@@ -234,7 +234,7 @@ Tono cálido, motivador y profesional. Usá emojis de sección.`;
     try {
 
 
-const res = await fetch("/api/generatePlan", {
+const res = await fetch("https://nutriplan-app-flax.vercel.app/api/generatePlan", {
   method: "POST",
   headers: {
     "Content-Type": "application/json"
@@ -958,6 +958,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
