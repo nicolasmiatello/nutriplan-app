@@ -232,25 +232,14 @@ Estructurá el plan con:
 Tono cálido, motivador y profesional. Usá emojis de sección.`;
 
     try {
-const apiKey = undefined;
+
 
 const res = await fetch("/api/generatePlan", {
   method: "POST",
   headers: {
-    "Content-Type": "application/json",
-    "x-api-key": apiKey,
-    "anthropic-version": "2023-06-01"
+    "Content-Type": "application/json"
   },
-  body: JSON.stringify({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4000,
-    messages: [
-      {
-        role: "user",
-        content: prompt
-      }
-    ]
-  })
+  body: JSON.stringify({ prompt })
 });
 
 const data = await res.json();
@@ -969,6 +958,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
