@@ -1,4 +1,4 @@
-import { useState, useReducer, useEffect } from "react";
+import React, { useState, useReducer, useEffect } from "react";
 
 const ALERGIAS_OPTS = ["Gluten", "Lactosa", "Huevo", "Mariscos", "Frutos secos", "Soja", "Ninguna"];
 const PATOLOGIAS_OPTS = ["Diabetes tipo 2", "Celiaquía", "Hipotiroidismo", "Hipertensión", "SOP", "Colesterol alto", "Ninguna"];
@@ -945,3 +945,4 @@ export default function App() {
     </div>
   );
 }
+
