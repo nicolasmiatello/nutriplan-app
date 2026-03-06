@@ -232,7 +232,7 @@ Estructurá el plan con:
 Tono cálido, motivador y profesional. Usá emojis de sección.`;
 
     try {
-const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+const apiKey = undefined;
 
 const res = await fetch("/api/generatePlan", {
   method: "POST",
@@ -969,6 +969,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
