@@ -234,7 +234,7 @@ Tono cálido, motivador y profesional. Usá emojis de sección.`;
     try {
 const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
 
-const res = await fetch("https://api.anthropic.com/v1/messages", {
+const res = await fetch("/api/generatePlan", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -969,5 +969,6 @@ export default function App() {
     </div>
   );
 }
+
 
 
