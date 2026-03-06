@@ -232,12 +232,36 @@ Estructurá el plan con:
 Tono cálido, motivador y profesional. Usá emojis de sección.`;
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:4000, messages:[{role:"user",content:prompt}] })
-      });
-      const data = await res.json();
-      setPlan(data.content?.[0]?.text || "Error al generar el plan.");
+const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+
+const res = await fetch("https://api.anthropic.com/v1/messages", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": apiKey,
+    "anthropic-version": "2023-06-01"
+  },
+  body: JSON.stringify({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 4000,
+    messages: [
+      {
+        role: "user",
+        content: prompt
+      }
+    ]
+  })
+});
+
+const data = await res.json();
+
+if (!res.ok) {
+  console.error(data);
+  setPlan("Error al generar el plan.");
+  return;
+}
+
+setPlan(data.content?.[0]?.text || "Error al generar el plan.");
     } catch { setPlan("Error de conexión. Intentá nuevamente."); }
     setLoading(false);
   };
@@ -945,4 +969,5 @@ export default function App() {
     </div>
   );
 }
+
 
