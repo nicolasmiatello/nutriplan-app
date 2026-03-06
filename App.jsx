@@ -1,10 +1,12 @@
-import React, { useState, useReducer, useEffect } from "react";
+import { useState, useReducer, useEffect } from "react";
 
 const ALERGIAS_OPTS = ["Gluten", "Lactosa", "Huevo", "Mariscos", "Frutos secos", "Soja", "Ninguna"];
 const PATOLOGIAS_OPTS = ["Diabetes tipo 2", "Celiaquía", "Hipotiroidismo", "Hipertensión", "SOP", "Colesterol alto", "Ninguna"];
 const OBJETIVOS_OPTS = ["Bajar de peso", "Subir masa muscular", "Mantenimiento", "Mejorar energía", "Control glucémico", "Alimentación saludable general"];
 const ACTIVIDAD_OPTS = ["Sedentario", "Leve (1-2 días/semana)", "Moderado (3-4 días/semana)", "Activo (5+ días/semana)", "Muy activo / deportista"];
-const initialPlanForm = { nombre:"", edad:"", peso:"", altura:"", sexo:"", objetivo:"", nivelActividad:"", alergias:[], patologias:[], preferencias:"", aversiones:"", cantidadComidas:"4" };
+const TIPO_PLAN_OPTS = ["Estándar", "Antiinflamatorio", "Sin TACC", "Proteico", "Bajo en carbohidratos"];
+const initialPlanForm = { nombre:"", edad:"", peso:"", altura:"", sexo:"", objetivo:"", nivelActividad:"", alergias:[], patologias:[], preferencias:"", aversiones:"", cantidadComidas:"4", tipoPlan:"Estándar" };
+
 const initialClinica = { motivo:"", diagnostico:"", antecedentes:"", medicacion:"", patologias:"", alergias:"", digestivo:"", sueno:"", estres:"", actividad:"" };
 
 function uid() { return Math.random().toString(36).slice(2,9); }
@@ -209,49 +211,129 @@ function PlanGenerator({ prefill, onSavePlan, onBack }) {
 
   const generatePlan = async () => {
     setStep(3); setLoading(true);
-    const prompt = `Eres una nutricionista profesional. Generá un plan alimentario detallado y personalizado en español, con formato claro y profesional.
+
+    const esAntiinflamatorio = form.tipoPlan === "Antiinflamatorio";
+    const esSinTACC = form.tipoPlan === "Sin TACC" || form.alergias.includes("Gluten");
+    const esProteico = form.tipoPlan === "Proteico";
+
+    const prompt = `Sos una nutricionista profesional argentina llamada Julieta Lupardo (MN: 6858, MP: 3265). Generá un plan de alimentación completo para tu paciente, con el mismo estilo y estructura que usás en tus planes reales.
 
 DATOS DE LA PACIENTE:
 - Nombre: ${form.nombre}
 - Edad: ${form.edad} años | Peso: ${form.peso} kg | Altura: ${form.altura} cm | Sexo: ${form.sexo}
 - Nivel de actividad: ${form.nivelActividad}
 - Objetivo principal: ${form.objetivo}
+- Tipo de plan: ${form.tipoPlan}
 - Alergias/intolerancias: ${form.alergias.length ? form.alergias.join(", ") : "Ninguna"}
 - Patologías: ${form.patologias.length ? form.patologias.join(", ") : "Ninguna"}
-- Preferencias alimentarias: ${form.preferencias || "No especificadas"}
-- Alimentos que no le gustan: ${form.aversiones || "No especificados"}
-- Cantidad de comidas por día: ${form.cantidadComidas}
+- Preferencias: ${form.preferencias || "No especificadas"}
+- Aversiones: ${form.aversiones || "No especificadas"}
+- Comidas por día: ${form.cantidadComidas}
 
-Estructurá el plan con:
-1. Introducción breve personalizada
-2. Distribución de macronutrientes estimada (%)
-3. Plan semanal lunes a domingo con porciones
-4. Indicaciones generales
-5. Tips para su objetivo
+ESTRUCTURA OBLIGATORIA DEL PLAN (seguí este orden exacto):
 
-Tono cálido, motivador y profesional. Usá emojis de sección.`;
+PLAN DE ALIMENTACIÓN${esAntiinflamatorio ? " ANTIINFLAMATORIO" : ""}
+FECHA: ${today()}
+NOMBRE: ${form.nombre.toUpperCase()}
+
+SELECCIÓN DE ALIMENTOS
+
+CEREALES Y LEGUMBRES:
+[Indicar cantidad recomendada por comida según el objetivo. Detallar equivalencias concretas con medidas caseras: cdas cocidas, plato, unidades. Adaptar según si es antiinflamatorio, sin TACC, etc.]
+
+LÁCTEOS:
+CONSUMIR HASTA 3 PORCIONES POR DÍA. PUEDE CONSUMIRSE MENOS PERO NO MÁS PORCIONES.
+[Listar equivalencias de 1 porción: vaso de leche, yogur, queso, ricota, etc. ${esSinTACC || form.alergias.includes("Lactosa") ? "Preferir versiones sin lactosa." : ""}]
+
+VERDURAS:
+CONSUMIR COMO MÍNIMO MEDIO PLATO POR COMIDA (almuerzo y cena)
+[Listar verduras recomendadas. ${esAntiinflamatorio ? "Aclarar cuáles hasta 3 veces por semana (lechuga, repollo, acelga)." : ""}]
+
+FRUTAS:
+[Indicar cantidad diaria recomendada. Listar equivalencias de 1 fruta.]
+*FRUTOS SECOS: nueces, almendras, avellanas, maní, pistachos, castañas de cajú. 1 puñado. ${esAntiinflamatorio ? "DEBEN TOSTARSE EN UNA SARTÉN POR 2 MINUTOS." : "NO ES OBLIGATORIO SU CONSUMO DIARIO."}
+
+ACEITE:
+[Indicar cantidad en cucharadas. Recomendar oliva para ensaladas y girasol/maíz para cocciones.]
+
+CARNES:
+[Indicar porción estándar con equivalencias. Listar carnes rojas, cerdo, pollo, pescados y huevos con sus indicaciones.]
+
+DULCES:
+[Recomendar mermeladas light, pasta de maní, edulcorantes. Dar opciones de snacks dulces permitidos con marcas argentinas concretas como Colonial, WIK, Crudda, Íntegra, Laddubar.]
+
+OTROS:
+[Condimentos, infusiones, bebidas, semillas permitidas.]
+
+DISTRIBUCIÓN DIARIA DE ALIMENTOS
+
+OPCIONES DE DESAYUNO${form.cantidadComidas >= 4 ? "/MERIENDA" : ""}
+[Listar 6-8 opciones concretas con "Infusión +" o "Yogur +". ${esProteico ? "Incluir opciones proteicas: huevos, jamón, queso, frutos secos." : "Mezclar opciones con pan integral, pancakes, galletitas."} Incluir aclaración sobre cómo untar las tostadas.]
+
+${form.cantidadComidas >= 4 ? `OPCIONES DE MERIENDA
+[Si la merienda es post-entreno, indicarlo. Dar opciones más livianas o completas según el momento.]
+
+` : ""}COLACIONES (en caso de ser necesarias): [Listar 5-6 opciones simples: fruta, frutos secos, aceitunas, tomates cherry, huevo duro, etc.]
+
+ALMUERZO
+Cereales o Legumbres +
+Verduras crudas y/o cocidas +
+Carnes y/o Huevo
+
+CENA
+Verduras crudas y/o cocidas +
+Carnes y/o Huevo
+${esAntiinflamatorio ? "" : "(Opcionalmente cereales si el objetivo lo permite)"}
+
+IDEAS DE MENÚ PARA UNA SEMANA
+
+DÍA | ALMUERZO | CENA
+LUNES | [almuerzo] | [cena]
+MARTES | [almuerzo] | [cena]
+MIERCOLES | [almuerzo] | [cena]
+JUEVES | [almuerzo] | [cena]
+VIERNES | [almuerzo] | [cena]
+SÁBADO | [almuerzo] | [cena]
+DOMINGO | [almuerzo] | [cena]
+
+[Las comidas deben ser variadas, con nombres de platos concretos y realistas para Argentina. Incluir proteínas, verduras y cereales según corresponda.]
+
+RECOMENDACIONES:
+- Realice las ${form.cantidadComidas} comidas diarias sin saltear ninguna.
+- No pasar más de 4 horas sin comer durante el día.
+- A las 2 horas después de comer debés sentirte liviana y sin sueño. Si esto sucede, achicá la porción.
+- Consumir por lo menos 1,5 litros (6 vasos) de agua por día.
+${esAntiinflamatorio ? "- Utilizar los siguientes alimentos por tener efecto antiinflamatorio y antioxidante: té verde, cacao amargo, canela, cúrcuma, jengibre.\n- Consumir una cucharada por día de Aloe Vera marca Natier Máximas defensas o Antioxidantes." : ""}
+[Agregar 1-2 recomendaciones personalizadas según el objetivo de ${form.nombre}.]
+
+RECETAS BÁSICAS
+*Pancake (1 porción): [receta estándar de Julieta con avena o harina integral, huevo, polvo para hornear, vainilla y stevia]
+*Mugcake o torta individual: [receta estándar con huevo, aceite, leche, stevia, harina de avena o almendras]
+${esProteico ? `*Chia Pudding (1 porción): 2 Cdas de semillas de chía + 100ml de leche + vainilla + edulcorante. Dejar reposar 6hs en heladera. Servir con fruta y frutos secos.
+*Muffins proteicos (5 unidades): 1 Huevo + 2 Cdas de ricota + 2 Cditas de harina de almendras + 2 Cditas de leche en polvo + Stevia + 1 Cda de polvo para hornear. Cocinar 15 min en horno moderado.` : `*Budín integral: [receta estándar con huevos, azúcar, aceite, leche, harinas integrales y polvo para hornear]
+*Galletitas integrales (25 unidades): [receta estándar con huevo, azúcar, aceite, vainilla, harinas integrales y polvo para hornear]`}
+
+JULIETA LUPARDO – Nutricionista UBA –
+MN: 6858, MP: 3265
+
+INSTRUCCIONES ADICIONALES:
+- Escribí TODO en español argentino (vos, usás, etc.)
+- Las cantidades deben ser en medidas caseras argentinas (cda, cdita, taza, vaso, plato)
+- Mencioná marcas argentinas reales cuando sea relevante (Fargo, Val Maira, Bimbo, Colonial, WIK, etc.)
+- NO uses markdown con #, **, etc. Usá MAYÚSCULAS para títulos de sección
+- Sé específica y detallada como una nutricionista real
+- Adaptá TODO el plan al tipo: ${form.tipoPlan}`;
 
     try {
-
-
-const res = await fetch("https://nutriplan-app-flax.vercel.app/api/generatePlan", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ prompt })
-});
-
-const data = await res.json();
-
-if (!res.ok) {
-  console.error(data);
-  setPlan("Error al generar el plan.");
-  return;
-}
-
-setPlan(data.content?.[0]?.text || "Error al generar el plan.");
-    } catch { setPlan("Error de conexión. Intentá nuevamente."); }
+      const res = await fetch("/api/generatePlan", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ prompt })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+      setPlan(data.content?.[0]?.text || "Error al generar el plan.");
+    } catch(e) { setPlan("Error de conexión. Intentá nuevamente."); }
     setLoading(false);
   };
 
@@ -312,6 +394,12 @@ setPlan(data.content?.[0]?.text || "Error al generar el plan.");
                 <label style={S.label}>Nivel de actividad física</label>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginTop:5 }}>
                   {ACTIVIDAD_OPTS.map(o=><Tag key={o} label={o} selected={form.nivelActividad===o} onClick={()=>set("nivelActividad",o)} />)}
+                </div>
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <label style={S.label}>Tipo de plan</label>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginTop:5 }}>
+                  {TIPO_PLAN_OPTS.map(o=><Tag key={o} label={o} selected={form.tipoPlan===o} onClick={()=>set("tipoPlan",o)} />)}
                 </div>
               </div>
               <div style={{ marginBottom:16 }}>
