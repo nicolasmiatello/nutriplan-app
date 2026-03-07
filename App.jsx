@@ -26,6 +26,7 @@ function reducer(state,action) {
     case "ADD_MEDICION": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,mediciones:[action.m,...p.mediciones]}:p)};
     case "ADD_NOTA": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,notas:[action.n,...p.notas]}:p)};
     case "ADD_PLAN": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,planes:[action.plan,...p.planes]}:p)};
+    case "UPDATE_PLAN": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,planes:p.planes.map(pl=>pl.id===action.plan.id?action.plan:pl)}:p)};
     case "UPDATE_CLINICA": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,clinica:action.clinica}:p)};
     case "ADD_CONSULTA": return {...state,consultas:[action.c,...(state.consultas||[])]};
     case "LOAD": return {...state,patients:action.patients,consultas:action.consultas||[]};
@@ -463,12 +464,20 @@ function NewPatient({onSave,onCancel}) {
 }
 
 // ─── PLAN VIEWER ──────────────────────────────────────────────────────────────
-function PlanViewer({plan,paciente,onClose}) {
+function PlanViewer({plan,paciente,onClose,onUpdate}) {
+  const [editing,setEditing] = useState(false);
+  const [texto,setTexto] = useState(plan.texto||"");
   const [expanded,setExpanded] = useState(false);
   const [notasNutri,setNotasNutri] = useState("");
-  const texto = plan.texto||"";
+  const [saved,setSaved] = useState(false);
   const isLong = texto.length > 1500;
-  const shown = (!isLong||expanded) ? texto : texto.slice(0,1500)+"...";
+
+  const handleSave = () => {
+    onUpdate({...plan,texto});
+    setEditing(false);
+    setSaved(true);
+    setTimeout(()=>setSaved(false),2000);
+  };
 
   return (
     <div style={{...S.card,marginBottom:16}}>
@@ -478,25 +487,44 @@ function PlanViewer({plan,paciente,onClose}) {
           <div style={{fontSize:12,color:"#7a9a8a"}}>{plan.fecha}</div>
         </div>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>exportPDF({paciente,plan,notasNutricionista:notasNutri})} style={{...S.btnOutline,fontSize:12,padding:"6px 12px"}}>📄 PDF</button>
+          <button onClick={()=>setEditing(!editing)} style={{...S.btnGhost,fontSize:12,padding:"6px 12px"}}>
+            {editing?"✕ Cancelar":"✏️ Editar"}
+          </button>
+          <button onClick={()=>exportPDF({paciente,plan:{...plan,texto},notasNutricionista:notasNutri})} style={{...S.btnOutline,fontSize:12,padding:"6px 12px"}}>📄 PDF</button>
           <button onClick={onClose} style={{...S.btnGhost,fontSize:12,padding:"6px 12px"}}>✕</button>
         </div>
       </div>
-      <div style={{background:"#f8faf9",borderRadius:10,padding:"16px",maxHeight:expanded?"none":"400px",overflow:"hidden",position:"relative"}}>
-        <pre style={{margin:0,fontSize:13,lineHeight:1.75,color:"#2a2a2a",fontFamily:"inherit",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
-          {shown}
-        </pre>
-        {isLong&&!expanded&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:80,background:"linear-gradient(transparent,#f8faf9)"}}/>}
-      </div>
-      {isLong&&(
-        <button onClick={()=>setExpanded(!expanded)} style={{...S.btnGhost,width:"100%",marginTop:8,fontSize:13}}>
-          {expanded?"▲ Mostrar menos":"▼ Ver plan completo"}
-        </button>
+
+      {editing ? (
+        <div>
+          <textarea value={texto} onChange={e=>setTexto(e.target.value)} rows={20}
+            style={{...S.input,resize:"vertical",fontSize:13,lineHeight:1.75,marginBottom:10}}/>
+          <button onClick={handleSave} style={{...S.btnPrimary,width:"100%"}}>
+            {saved?"✓ Guardado":"💾 Guardar cambios"}
+          </button>
+        </div>
+      ) : (
+        <div>
+          <div style={{background:"#f8faf9",borderRadius:10,padding:"16px",maxHeight:expanded?"none":"400px",overflow:"hidden",position:"relative"}}>
+            <pre style={{margin:0,fontSize:13,lineHeight:1.75,color:"#2a2a2a",fontFamily:"inherit",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+              {texto}
+            </pre>
+            {isLong&&!expanded&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:80,background:"linear-gradient(transparent,#f8faf9)"}}/>}
+          </div>
+          {isLong&&(
+            <button onClick={()=>setExpanded(!expanded)} style={{...S.btnGhost,width:"100%",marginTop:8,fontSize:13}}>
+              {expanded?"▲ Mostrar menos":"▼ Ver plan completo"}
+            </button>
+          )}
+        </div>
       )}
-      <div style={{marginTop:12}}>
-        <label style={S.label}>Notas del nutricionista (aparecen en el PDF)</label>
-        <textarea value={notasNutri} onChange={e=>setNotasNutri(e.target.value)} rows={2} placeholder="Indicaciones adicionales..." style={{...S.input,resize:"vertical"}}/>
-      </div>
+
+      {!editing&&(
+        <div style={{marginTop:12}}>
+          <label style={S.label}>Notas del nutricionista (aparecen en el PDF)</label>
+          <textarea value={notasNutri} onChange={e=>setNotasNutri(e.target.value)} rows={2} placeholder="Indicaciones adicionales..." style={{...S.input,resize:"vertical"}}/>
+        </div>
+      )}
     </div>
   );
 }
@@ -649,7 +677,8 @@ function PatientDetail({patient,dispatch,onGeneratePlan,onBack,onDelete}) {
           patient.planes?.map(plan=>(
             <div key={plan.id}>
               {viewingPlan===plan.id
-                ?<PlanViewer plan={plan} paciente={patient} onClose={()=>setViewingPlan(null)}/>
+                ?<PlanViewer plan={plan} paciente={patient} onClose={()=>setViewingPlan(null)}
+                    onUpdate={updated=>dispatch({type:"UPDATE_PLAN",pid:patient.id,plan:updated})}/>
                 :<div style={{...S.card,marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
                   <div style={{flex:1}}>
                     <div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{plan.objetivo}</div>
@@ -716,6 +745,8 @@ function PlanGenerator({prefill,onSavePlan,onBack}) {
   const [notasNutri,setNotasNutri] = useState("");
   const [generatingPDF,setGeneratingPDF] = useState(false);
   const [expanded,setExpanded] = useState(false);
+  const [showMontoModal,setShowMontoModal] = useState(false);
+  const [monto,setMonto] = useState("");
 
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
 
@@ -1013,11 +1044,7 @@ INSTRUCCIONES DE FORMATO:
                     {generatingPDF?"Generando...":"📄 Descargar PDF"}
                   </button>
                   {onSavePlan&&(
-                    <button onClick={()=>{
-                      onSavePlan({id:uid(),fecha:today(),objetivo:form.objetivo,texto:plan});
-                      setSaved(true);
-                      setTimeout(()=>setSaved(false),3000);
-                    }} style={{...S.btnPrimary,flex:2,fontSize:13}}>
+                    <button onClick={()=>setShowMontoModal(true)} style={{...S.btnPrimary,flex:2,fontSize:13}}>
                       {saved?"✓ Guardado en ficha":"💾 Guardar en ficha"}
                     </button>
                   )}
@@ -1025,6 +1052,28 @@ INSTRUCCIONES DE FORMATO:
                 <button onClick={()=>{setStep(0);setPlan("");setEditing(false);setSaved(false);setExpanded(false);}} style={{...S.btnGhost,width:"100%",marginTop:10,fontSize:13}}>
                   ↩ Nuevo plan
                 </button>
+
+                {showMontoModal&&(
+                  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}>
+                    <div style={{...S.card,maxWidth:340,width:"90%",textAlign:"center"}}>
+                      <div style={{fontSize:28,marginBottom:8}}>💰</div>
+                      <h3 style={{margin:"0 0 6px",color:"#1a3d2b"}}>¿Cuánto cobró por esta consulta?</h3>
+                      <p style={{fontSize:13,color:"#7a9a8a",marginBottom:16}}>Se registrará junto con el plan en las estadísticas.</p>
+                      <input type="number" value={monto} onChange={e=>setMonto(e.target.value)}
+                        placeholder="Ej: 15000" autoFocus
+                        style={{...S.input,fontSize:18,fontWeight:700,textAlign:"center",marginBottom:16}}/>
+                      <div style={{display:"flex",gap:10}}>
+                        <button onClick={()=>setShowMontoModal(false)} style={{...S.btnGhost,flex:1}}>Cancelar</button>
+                        <button onClick={()=>{
+                          onSavePlan({id:uid(),fecha:today(),objetivo:form.objetivo,texto:plan,monto:parseFloat(monto)||0});
+                          setSaved(true);
+                          setShowMontoModal(false);
+                          setTimeout(()=>setSaved(false),3000);
+                        }} style={{...S.btnPrimary,flex:2}}>Guardar</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           )}
@@ -1125,7 +1174,11 @@ export default function App() {
         {screen==="plan-patient"&&patient&&(
           <PlanGenerator
             prefill={{nombre:patient.nombre,edad:patient.edad,peso:patient.peso,altura:patient.altura,sexo:patient.sexo,objetivo:patient.objetivo||"",nivelActividad:"",alergias:[],patologias:[],preferencias:"",aversiones:"",cantidadComidas:"4",tipoPlan:"Estándar"}}
-            onSavePlan={plan=>{dispatch({type:"ADD_PLAN",pid:patient.id,plan});go("detail",patient.id);}}
+            onSavePlan={plan=>{
+              dispatch({type:"ADD_PLAN",pid:patient.id,plan});
+              dispatch({type:"ADD_CONSULTA",c:{id:uid(),pacienteId:patient.id,pacienteNombre:patient.nombre,fecha:todayISO(),monto:plan.monto||0,tipo:"Plan generado",obs:`Plan: ${plan.objetivo}`}});
+              go("detail",patient.id);
+            }}
             onBack={()=>go("detail",patient.id)}/>
         )}
         {screen==="plan"&&<PlanGenerator onBack={()=>{setNavTab("patients");go("patients");}}/>}
