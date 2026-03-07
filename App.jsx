@@ -569,9 +569,6 @@ function PatientDetail({patient,dispatch,onGeneratePlan,onBack,onDelete}) {
         <button onClick={onBack} style={S.btnGhost}>← Volver</button>
         <div style={{flex:1}}>
           <h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>{patient.nombre}</h2>
-          <div style={{fontSize:13,color:"#7a9a8a",marginTop:2}}>
-            {[patient.edad&&`${patient.edad} años`,patient.peso&&`${patient.peso} kg`,patient.objetivo].filter(Boolean).join(" · ")}
-          </div>
         </div>
         <div style={{display:"flex",gap:8}}>
           <button onClick={onGeneratePlan} style={S.btnPrimary}>✨ Nuevo plan</button>
@@ -1143,7 +1140,7 @@ export default function App() {
       <div style={{background:"#fff",borderBottom:"1.5px solid #e8f0ec",padding:"0 20px",position:"sticky",top:0,zIndex:100}}>
         <div style={{maxWidth:980,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:14}}>JL</div>
+            <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍏</div>
             <span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>JL Nutrición</span>
             <span style={{fontSize:11,color:saveStatus==="saving"?"#f4a261":saveStatus==="saved"?"#52b788":saveStatus==="error"?"#e63946":"transparent",fontWeight:600,transition:"color .3s"}}>
               {saveStatus==="saving"?"● guardando...":saveStatus==="saved"?"✓ guardado":saveStatus==="error"?"⚠ error":"·"}
