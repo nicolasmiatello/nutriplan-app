@@ -89,11 +89,7 @@ function exportPDF({ paciente, plan, notasNutricionista="" }) {
     .logo{width:48px;height:48px;background:#52b788;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:bold;color:white;font-family:sans-serif;flex-shrink:0}
     .header-title{font-size:20px;font-weight:bold;margin-left:14px}
     .header-sub{font-size:11px;opacity:.75;margin-top:3px;font-family:sans-serif;margin-left:14px}
-    .patient-card{background:#e8f5ee;border-left:5px solid #2d6a4f;margin:24px 40px 0;padding:14px 20px;border-radius:0 8px 8px 0;display:flex;justify-content:space-between;align-items:center}
-    .patient-name{font-size:18px;font-weight:bold;color:#1a3d2b;font-family:sans-serif}
-    .patient-meta{font-size:11px;color:#5a7a6a;margin-top:3px;font-family:sans-serif}
-    .badge{background:#2d6a4f;color:white;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:bold;font-family:sans-serif}
-    .content{padding:20px 40px 60px}
+    .content{padding:24px 40px 60px}
     .plan-text p{font-size:12.5px;line-height:1.75;color:#2a2a2a;margin-bottom:2px}
     .plan-text p.day{font-weight:bold;color:#2d6a4f;font-size:13px;margin-top:14px;margin-bottom:3px;font-family:sans-serif;border-left:3px solid #52b788;padding-left:8px}
     .plan-text p.section-title{font-weight:bold;color:#1a3d2b;font-size:13px;margin-top:16px;font-family:sans-serif;text-transform:uppercase;letter-spacing:.5px}
@@ -109,10 +105,6 @@ function exportPDF({ paciente, plan, notasNutricionista="" }) {
       <div><div class="header-title">JL Nutrición – Plan Alimentario</div><div class="header-sub">Lic. Julieta Lupardo · MN: 6858, MP: 3265</div></div>
     </div>
     <div style="font-size:12px;opacity:.85;font-family:sans-serif;text-align:right">Fecha: ${fecha}</div>
-  </div>
-  <div class="patient-card">
-    <div><div class="patient-name">${nombre}</div><div class="patient-meta">Plan generado el ${fecha}</div></div>
-    <div class="badge">${objetivo||"Plan nutricional"}</div>
   </div>
   <div class="content">
     <div class="plan-text">${planHTML}</div>
