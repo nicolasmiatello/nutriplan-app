@@ -29,7 +29,7 @@ function reducer(state,action) {
     case "UPDATE_PLAN": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,planes:p.planes.map(pl=>pl.id===action.plan.id?action.plan:pl)}:p)};
     case "UPDATE_CLINICA": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,clinica:action.clinica}:p)};
     case "ADD_CONSULTA":
-  sbInsertConsulta(action.c);
+  
   return { ...state, consultas:[action.c,...(state.consultas||[])] };
   }
 }
