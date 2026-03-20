@@ -59,7 +59,23 @@ async function sbUpsert(patient) {
   });
   await fetch(`${SUPABASE_URL}/rest/v1/patients`,{method:"POST",headers:sbHeaders,body});
 }
+async function sbInsertConsulta(consulta) {
+  const body = JSON.stringify({
+    id: consulta.id,
+    paciente_id: consulta.pacienteId,
+    paciente_nombre: consulta.pacienteNombre,
+    fecha: consulta.fecha,
+    monto: consulta.monto || 0,
+    tipo: consulta.tipo || "",
+    obs: consulta.obs || ""
+  });
 
+  await fetch(`${SUPABASE_URL}/rest/v1/consultas`, {
+    method: "POST",
+    headers: sbHeaders,
+    body
+  });
+}
 async function sbDelete(id) {
   await fetch(`${SUPABASE_URL}/rest/v1/patients?id=eq.${id}`,{method:"DELETE",headers:sbHeaders});
 }
