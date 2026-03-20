@@ -104,7 +104,6 @@ function buildPrompt(form) {
   const tieneInflamacion = form.patologias.includes("Inflamación");
   const tieneTrombofilia = form.patologias.includes("Trombofilia");
 
-  // Título del plan
   let tituloPlan = "PLAN DE ALIMENTACIÓN";
   if(esSinTACC||esCeliaquia) tituloPlan += " SIN TACC";
   if(esFODMAPs) tituloPlan += " BAJO EN FODMAPS";
@@ -114,13 +113,11 @@ function buildPrompt(form) {
   if(esDBTGestacional) tituloPlan += " – DIABETES GESTACIONAL";
   if(esResistenciaInsulina && !esDBTGestacional) tituloPlan += " – RESISTENCIA A LA INSULINA";
 
-  // ── MODELO DE REFERENCIA SEGÚN TIPO DE PLAN ──
   let modeloReferencia = "";
 
   if(esDBTGestacional) {
     modeloReferencia = `
 MODELO DE REFERENCIA: PLAN PARA DIABETES GESTACIONAL DE JULIETA LUPARDO
-Seguí este modelo exacto como base, adaptándolo a la paciente:
 
 RECOMENDACIONES ESPECÍFICAS DBT GESTACIONAL:
 - No pasar más de 3 horas sin comer durante el día.
@@ -136,260 +133,142 @@ Máximo 2 veces por semana: ½ Plancha de ravioles, 2 Canelones de verdura, 2 Po
 PREFERIR VERSIÓN INTEGRAL. Si es versión blanca: acompañar con carne/huevo + verduras verdes + alimento graso (crema, manteca, mayonesa, palta, frutos secos).
 Si papa/batata/arroz/fideos blancos se cocinan y dejan 12hs en heladera se retarda la digestión.
 
-LÁCTEOS: HASTA 3 PORCIONES POR DÍA.
-1 Porción = 1 Vaso de leche, 2 Cdas de leche en polvo, 6 Cdas de queso untable (no diario), 2 Cdas de ricota magra, 1 Rodaja de queso fresco de un dedo de grosor, 2 Fetas de queso de máquina, 2 Cdas de queso rallado al ras, 1 Pote de yogur natural sin azúcar, 1 Yogur Ser.
+LÁCTEOS: HASTA 3 PORCIONES POR DÍA. 1 Porción = 1 Vaso de leche, 2 Cdas de leche en polvo, 6 Cdas de queso untable (no diario), 2 Cdas de ricota magra, 1 Rodaja de queso fresco de un dedo de grosor, 2 Fetas de queso de máquina, 2 Cdas de queso rallado al ras, 1 Pote de yogur natural sin azúcar, 1 Yogur Ser.
 
-CARNES: SE DEBE REPETIR CUALQUIER TIPO DE CARNE EN ALMUERZO Y CENA.
-1 Porción = 1 Bife del tamaño de la mano entera, 3 Albóndigas medianas, 2 Hamburguesas caseras, ¼ de pollo sin piel, 1 Filete de pescado grande o 2 chicos, 2 Rodajas de carne al horno de un dedo de grosor, ½ Plato de carne picada o en trozos, 1 Lata de atún o caballa.
-Carne roja, cerdo (sin grasa visible), pollo sin piel, pescados (hasta 3 veces/semana).
-Huevos: Hasta 3 unidades por día. Claras libremente.
+CARNES: SE DEBE REPETIR CUALQUIER TIPO DE CARNE EN ALMUERZO Y CENA. Huevos: Hasta 3 unidades por día.
 
-VERDURAS LIBRES (MÍNIMO ½ PLATO): Acelga, achicoria, ajo, alcaucil, apio, berenjena, berro, brócoli, cebolla, champiñones, chauchas, coliflor, espárragos, espinaca, hinojo, lechuga, morrón, palmitos, pepino, puerro, rabanito, rúcula, tomate, zapallito, zucchinis.
-VERDURAS CONTROLADAS (Hasta ½ Plato/día): CALABAZA, REMOLACHA, ZAPALLO Y ZANAHORIA. Combinar con verduras verdes.
+VERDURAS LIBRES (MÍNIMO ½ PLATO). VERDURAS CONTROLADAS (Hasta ½ Plato/día): CALABAZA, REMOLACHA, ZAPALLO Y ZANAHORIA.
 
-FRUTAS: 2 unidades por día. Preferir en trozos. Evitar jugos. Licuados con menor frecuencia (agregar avena y frutos secos).
-½ palta.
-Frutos secos: sin cantidad específica, para acompañar fruta y dar saciedad.
+FRUTAS: 2 unidades por día. Preferir en trozos. Evitar jugos. ½ palta.
 
-DULCES: Solo sin azúcar. Mermelada light/sin azúcar 4 cditas/día. Mantequilla de maní sin azúcar 2 cditas/día. Edulcorante con moderación líquido.
-Opciones dulces: 15-20g chocolate sin azúcar (Colonial, Torroncino, Felfort Diab, Georgalos), 1 Bocadito ÍNTEGRA, 1 Barra WIK.
-Preparaciones dulces con mezcla de harina integral/avena + harina de almendras o coco.
+DULCES: Solo sin azúcar. Mermelada light/sin azúcar 4 cditas/día. Mantequilla de maní sin azúcar 2 cditas/día. Opciones: 15-20g chocolate sin azúcar (Colonial, Torroncino, Felfort Diab, Georgalos), 1 Bocadito ÍNTEGRA, 1 Barra WIK.
 
-ACEITES: 2 a 3 cucharadas soperas por día. En crudo. 1 Cda aceite = 2 Cdas mayonesa light.
+ACEITES: 2 a 3 cucharadas soperas por día. 1 Cda aceite = 2 Cdas mayonesa light.
 
-RECETAS: Pancake con 1 cda harina integral/avena + 1 cda harina coco/almendras + 1 Huevo + polvo hornear + vainilla + Stevia + 2 Cdas leche. Mugcake con 1 Cda harina almendras/coco + 1 Cda harina avena/integral + 1 Huevo + aceite + leche + Stevia + polvo hornear. Budín con mezcla ½ harina integral/avena y ½ harina coco/almendras. Galletitas 25-30 unidades con la misma lógica de harinas.
+RECETAS: Pancake con 1 cda harina integral/avena + 1 cda harina coco/almendras + 1 Huevo + polvo hornear + vainilla + Stevia + 2 Cdas leche. Mugcake con harinas mixtas. Budín con ½ harina integral/avena y ½ harina coco/almendras. Galletitas 25-30 unidades.
 `;
   } else if(esResistenciaInsulina) {
     modeloReferencia = `
 MODELO DE REFERENCIA: PLAN PARA RESISTENCIA A LA INSULINA DE JULIETA LUPARDO
-Seguí este modelo exacto como base, adaptándolo a la paciente:
 
-RECOMENDACIONES ESPECÍFICAS RESISTENCIA A LA INSULINA:
+RECOMENDACIONES ESPECÍFICAS:
 - No pasar más de 3 o 4 horas sin comer durante el día.
 - A las 2 horas de comer debe sentirse liviana y sin sueño. Si no, achicar porción.
-- El grupo de hidratos de carbono debe consumirse de manera DIARIA acompañado de verduras y de algún tipo de carne o huevo.
-- Si se consume versión integral ya tiene fibra, pero igualmente agregar verduras.
-- Si se consume versión blanca, debe predominar verdura verde + proteína.
-- Si versión blanca sin verdura, agregar fruta de postre (no de manera frecuente).
-- Papa, batata, arroz blanco y fideos blancos cocidos y 24hs en heladera retardan la digestión. Puede comerse frío o recalentado.
-- Puede consumirse cualquier fruta respetando equivalencias.
+- El grupo de hidratos de carbono debe consumirse de manera DIARIA acompañado de verduras y carne o huevo.
+- Si versión blanca, debe predominar verdura verde + proteína.
+- Papa, batata, arroz blanco y fideos blancos cocidos y 24hs en heladera retardan la digestión.
 
-CEREALES Y LEGUMBRES: CONSUMIR EN EL ALMUERZO (respetando cantidades).
-½ Plato de arroz integral/yamaní/parboil/largo fino, 2 Porciones de tarta con 1 sola tapa, 2-3 Fajitas integrales (Rapiditas), 1 Papa mediana (200g), 1 Batata mediana (200g), ½ Plato de quínoa, 1 Choclo, 1 Milanesa, ½ Plato de legumbres o 2 Hamburguesas de legumbres, ½ Plato de fideos integrales o secos fríos/recalentados, 2 Empanadas (una con verdura).
-Máximo 2 veces/semana: ½ Plancha ravioles verdura, 2 Canelones verdura, 2 Porciones pizza integral.
+CEREALES Y LEGUMBRES: CONSUMIR EN EL ALMUERZO. ½ Plato de arroz integral/yamaní/parboil/largo fino, 2 Porciones de tarta con 1 sola tapa, 2-3 Fajitas integrales, 1 Papa mediana (200g), 1 Batata mediana (200g), ½ Plato de quínoa, 1 Choclo, 1 Milanesa, ½ Plato de legumbres, ½ Plato de fideos integrales, 2 Empanadas (una con verdura). Máximo 2 veces/semana: ravioles, canelones, pizza integral.
 
-CARNES: SE PUEDE REPETIR EN ALMUERZO Y CENA.
-1 Porción = 1 Bife tamaño mano, 3 Albóndigas, 2 Hamburguesas caseras, ¼ pollo sin piel, 1 Filete pescado grande, 2 Rodajas carne al horno, ½ Plato carne picada, 1 Lata atún.
-Carne roja hasta 3 veces/semana. Cerdo sin grasa. Pollo sin piel. Pescados variados.
-Huevos: Hasta 2/día. Claras libremente.
+CARNES: SE PUEDE REPETIR EN ALMUERZO Y CENA. Carne roja hasta 3 veces/semana. Huevos: Hasta 2/día.
+LÁCTEOS: 2 a 3 porciones/día. FRUTAS: Hasta 2 unidades. PREFERIR EN TROZOS. EVITAR JUGOS.
+VERDURAS LIBRES (MÍNIMO ½ PLATO). DULCES: sin azúcar. ACEITES: 2-3 Cdas/día.
 
-LÁCTEOS: 2 a 3 porciones/día. Leche reducida en lactosa 1 taza. Yogur descremado 1 taza. Queso fresco 1 rodaja o 2 fetas o 2 Cdas rallado.
-
-FRUTAS: Hasta 2 unidades. PREFERIR EN TROZOS. EVITAR JUGOS. Licuados con avena y frutos secos.
-Palta: hasta 1/día.
-Frutos secos: sin cantidad específica, máximo 1 puñado por vez.
-
-VERDURAS LIBRES (MÍNIMO ½ PLATO): todas las verduras sin restricción.
-
-DULCES: Mermelada sin azúcar 4 cditas/día o mantequilla de maní sin azúcar 2 cditas/día. Edulcorante con moderación líquido.
-Opciones: 15-20g chocolate sin azúcar, 1 Bocadito ÍNTEGRA, 1 Barra chocolate semiamargo.
-
-ACEITES: 2-3 Cdas/día. 1 Cda aceite = 2 Cdas mayonesa light.
-
-RECETAS: Pancake con 3 Cdas harina avena/integral + 1 Huevo + 4 Cdas agua/leche + vainilla + polvo hornear + edulcorante. 1 pancake = 1 Cda mezcla en crudo. Puede hacerse con harina almendras/coco. Saborizar con ralladura limón/naranja, cacao amargo, fruta.
+RECETAS: Pancake con 3 Cdas harina avena/integral + 1 Huevo + 4 Cdas agua/leche + vainilla + polvo hornear + edulcorante.
 `;
   } else if(esFODMAPs && esVegetariano) {
     modeloReferencia = `
 MODELO DE REFERENCIA: PLAN VEGETARIANO BAJO EN FODMAPS DE JULIETA LUPARDO
-Seguí este modelo exacto como base, adaptándolo a la paciente:
 
-CEREALES Y LEGUMBRES: CONSUMIR ½ PLATO POR DÍA (almuerzo o cena).
-½ Plato arroz cocido (cualquier variedad), ½ Plato fideos sin gluten, 2 Fajitas sin tacc (sin leche en polvo), ½ Plato fideos de legumbres/quínoa, 2 Porciones tarta sin tacc con 1 sola masa (sin leche en polvo), 1 Papa mediana (150g), 1 Batata mediana (150g), ½ Plato quínoa o 2 Hamburguesas quinoa, ½ Lata de lentejas/arvejas/garbanzos/porotos, 1 Plato chico polenta, ½ Lata choclo, ½ Plato mijo.
-Puede consumirse avena (evaluar tolerancia).
-Harinas sin gluten: trigo sarraceno, sorgo, harina almendras, coco, legumbres, fécula papa, maicena, harina arroz, quínoa.
-LA MAYOR PARTE DEL TIEMPO SIN GLUTEN, dejar gluten para consumo ocasional.
-Legumbres: preferir en lata bien lavadas. Frescas: remojar 12hs, cambiar agua, cocinar con bicarbonato y laurel. Lentejas turcas sin remojar, 10 min cocción.
-
-LÁCTEOS: HASTA 3 PORCIONES. 1 Porción = 1 Vaso leche reducida en lactosa o bebida almendras/coco, 2 Cdas ricota magra, 1 Rodaja queso fresco, 2 Fetas queso máquina, 2 Cdas queso rallado, 1 Yogur reducido en lactosa (Ser 15g proteína, Milkaut 0% Lactosa, Activia zero lactosa, Yogurísimo tapa celeste, Griego La Serenísima).
-
-VERDURAS (MÍNIMO ½ PLATO POR COMIDA):
-Mayor frecuencia: Zanahoria, berenjena, zapallito, albahaca, zucchini, calabaza/zapallo, apio, tomate, cebolla de verdeo, espinaca, rúcula, champiñones, brócoli.
-Hasta 3 veces/semana: pepino, espárragos, remolacha, chaucha, alcaucil.
-
-FRUTAS: HASTA 2 POR DÍA. Mínimo 1 diaria.
-1 Fruta = 1 Banana, 1 caja arándanos, 1 Taza frutillas (200g), 1 Taza uvas (100g), 2 kiwis, limón, 1 mandarina, 1 naranja, 2 rodajas melón, 2 rodajas ananá lata, ½ palta.
-Hasta 3 veces/semana: 2 Ciruelas chicas, 1 Durazno chico, 1 Manzana chica, 1 rodaja sandía, 1 Pelón, 1 Pera.
-Frutos secos: 1 puñado/día. TOSTAR en sartén 2 min y almacenar en frasco.
-
-HUEVO: 2 a 3 huevos por día o 1 Rodaja de tofu de un dedo de grosor.
 NO INCLUIR CARNES DE NINGÚN TIPO.
 
-ACEITE: 2-3 CUCHARADAS POR DÍA. Oliva para ensaladas. Girasol/maíz para cocciones largas.
+CEREALES Y LEGUMBRES: CONSUMIR ½ PLATO POR DÍA (almuerzo o cena). Sin gluten la mayor parte del tiempo. Legumbres: preferir en lata bien lavadas. Lentejas turcas sin remojar 10 min.
+Harinas sin gluten: trigo sarraceno, sorgo, almendras, coco, legumbres, fécula papa, maicena, arroz, quínoa.
 
-DULCES: Hasta 4 Cditas mermelada (El Brocal Light, Las Quinas sin azúcar, Cuarto Creciente Light, de frutos rojos/frutilla/arándanos). Hasta 2 Cditas pasta de maní (Let Fit, BeePure, Entrenut, King). Stevia/Sucralosa/Hileret líquido con moderación.
-Opciones dulces: 3 Cuadraditos chocolate Colonial, 1 Bocadito ÍNTEGRA, 1 Barra WIK, ½ Barra Crudda.
+LÁCTEOS: HASTA 3 PORCIONES. Solo reducidos en lactosa o bebida almendras/coco. Yogur reducido en lactosa (Ser 15g proteína, Milkaut 0% Lactosa, Activia zero lactosa, Yogurísimo tapa celeste, Griego La Serenísima).
 
-Semillas: chía 2 cditas/día activadas o tostadas o molidas.
+VERDURAS (MÍNIMO ½ PLATO): Mayor frecuencia: Zanahoria, berenjena, zapallito, albahaca, zucchini, calabaza, apio, tomate, cebolla de verdeo, espinaca, rúcula, champiñones, brócoli. Hasta 3 veces/semana: pepino, espárragos, remolacha, chaucha, alcaucil.
 
-RECOMENDACIONES FODMAPs VEGETARIANO:
-- Si estás ansiosa, esperar 1 hora y media entre comida y comida.
-- Usar alimentos antiinflamatorios: té verde, cacao amargo, canela, cúrcuma, jengibre.
-- Preparaciones dulces con avena instantánea y harina de arroz o maicena + polvo para hornear.
-- Las primeras dos semanas consumir harinas sin gluten y avena (según tolerancia). A partir de la tercera semana podés agregar pan de masa madre.
+FRUTAS: HASTA 2 POR DÍA. Hasta 3 veces/semana: ciruelas, durazno chico, manzana chica, sandía, pelón, pera. Frutos secos: 1 puñado/día TOSTADOS.
 
-RECETAS: Pancake con 3 Cdas avena instantánea o 2 Cdas harina avena/coco/almendras + 1 Huevo + polvo hornear + vainilla + Stevia + 1 Cda agua o leche reducida en lactosa. Mugcake con 1 Huevo + 1 Cda aceite + 2 Cdas leche reducida en lactosa + Stevia + vainilla + polvo hornear + 2 Cdas harina avena/coco/almendras. Budín con 2 Huevos + 3 Cdas sucralosa/Stevia + ½ taza aceite + ¼ taza leche reducida en lactosa + 1½ taza harina (½ coco/almendras + ½ arroz) + vainilla + polvo hornear. Galletitas 25-30 unidades con misma lógica.
+HUEVO: 2 a 3 por día o 1 Rodaja de tofu.
+ACEITE: 2-3 CDAS POR DÍA. Semillas: chía 2 cditas/día activadas o tostadas o molidas.
+
+RECOMENDACIONES: Primeras dos semanas sin gluten y avena según tolerancia. Tercera semana agregar pan de masa madre.
+
+RECETAS: Pancake, Mugcake, Budín con harinas sin gluten (avena/coco/almendras/arroz). Galletitas 25-30 unidades.
 `;
   } else if(esFODMAPs) {
     modeloReferencia = `
 MODELO DE REFERENCIA: PLAN BAJO EN FODMAPS DE JULIETA LUPARDO
-Seguí este modelo exacto como base, adaptándolo a la paciente:
 
-CEREALES Y LEGUMBRES: CONSUMIR EN ALMUERZO Y/O CENA.
-½ Plato arroz cocido (cualquier variedad), ½ Plato fideos sin gluten, 2 Fajitas sin tacc, ½ Plato fideos legumbres/quínoa, 2 Porciones tarta sin tacc con 1 masa (La Salteña naranja) o 2 Empanadas sin tacc, 1 Papa mediana (150g), 1 Batata mediana (150g), 1 Boniato mediano (150g), ½ Plato quínoa o 2 Hamburguesas quinoa, ½ Lata lentejas/arvejas/garbanzos/porotos, 1 Plato chico polenta, 1 Choclo o ½ lata, ½ Plato mijo, ½ Plancha ravioles sin tacc, avena.
-Harinas sin gluten: trigo sarraceno, sorgo, almendras, coco, legumbres, fécula papa, maicena, arroz, quínoa.
-LA MAYOR PARTE DEL TIEMPO SIN GLUTEN, gluten para consumo ocasional.
-Legumbres: preferir en lata bien lavadas. Frescas: remojar 12-24hs, cambiar agua, cocinar con bicarbonato y laurel. Lentejas turcas sin remojar 10 min.
+CEREALES Y LEGUMBRES: CONSUMIR EN ALMUERZO Y/O CENA. Sin gluten la mayor parte del tiempo. Legumbres: preferir en lata bien lavadas, remojar 12-24hs las frescas con bicarbonato y laurel. Lentejas turcas sin remojar 10 min.
 
-LÁCTEOS: HASTA 3 PORCIONES. NO MÁS.
-1 Porción = 1 Vaso leche reducida en lactosa o bebida almendras/coco, 4 Cdas queso untable (no diario, preferir Milkaut o Tregar), 2 Cdas ricota magra, 1 Rodaja queso fresco, 2 Fetas queso máquina, 2 Cdas queso rallado al ras, 1 Yogur reducido en lactosa (Ser natural, Milkaut natural 0% Lactosa, Activia zero lactosa, Yogurísimo tapa celeste).
+LÁCTEOS: HASTA 3 PORCIONES. Solo reducidos en lactosa o bebida almendras/coco. No consumir queso untable de manera diaria (preferir Milkaut o Tregar).
 
-VERDURAS (MÍNIMO ½ PLATO POR DÍA):
-Mayor frecuencia: Zanahoria cruda/cocida, zapallito, albahaca, zucchini, calabaza/zapallo, apio, tomate crudo/cocido, cebolla de verdeo, cebolla morada, espinaca cruda/cocida, morrón y cebolla blanca en pequeñas cantidades, champiñones, brócoli.
-Hasta 3 veces/semana: rúcula, brócoli, pepino, espárragos, remolacha, rábano, rabanito, chaucha, alcaucil, ajo.
+VERDURAS (MÍNIMO ½ PLATO): Mayor frecuencia: Zanahoria, zapallito, albahaca, zucchini, calabaza, apio, tomate, cebolla de verdeo, cebolla morada, espinaca, morrón y cebolla blanca en pequeñas cantidades, champiñones, brócoli. Hasta 3 veces/semana: rúcula, brócoli, pepino, espárragos, remolacha, rábano, rabanito, chaucha, alcaucil, ajo.
 
-FRUTAS: HASTA 3 POR DÍA. Mínimo 1 diaria.
-1 Fruta = 1 Banana, 1 caja arándanos, 1 Taza frutillas (200g), 1 Taza uvas (100g), 2 kiwis, limón, 1 mandarina, 1 naranja, 2 rodajas melón, 2 rodajas ananá lata, ½ palta.
-Hasta 3 veces/semana: 1 Taza cerezas, 2 Ciruelas chicas, 1 Durazno grande, 1 Manzana mediana, 2 rodajas sandía, 1 Pelón, 1 Pera, 1 Pomelo chico.
-Frutos secos: sin cantidad específica. TOSTAR en sartén 2 min y almacenar en frasco.
+FRUTAS: HASTA 3 POR DÍA. Hasta 3 veces/semana: cerezas, ciruelas, durazno, manzana, sandía, pelón, pera, pomelo. Frutos secos: TOSTAR en sartén 2 min.
 
-CARNES: SE PUEDE REPETIR EN ALMUERZO Y CENA.
-1 Porción = 1 Bife tamaño mano, 4 Albóndigas, 2 Hamburguesas caseras, ¼ pollo sin piel, 1 Filete pescado grande o 2 chicos, 2-3 Rodajas carne al horno, 1 Milanesa mediana (empanada con avena/polenta/rebozador sin tacc), ½ Plato carne picada, 1 Lata atún en aceite.
-Carne roja hasta 3 veces/semana. Cerdo sin grasa. Pollo sin piel. Pescados variados.
-Huevos: Hasta 2/día. Claras libremente.
+CARNES: SE PUEDE REPETIR EN ALMUERZO Y CENA. Milanesa empanada con avena/polenta/rebozador sin tacc. Huevos: Hasta 2/día.
+ACEITE: 3-4 CDAS. Semillas: chía 1 cdita/día. Bebidas: EVITAR CON GAS. Jugo hasta 2 veces/semana.
 
-ACEITE: 3-4 CUCHARADAS POR DÍA. Oliva para ensaladas/puré. Girasol/maíz para cocciones +30 min.
+RECOMENDACIONES: Aloe Vera Natier Máximas defensas 1 cda/día. En evento social 2 cdas antes. NO comprar Sistema Digestivo.
 
-DULCES: 4 Cditas mermelada casera o El Brocal Light/Las Quinas sin azúcar/Cuarto Creciente Light. 2 Cditas pasta de maní (Let Fit, BeePure, Entrenut, King). Stevia/Sucralosa/Hileret líquido con moderación. Azúcar mascabo/blanca/miel: hasta 3 cditas/día.
-Opciones: 4-6 cuadraditos chocolate Colonial, 1 Bocadito ÍNTEGRA, 1 Barra WIK, 1 Barra Ki Bar, 1 Barra Águila 60% cacao.
-
-Semillas: chía 1 cdita/día activada o tostada o molida.
-
-Infusiones: té negro/verde/hierbas, mate cocido, mate cebado (colar yerba + cedrón o manzanilla). Café máximo 1 taza/día.
-Bebidas: Preferir agua sin gas, agua saborizada natural (limón, jengibre, menta). EVITAR BEBIDAS CON GAS. Jugo hasta 2 veces/semana con almuerzo/cena.
-
-RECOMENDACIONES FODMAPs:
-- Usar alimentos antiinflamatorios: té verde, cacao amargo, canela, cúrcuma, jengibre.
-- Preparaciones dulces con avena instantánea y harina de arroz o maicena + polvo para hornear.
-- Consumir 1 cda/día Aloe Vera Natier Máximas defensas (versión común) o Antioxidantes. En evento social 2 cdas antes. NO comprar el de Sistema Digestivo.
-
-RECETAS: Pancake con 2 Cdas avena instantánea + 1 Cda harina arroz + 1 Huevo + polvo hornear + vainilla + Stevia + 1 Cda agua o leche reducida en lactosa. Saborizar con ralladura limón/naranja, cacao amargo, frutas.
+RECETAS: Pancake con 2 Cdas avena instantánea + 1 Cda harina arroz + 1 Huevo + polvo hornear + vainilla + Stevia.
 `;
   } else if(esCeliaquia) {
     modeloReferencia = `
 MODELO DE REFERENCIA: PLAN SIN TACC CELIAQUÍA DE JULIETA LUPARDO
-Seguí este modelo exacto como base, adaptándolo a la paciente:
 
-IMPORTANTE: TODOS LOS PRODUCTOS DEBEN SER SIN TACC Y TENER EL LOGO OFICIAL.
+TODOS LOS PRODUCTOS DEBEN SER SIN TACC Y TENER EL LOGO OFICIAL.
 
-CEREALES SIN TACC: CONSUMIR 1 VEZ POR DÍA EN ALMUERZO O CENA.
-½ Plato arroz (parboil, integral, yamaní), ½ Plato fideos sin tacc (sugerencia Soyaarroz), 2 Porciones tarta masa sin tacc, ½ Plato polenta sin tacc, 2 Empanadas masa sin tacc, 1 Papa/batata/boniato mediano (150g), 1 Choclo o ½ Lata sin tacc, ½ Plato quínoa sin tacc o 1 Hamburguesa quínoa sin tacc, ½ Lata legumbres sin tacc, ½ Plato fideos quínoa/maíz/legumbres/chía sin tacc, ½ Plato mijo, ½ Plato amaranto.
+CEREALES SIN TACC: CONSUMIR 1 VEZ POR DÍA EN ALMUERZO O CENA. ½ Plato arroz, ½ Plato fideos sin tacc (Soyaarroz), 2 Porciones tarta masa sin tacc, ½ Plato polenta sin tacc, 2 Empanadas masa sin tacc, 1 Papa/batata/boniato (150g), ½ Plato quínoa sin tacc, ½ Lata legumbres sin tacc, fideos quínoa/maíz/legumbres/chía sin tacc, mijo, amaranto.
 
-CARNES: LAS CARNES Y HUEVOS NO NECESITAN LOGO. SE PUEDE REPETIR EN ALMUERZO Y CENA.
-1 Porción = 1 Bife tamaño mano, 4 Albóndigas, 2 Hamburguesas caseras, ¼ pollo sin piel, 1 Filete pescado grande o 2 chicos, 2 Rodajas carne al horno, 1 Milanesa (rebozada con polenta o rebozador sin tacc o copos papa deshidratada Puré Chef Maggi sin tacc), ½ Plato carne picada, 1 Lata atún o ½ caballa.
-Carne roja, cerdo sin grasa, pollo sin piel, pescados, huevos hasta 2/día.
+CARNES: LAS CARNES Y HUEVOS NO NECESITAN LOGO. Milanesa rebozada con polenta/rebozador sin tacc/copos papa Puré Chef Maggi sin tacc. Huevos hasta 2/día.
 
-LÁCTEOS: HASTA 3 PORCIONES.
-1 Porción = 1 Vaso leche reducida en lactosa, 1 Vaso yogur natural o griego, 1 Rodaja queso fresco, 2 Fetas queso máquina, 2 Cdas queso rallado, 4 Cdas queso untable, 2 Rodajas queso semiduro.
+LÁCTEOS: HASTA 3 PORCIONES. Yogur natural o griego, quesos varios, queso untable, queso semiduro.
 
-VERDURAS: MÍNIMO ½ PLATO POR COMIDA. Frescas sin problema. Congeladas DEBEN tener logo.
-Todas las verduras estándar.
+VERDURAS: MÍNIMO ½ PLATO. Frescas sin problema. Congeladas DEBEN tener logo.
+FRUTAS: 1-3/DÍA. Frescas sin problema. Congeladas con logo. Frutos secos SIN TACC.
 
-FRUTAS: 1-3 UNIDADES POR DÍA. Frescas sin problema. Congeladas con logo.
-Frutos secos SIN TACC: 1 puñado.
+DULCES: Mermelada sin tacc, dulce de leche sin azúcar sin tacc (Doña Magdalena, Beepure, Las Quinas), mantequilla maní. Opciones: Chocolate Águila, Colonial, Ladubbar, Ki Bar, Crudda.
 
-ACEITE: 3 CUCHARADAS POR DÍA. Oliva ensaladas. Maíz/girasol cocinar.
+OTROS: Todos condimentos DEBEN tener logo. Infusiones con logo. Gaseosas sin tacc (Cunnington) o primeras marcas.
 
-DULCES: 4 Cditas mermelada sin tacc. 2 Cdas dulce de leche sin azúcar sin tacc (Doña Magdalena, Beepure, Las Quinas). 2 Cdas mantequilla maní (Entrenut, King, Let Fit). Edulcorante con moderación.
-Opciones: 1 Barra Chocolate Águila, 4 Cuadraditos Colonial, 1 Barra Ladubbar, 1 Barra Ki Bar, 1 Barra Crudda.
-
-OTROS: Todos los condimentos DEBEN tener logo. Infusiones con logo. Bebidas: agua, jugos en polvo sin tacc, gaseosas sin tacc (Cunnington) o primeras marcas. Vino: buenas marcas.
-
-RECOMENDACIONES CELIAQUÍA:
-- Comprar todo con sello SIN TACC. No comprar a granel.
-- En el barrio chino se consiguen muchos productos sin tacc (ej: fideos de arroz con brócoli o espinaca).
-- Harina de algarroba (sabor chocolate para dulces), trigo sarraceno y sorgo son alternativas sin tacc con fibra.
-- ES IMPORTANTE acompañar cada preparación con verduras, frutas o frutos secos ya que los alimentos sin TACC vienen mayormente sin fibra.
+RECOMENDACIONES: No comprar a granel. Barrio chino tiene muchos productos sin tacc. Harina algarroba (sabor chocolate), trigo sarraceno, sorgo. Acompañar preparaciones con verduras/frutas/frutos secos por falta de fibra en productos sin TACC.
 `;
   } else if(esSinTACC) {
     modeloReferencia = `
 MODELO DE REFERENCIA: PLAN SIN TACC DE JULIETA LUPARDO
-Seguí este modelo exacto como base, adaptándolo a la paciente:
 
 TODOS LOS PRODUCTOS DEBEN SER SIN TACC Y TENER EL LOGO.
 
-CEREALES SIN TACC: CONSUMIR 1 VEZ POR DÍA EN ALMUERZO O CENA.
-½ Plato arroz (blanco largo fino, integral, yamaní), ½ Plato fideos arroz o sin gluten, 2 Porciones tarta masa sin tacc (La Salteña naranja), 1 Plato polenta (harina maíz) sin tacc, 2 Empanadas masa sin tacc, 1 Papa/batata/boniato mediano (150g), 1 Choclo o ½ Lata sin tacc, ½ Plato quínoa sin tacc o 1 Hamburguesa quínoa, ½ Lata legumbres sin tacc, 1 Plato fideos quínoa/maíz/legumbres/chía sin tacc, ½ Plato mijo, ½ Plato amaranto.
-Harina trigo sarraceno y sorgo también sin tacc. Almidón de maíz (Maicena), fécula papa, harina mandioca.
+CEREALES SIN TACC: CONSUMIR 1 VEZ POR DÍA. Arroz, fideos arroz/sin gluten, tarta masa sin tacc (La Salteña naranja), polenta sin tacc, empanadas, papa/batata/boniato, quínoa, legumbres sin tacc, fideos quínoa/maíz/legumbres/chía, mijo, amaranto. Harina trigo sarraceno, sorgo, maicena, fécula papa, harina mandioca.
 
-LÁCTEOS: HASTA 3 PORCIONES. Leche reducida en lactosa, yogur reducido en lactosa, quesos varios.
+LÁCTEOS: HASTA 3 PORCIONES. Leche y yogur reducidos en lactosa.
+VERDURAS: MÍNIMO ½ PLATO. Todas + palta hasta 1/día.
+FRUTAS: HASTA 3/DÍA. Frutos secos SIN TACC: 1 puñado.
+CARNES: SE PUEDE REPETIR. LAS CARNES Y HUEVOS NO NECESITAN LOGO. Milanesa con polenta/rebozador sin tacc/copos papa Maggi. Huevos: 1/día.
 
-VERDURAS: MÍNIMO ½ PLATO POR DÍA. Todas las verduras + palta hasta 1/día.
+DULCES: Mermelada, dulce de leche, mantequilla maní, dulce membrillo/batata light. Opciones: Chocolate Águila/Colonial/Cadbury, Flynn Paff, Pico dulce Georgalos, Vauquita, Oblea Gallo, Chocoarroz.
 
-FRUTAS: HASTA 3 POR DÍA. Frutos secos SIN TACC: 1 puñado.
-
-CARNES: SE PUEDE REPETIR EN ALMUERZO Y CENA. LAS CARNES Y HUEVOS NO NECESITAN LOGO.
-Milanesa rebozada con polenta/rebozador sin tacc/copos papa Maggi sin tacc.
-Huevos: 1/día. Claras libremente.
-
-ACEITE: 3 Cdas/día. DULCES: 4 Cditas mermelada o 2 Cdas dulce de leche o 2 Cdas mantequilla maní o 2 Rodajas dulce membrillo/batata light.
-Opciones dulces: Chocolate Águila/Colonial/Cadbury, Flynn Paff, Chupetín Pico dulce Georgalos, Vauquita, Oblea Gallo, Chocoarroz.
-
-Condimentos con logo. Gelatina sin tacc. Bebidas: agua, jugos en polvo sin tacc, gaseosas sin tacc o primeras marcas.
-
-RECOMENDACIONES SIN TACC:
-- Comprar todo con sello SIN TACC. No comprar a granel.
-- Consumir 7 días 1 cda/día Aloe Vera Natier Máximas Defensas, luego 2 cdas/día.
-- En el barrio chino: muchos productos sin tacc.
-- Harina algarroba (dulces, sabor chocolate) y trigo sarraceno (salados) como alternativas. Usar en pequeñas proporciones para evitar amargor.
-- Fécula papa, fécula mandioca y almidón maíz. Para dulces: harina premezcla ya viene en proporciones correctas.
+Condimentos con logo. Gelatina sin tacc. Aloe Vera Natier Máximas Defensas 1 cda/día (luego 2 cdas). Barrio chino para productos sin tacc. Harina algarroba (dulces), trigo sarraceno (salados). Premezcla para dulces.
 `;
   } else if(esVegetariano) {
     modeloReferencia = `
 MODELO DE REFERENCIA: PLAN VEGETARIANO DE JULIETA LUPARDO
-Seguí este modelo exacto como base, adaptándolo a la paciente:
 
-NO INCLUIR CARNES DE NINGÚN TIPO (vacuna, pollo, cerdo, pescado, mariscos).
+NO INCLUIR CARNES DE NINGÚN TIPO.
 
-GRUPO DE CEREALES: CONSUMIR 1 VEZ POR DÍA.
-Hasta 2 veces/semana: ½ Plancha ravioles verdura, 2 Canelones verdura, 1 Plato chico ñoquis, 1 Porción lasaña verdura, 1 Plato fideos secos blancos o integrales (1 vaso en crudo), 1 Plato chico polenta (1 Pocillo café en crudo).
-Resto de días: ½ Plato arroz integral/yamaní/largo fino (1 Pocillo café en crudo), ½ Plato fideos integrales, 2 Porciones tarta casera 1 tapa o 1 porción comprada, 2 Fajitas integrales (Rapiditas), 2 Empanadas (una de verdura), 2 Porciones pizza, 1 Papa chica, 1 Batata chica, 1 Choclo.
-PREFERIR VERSIÓN INTEGRAL. Si blanca: acompañar con verdura verde. También puede consumirse frío o recalentado después de 24hs en heladera.
+CEREALES: CONSUMIR 1 VEZ POR DÍA. Hasta 2 veces/semana: ravioles verdura, canelones, ñoquis, lasaña, fideos blancos/integrales, polenta. Resto: arroz integral/yamaní, fideos integrales, tarta 1 tapa, fajitas integrales (Rapiditas), empanadas (una de verdura), pizza, papa chica, batata chica, choclo.
+PREFERIR INTEGRAL. Si blanca: acompañar con verdura verde. Puede consumirse frío o recalentado después de 24hs en heladera.
 
-PROTEÍNAS VEGETALES Y HUEVO: CONSUMIR 1 VEZ POR DÍA.
-1 Porción = 2 Huevos, 1 Milanesa soja, 2 Salchichas soja, 1 Hamburguesa soja, ½ Plato lentejas/arvejas/garbanzos/porotos, ½ Plato seitán, ½ Plato texturizado soja, ½ Plato quínoa, 2 Rodajas tofu de un dedo de grosor.
-Preparaciones: con verduras, ensaladas, hamburguesas caseras, rellenos, milanesas al horno, budines, revueltos, tortillas, croquetas, omelette con 2 huevos.
+PROTEÍNAS VEGETALES Y HUEVO: CONSUMIR 1 VEZ POR DÍA. 1 Porción = 2 Huevos, 1 Milanesa soja, 2 Salchichas soja, 1 Hamburguesa soja, ½ Plato legumbres, ½ Plato seitán, ½ Plato texturizado soja, ½ Plato quínoa, 2 Rodajas tofu.
 
-VERDURAS LIBRES (MÍNIMO ½ PLATO POR COMIDA): Todas las verduras estándar.
-VERDURAS CONTROLADAS (HASTA ½ PLATO/DÍA): Calabaza, remolacha, zapallo y zanahoria. En puré acompañar con verdura verde.
-PALTA: hasta 2 veces/semana (1 unidad por vez).
+VERDURAS LIBRES (MÍNIMO ½ PLATO). VERDURAS CONTROLADAS (HASTA ½ PLATO/DÍA): Calabaza, remolacha, zapallo, zanahoria. PALTA: hasta 2 veces/semana.
 
-FRUTAS: 2-3 unidades. Preferir trozos. Licuados menor frecuencia. EVITAR jugos naturales.
-Frutas secas: 1 puñado = REEMPLAZO de fruta fresca.
+FRUTAS: 2-3 unidades. Preferir trozos. EVITAR jugos. Frutas secas: 1 puñado = reemplazo fruta fresca.
 
-LÁCTEOS: 3 porciones/día. PREFERIR ENTEROS (salvo yogur descremado).
-Leche parcialmente descremada o reducida en lactosa: 1 taza. Quesos untables/ricota: 4 cditas. Queso fresco: 1 rodaja o 2 fetas o 2 Cdas rallado.
-Yogur Griego, Ser, Yogurísimo Natural, Beaudroit natural.
+LÁCTEOS: 3 porciones/día. PREFERIR ENTEROS (salvo yogur descremado). Yogur Griego, Ser, Yogurísimo Natural, Beaudroit natural.
 
-DULCES: Mermelada sin azúcar 4 cditas o mantequilla maní sin azúcar 2 cditas. Edulcorante con moderación. 15-20g chocolate sin azúcar.
-DEJAR CONSUMO AZÚCAR PARA EVENTOS SOCIALES.
+DULCES: Mermelada sin azúcar 4 cditas o mantequilla maní 2 cditas. 15-20g chocolate sin azúcar. DEJAR AZÚCAR PARA EVENTOS SOCIALES.
 
-ACEITES: 4 Cdas/día. En crudo. Evitar frituras. 1 Cda aceite = 2 Cdas mayonesa light.
-
+ACEITES: 4 Cdas/día. 1 Cda aceite = 2 Cdas mayonesa light.
 Semillas: lino, chía, sésamo, amaranto, girasol, calabaza. Hasta 2 Cditas/día.
 `;
   }
 
-  // ── PROMPT PRINCIPAL ──
   return `Actuá como una nutricionista clínica profesional argentina llamada Julieta Lupardo (MN: 6858, MP: 3265), especializada en fertilidad, metabolismo, salud hormonal y descenso de peso.
 Generá un plan de alimentación completo para tu paciente. El plan debe estar completamente adaptado a las variables seleccionadas y debe seguir tu estilo real de trabajo.
 
@@ -413,7 +292,6 @@ INSTRUCCIONES ESPECIALES - FERTILIDAD:
 - Micronutrientes clave: folato, hierro, zinc, omega-3, vitamina D, coenzima Q10, inositol
 - Alimentos beneficiosos: verduras de hoja verde, semillas de lino/chía/calabaza, palta, frutos rojos, nueces, pescado azul, legumbres, huevos, cúrcuma, jengibre
 - Evitar: azúcar refinada, ultraprocesados, alcohol, exceso de cafeína, lácteos en exceso
-- Horario de comidas: respetar ritmos circadianos
 `:""}
 
 ESTRUCTURA DEL PLAN (seguí este orden exacto):
@@ -424,12 +302,12 @@ NOMBRE: ${form.nombre.toUpperCase()}
 
 ${esCeliaquia||esSinTACC?"TODOS LOS PRODUCTOS QUE COMPRES DEBEN SER SIN TACC Y TENER EL LOGO OFICIAL.\n":""}SELECCIÓN DE ALIMENTOS
 
-[Usá las porciones, equivalencias, marcas y alimentos EXACTOS del modelo de referencia de arriba. Adaptá según las alergias e intolerancias de la paciente. Incluí todos los grupos de alimentos del modelo.]
+[Usá las porciones, equivalencias, marcas y alimentos EXACTOS del modelo de referencia. Adaptá según alergias e intolerancias.]
 
 DISTRIBUCIÓN DIARIA DE ALIMENTOS
 
 OPCIONES DE DESAYUNO/MERIENDA
-[6-8 opciones con "Infusión +" o "Yogur +". Incluir aclaración sobre untados. Adaptar a las restricciones de la paciente.]
+[6-8 opciones con "Infusión +" o "Yogur +". Incluir aclaración sobre untados.]
 
 COLACIONES (en caso de ser necesarias): [5-6 opciones simples]
 
@@ -451,10 +329,10 @@ SÁBADO | [almuerzo] | [cena]
 DOMINGO | [almuerzo] | [cena]
 
 RECOMENDACIONES:
-[Incluir las recomendaciones específicas del modelo de referencia + 1-2 personalizadas para ${form.nombre}.]
+[Incluir las recomendaciones del modelo de referencia + 1-2 personalizadas para ${form.nombre}.]
 
 RECETAS BÁSICAS
-[Incluir las recetas del modelo de referencia adaptadas a las restricciones de la paciente.]
+[Incluir las recetas del modelo de referencia adaptadas a las restricciones.]
 
 JULIETA LUPARDO – Nutricionista UBA –
 MN: 6858, MP: 3265
@@ -518,10 +396,12 @@ function StatsDashboard({patients,consultas}) {
   return (<div><h2 style={{margin:"0 0 20px",fontSize:20,fontWeight:700,color:"#1a3d2b"}}>📊 Estadísticas</h2><div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:24}}>{statCard("👩","Pacientes totales",patients.length,"en el sistema")}{statCard("📅","Consultas este mes",consultasMes.length,"registradas")}{statCard("💰","Facturación del mes",fmtMoney(totalMes),"total cobrado","#1a6b3a")}{statCard("📈","Promedio por consulta",fmtMoney(promedio),"este mes")}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}><div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#1a3d2b"}}>Consultas por mes</h4>{last6.some(d=>d.value>0)?<BarChart data={last6} color="#52b788"/>:<p style={{fontSize:13,color:"#aaa",textAlign:"center",padding:"30px 0"}}>Sin datos aún</p>}</div><div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#1a3d2b"}}>Facturación por mes</h4>{last6.some(d=>d.monto>0)?<BarChart data={last6.map(d=>({...d,value:d.monto}))} color="#2d6a4f" formatValue={v=>`$${Math.round(v/1000)}k`}/>:<p style={{fontSize:13,color:"#aaa",textAlign:"center",padding:"30px 0"}}>Sin datos aún</p>}</div></div></div>);
 }
 
-function ConsultationForm({patients,onSave,onCancel}) {
-  const [form,setForm]=useState({pacienteId:"",fecha:todayISO(),monto:"",tipo:"Primera consulta",obs:""});const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.pacienteId&&form.fecha&&form.monto;
+// ─── CONSULTA FORM (reutilizable, con paciente opcional precargado) ───────────
+function ConsultationForm({patients,onSave,onCancel,prefillPatientId}) {
+  const [form,setForm]=useState({pacienteId:prefillPatientId||"",fecha:todayISO(),monto:"",tipo:"Primera consulta",obs:""});
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.pacienteId&&form.fecha&&form.monto;
   const handleSave=()=>{const p=patients.find(x=>x.id===form.pacienteId);onSave({id:uid(),pacienteId:form.pacienteId,pacienteNombre:p?.nombre||"",fecha:form.fecha,monto:parseFloat(form.monto)||0,tipo:form.tipo,obs:form.obs});};
-  return (<div style={S.card}><h3 style={{margin:"0 0 16px",color:"#1a3d2b",fontSize:16}}>➕ Registrar consulta</h3><div style={{marginBottom:14}}><label style={S.label}>Paciente</label><select value={form.pacienteId} onChange={e=>set("pacienteId",e.target.value)} style={S.input}><option value="">Seleccioná un paciente...</option>{patients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha" type="date" value={form.fecha} onChange={v=>set("fecha",v)}/><Field label="Monto cobrado ($)" type="number" value={form.monto} onChange={v=>set("monto",v)} placeholder="5000"/></div><div style={{marginBottom:14}}><label style={S.label}>Tipo de consulta</label><select value={form.tipo} onChange={e=>set("tipo",e.target.value)} style={S.input}>{["Primera consulta","Seguimiento","Control","Consulta especial"].map(t=><option key={t}>{t}</option>)}</select></div><Field label="Observación (opcional)" value={form.obs} onChange={v=>set("obs",v)} placeholder="Notas sobre la consulta..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={handleSave} disabled={!valid} style={{...S.btnPrimary,flex:2,opacity:valid?1:.5}}>Guardar consulta</button></div></div>);
+  return (<div style={S.card}><h3 style={{margin:"0 0 16px",color:"#1a3d2b",fontSize:16}}>➕ Registrar consulta</h3>{!prefillPatientId&&<div style={{marginBottom:14}}><label style={S.label}>Paciente</label><select value={form.pacienteId} onChange={e=>set("pacienteId",e.target.value)} style={S.input}><option value="">Seleccioná un paciente...</option>{patients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha" type="date" value={form.fecha} onChange={v=>set("fecha",v)}/><Field label="Monto cobrado ($)" type="number" value={form.monto} onChange={v=>set("monto",v)} placeholder="5000"/></div><div style={{marginBottom:14}}><label style={S.label}>Tipo de consulta</label><select value={form.tipo} onChange={e=>set("tipo",e.target.value)} style={S.input}>{["Primera consulta","Seguimiento","Control","Consulta especial"].map(t=><option key={t}>{t}</option>)}</select></div><Field label="Observación (opcional)" value={form.obs} onChange={v=>set("obs",v)} placeholder="Notas sobre la consulta..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={handleSave} disabled={!valid} style={{...S.btnPrimary,flex:2,opacity:valid?1:.5}}>Guardar consulta</button></div></div>);
 }
 
 function PatientsStats({patients,consultas,onAddConsulta,onSelect}) {
@@ -546,19 +426,50 @@ function PlanViewer({plan,paciente,onClose,onUpdate}) {
   return (<div style={{...S.card,marginBottom:16}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}><div><div style={{fontWeight:700,color:"#1a3d2b",fontSize:15}}>{plan.objetivo}</div><div style={{fontSize:12,color:"#7a9a8a"}}>{plan.fecha}</div></div><div style={{display:"flex",gap:8}}><button onClick={()=>setEditing(!editing)} style={{...S.btnGhost,fontSize:12,padding:"6px 12px"}}>{editing?"✕ Cancelar":"✏️ Editar"}</button><button onClick={()=>exportPDF({paciente,plan:{...plan,texto},notasNutricionista:notasNutri})} style={{...S.btnOutline,fontSize:12,padding:"6px 12px"}}>📄 PDF</button><button onClick={onClose} style={{...S.btnGhost,fontSize:12,padding:"6px 12px"}}>✕</button></div></div>{editing?<div><textarea value={texto} onChange={e=>setTexto(e.target.value)} rows={20} style={{...S.input,resize:"vertical",fontSize:13,lineHeight:1.75,marginBottom:10}}/><div style={{marginBottom:10}}><label style={S.label}>Notas del nutricionista (se guardan con el plan y aparecen en el PDF)</label><textarea value={notasNutri} onChange={e=>setNotasNutri(e.target.value)} rows={2} placeholder="Indicaciones adicionales..." style={{...S.input,resize:"vertical"}}/></div><button onClick={handleSave} style={{...S.btnPrimary,width:"100%"}}>{saved?"✓ Guardado":"💾 Guardar cambios"}</button></div>:<div><div style={{background:"#f8faf9",borderRadius:10,padding:"16px",maxHeight:expanded?"none":"400px",overflow:"hidden",position:"relative"}}><pre style={{margin:0,fontSize:13,lineHeight:1.75,color:"#2a2a2a",fontFamily:"inherit",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{texto}</pre>{isLong&&!expanded&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:80,background:"linear-gradient(transparent,#f8faf9)"}}/>}</div>{isLong&&<button onClick={()=>setExpanded(!expanded)} style={{...S.btnGhost,width:"100%",marginTop:8,fontSize:13}}>{expanded?"▲ Mostrar menos":"▼ Ver plan completo"}</button>}</div>}{!editing&&<div style={{marginTop:12}}><label style={S.label}>Notas del nutricionista (aparecen en el PDF)</label><textarea value={notasNutri} onChange={e=>setNotasNutri(e.target.value)} rows={2} placeholder="Indicaciones adicionales..." style={{...S.input,resize:"vertical"}}/><button onClick={()=>{onUpdate({...plan,texto,notasNutri});setSaved(true);setTimeout(()=>setSaved(false),2000);}} style={{...S.btnGhost,width:"100%",marginTop:6,fontSize:12}}>{saved?"✓ Notas guardadas":"💾 Guardar notas"}</button></div>}</div>);
 }
 
-function PatientDetail({patient,dispatch,onGeneratePlan,onBack,onDelete}) {
-  const [tab,setTab]=useState("clinica");const [clinica,setClinica]=useState(patient.clinica||initialClinica);const [clinicaSaved,setClinicaSaved]=useState(false);const [newMedicion,setNewMedicion]=useState({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});const [newNota,setNewNota]=useState("");const [showMedForm,setShowMedForm]=useState(false);const [viewingPlan,setViewingPlan]=useState(null);const [deleteConfirm,setDeleteConfirm]=useState(false);
+// ─── PATIENT DETAIL (con pestaña Consultas + consultas en Timeline) ───────────
+function PatientDetail({patient,dispatch,consultas,onAddConsulta,onGeneratePlan,onBack,onDelete}) {
+  const [tab,setTab]=useState("clinica");const [clinica,setClinica]=useState(patient.clinica||initialClinica);const [clinicaSaved,setClinicaSaved]=useState(false);const [newMedicion,setNewMedicion]=useState({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});const [newNota,setNewNota]=useState("");const [showMedForm,setShowMedForm]=useState(false);const [viewingPlan,setViewingPlan]=useState(null);const [deleteConfirm,setDeleteConfirm]=useState(false);const [showConsultaForm,setShowConsultaForm]=useState(false);
   const setC=(k,v)=>setClinica(c=>({...c,[k]:v}));
   const saveClinica=()=>{dispatch({type:"UPDATE_CLINICA",pid:patient.id,clinica});setClinicaSaved(true);setTimeout(()=>setClinicaSaved(false),2000);};
   const addMedicion=()=>{const m={id:uid(),...newMedicion,imc:calcIMC(newMedicion.peso,patient.altura)};dispatch({type:"ADD_MEDICION",pid:patient.id,m});setNewMedicion({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});setShowMedForm(false);};
   const addNota=()=>{if(!newNota.trim())return;dispatch({type:"ADD_NOTA",pid:patient.id,n:{id:uid(),fecha:today(),texto:newNota}});setNewNota("");};
-  const tabs=[["clinica","📋 Clínica"],["antrop","📏 Antropometría"],["evol","📝 Evolución"],["planes","🥗 Planes"],["timeline","⏱ Timeline"]];
+
+  // Consultas de este paciente
+  const patientConsultas = (consultas||[]).filter(c=>c.pacienteId===patient.id);
+  const totalCobrado = patientConsultas.reduce((s,c)=>s+(parseFloat(c.monto)||0),0);
+
+  const tabs=[["clinica","📋 Clínica"],["antrop","📏 Antropometría"],["evol","📝 Evolución"],["planes","🥗 Planes"],["consultas","💰 Consultas"],["timeline","⏱ Timeline"]];
+
   return (<div><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}><button onClick={onBack} style={S.btnGhost}>← Volver</button><div style={{flex:1}}><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>{patient.nombre}</h2></div><div style={{display:"flex",gap:8}}><button onClick={onGeneratePlan} style={S.btnPrimary}>✨ Nuevo plan</button><button onClick={()=>setDeleteConfirm(true)} style={S.btnDanger}>🗑 Eliminar</button></div></div><div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#2d6a4f":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>
+
   {tab==="clinica"&&<div style={S.card}><SectionHead>Historia Clínica</SectionHead><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Motivo de consulta" value={clinica.motivo} onChange={v=>setC("motivo",v)} rows={2}/><Field label="Diagnóstico nutricional" value={clinica.diagnostico} onChange={v=>setC("diagnostico",v)} rows={2}/><Field label="Antecedentes" value={clinica.antecedentes} onChange={v=>setC("antecedentes",v)} rows={2}/><Field label="Medicación" value={clinica.medicacion} onChange={v=>setC("medicacion",v)} rows={2}/><Field label="Patologías" value={clinica.patologias} onChange={v=>setC("patologias",v)} rows={2}/><Field label="Alergias / Intolerancias" value={clinica.alergias} onChange={v=>setC("alergias",v)} rows={2}/><Field label="Síntomas digestivos" value={clinica.digestivo} onChange={v=>setC("digestivo",v)} rows={2}/><Field label="Calidad del sueño" value={clinica.sueno} onChange={v=>setC("sueno",v)} rows={2}/><Field label="Nivel de estrés" value={clinica.estres} onChange={v=>setC("estres",v)} rows={2}/><Field label="Actividad física" value={clinica.actividad} onChange={v=>setC("actividad",v)} rows={2}/></div><button onClick={saveClinica} style={{...S.btnPrimary,width:"100%"}}>{clinicaSaved?"✓ Guardado":"Guardar historia clínica"}</button></div>}
+
   {tab==="antrop"&&<div><div style={{...S.card,marginBottom:16}}><SectionHead action={<button onClick={()=>setShowMedForm(!showMedForm)} style={S.btnPrimary}>+ Agregar</button>}>Mediciones</SectionHead>{showMedForm&&<div style={{background:"#f5faf7",borderRadius:10,padding:14,marginBottom:14}}><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}><Field label="Fecha" type="date" value={newMedicion.fecha} onChange={v=>setNewMedicion(m=>({...m,fecha:v}))}/><Field label="Peso (kg)" type="number" value={newMedicion.peso} onChange={v=>setNewMedicion(m=>({...m,peso:v}))} placeholder="70"/><Field label="Grasa %" type="number" value={newMedicion.grasa} onChange={v=>setNewMedicion(m=>({...m,grasa:v}))} placeholder="25"/><Field label="Masa muscular %" type="number" value={newMedicion.muscular} onChange={v=>setNewMedicion(m=>({...m,muscular:v}))} placeholder="40"/></div><Field label="Observaciones" value={newMedicion.obs} onChange={v=>setNewMedicion(m=>({...m,obs:v}))} placeholder="Notas..."/><button onClick={addMedicion} style={{...S.btnPrimary,width:"100%"}}>Guardar medición</button></div>}{patient.mediciones?.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"20px 0"}}>Sin mediciones aún</p>:<div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr style={{borderBottom:"2px solid #e8f0ec"}}>{["Fecha","Peso","IMC","Grasa%","Músculo%","Obs"].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#5a7a6a",fontWeight:700,fontSize:11,textTransform:"uppercase"}}>{h}</th>)}</tr></thead><tbody>{patient.mediciones?.map(m=>(<tr key={m.id} style={{borderBottom:"1px solid #f0f4f1"}}><td style={{padding:"10px"}}>{m.fecha}</td><td style={{padding:"10px",fontWeight:700,color:"#1a3d2b"}}>{m.peso} kg</td><td style={{padding:"10px"}}><Badge label={m.imc}/></td><td style={{padding:"10px"}}>{m.grasa||"—"}%</td><td style={{padding:"10px"}}>{m.muscular||"—"}%</td><td style={{padding:"10px",color:"#7a9a8a",fontSize:12}}>{m.obs||"—"}</td></tr>))}</tbody></table></div>}</div></div>}
+
   {tab==="evol"&&<div><div style={{...S.card,marginBottom:16}}><SectionHead>Agregar nota de evolución</SectionHead><textarea value={newNota} onChange={e=>setNewNota(e.target.value)} rows={3} placeholder="Notas de la consulta de hoy..." style={{...S.input,resize:"vertical",marginBottom:10}}/><button onClick={addNota} disabled={!newNota.trim()} style={{...S.btnPrimary,width:"100%",opacity:newNota.trim()?1:.5}}>Guardar nota</button></div>{patient.notas?.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"20px 0"}}>Sin notas aún</p>:patient.notas?.map(n=>(<div key={n.id} style={{...S.card,marginBottom:10,borderLeft:"3px solid #52b788"}}><div style={{fontSize:11,color:"#7a9a8a",marginBottom:6,fontWeight:600}}>{n.fecha}</div><p style={{margin:0,fontSize:14,color:"#2a2a2a",lineHeight:1.6}}>{n.texto}</p></div>))}</div>}
+
   {tab==="planes"&&<div><div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}><button onClick={onGeneratePlan} style={S.btnPrimary}>✨ Generar nuevo plan</button></div>{patient.planes?.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>Sin planes generados aún</p>:patient.planes?.map(plan=>(<div key={plan.id}>{viewingPlan===plan.id?<PlanViewer plan={plan} paciente={patient} onClose={()=>setViewingPlan(null)} onUpdate={updated=>dispatch({type:"UPDATE_PLAN",pid:patient.id,plan:updated})}/>:<div style={{...S.card,marginBottom:10,display:"flex",alignItems:"center",gap:12}}><div style={{flex:1}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{plan.objetivo}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{plan.fecha}</div></div><div style={{display:"flex",gap:8}}><button onClick={()=>setViewingPlan(plan.id)} style={{...S.btnGhost,fontSize:12,padding:"6px 12px"}}>👁 Ver</button><button onClick={()=>exportPDF({paciente:patient,plan})} style={{...S.btnOutline,fontSize:12,padding:"6px 12px"}}>📄 PDF</button></div></div>}</div>))}</div>}
-  {tab==="timeline"&&<div>{[...(patient.planes||[]).map(x=>({...x,tipo:"plan",icon:"🥗",color:"#2d6a4f"})),...(patient.mediciones||[]).map(x=>({...x,tipo:"med",icon:"📏",color:"#52b788",fecha:x.fecha})),...(patient.notas||[]).map(x=>({...x,tipo:"nota",icon:"📝",color:"#74c69d"}))].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map((item,i)=>(<div key={i} style={{display:"flex",gap:14,marginBottom:14}}><div style={{width:36,height:36,borderRadius:"50%",background:item.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{item.icon}</div><div style={{...S.card,flex:1,padding:14}}><div style={{fontSize:11,color:"#7a9a8a",marginBottom:4,fontWeight:600}}>{item.fecha}</div>{item.tipo==="plan"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Plan generado</div><div style={{fontSize:13,color:"#5a7a6a"}}>{item.objetivo}</div></>}{item.tipo==="med"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Medición registrada</div><div style={{fontSize:13,color:"#5a7a6a"}}>Peso: {item.peso}kg · IMC: {item.imc}</div></>}{item.tipo==="nota"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Nota de evolución</div><div style={{fontSize:13,color:"#5a7a6a",marginTop:2}}>{item.texto}</div></>}</div></div>))}</div>}
+
+  {tab==="consultas"&&<div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+      <div>
+        <span style={{fontSize:13,color:"#5a7a6a"}}>{patientConsultas.length} consulta{patientConsultas.length!==1?"s":""}</span>
+        {patientConsultas.length>0&&<span style={{fontSize:13,color:"#2d6a4f",fontWeight:700,marginLeft:12}}>Total: {fmtMoney(totalCobrado)}</span>}
+      </div>
+      <button onClick={()=>setShowConsultaForm(!showConsultaForm)} style={S.btnPrimary}>+ Registrar consulta</button>
+    </div>
+    {showConsultaForm&&<div style={{marginBottom:16}}><ConsultationForm patients={[patient]} prefillPatientId={patient.id} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/></div>}
+    {patientConsultas.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>No hay consultas registradas para este paciente</p>:
+    [...patientConsultas].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(c=>(<div key={c.id} style={{...S.card,marginBottom:10,display:"flex",alignItems:"center",gap:14}}><div style={{width:36,height:36,borderRadius:"50%",background:"#e8f5ee",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>💰</div><div style={{flex:1}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{c.tipo}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{new Date(c.fecha).toLocaleDateString("es-AR")}</div>{c.obs&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:2,fontStyle:"italic"}}>{c.obs}</div>}</div><div style={{fontWeight:700,fontSize:16,color:"#2d6a4f"}}>{fmtMoney(c.monto)}</div></div>))}
+  </div>}
+
+  {tab==="timeline"&&<div>{[
+    ...(patient.planes||[]).map(x=>({...x,tipo:"plan",icon:"🥗",color:"#2d6a4f"})),
+    ...(patient.mediciones||[]).map(x=>({...x,tipo:"med",icon:"📏",color:"#52b788",fecha:x.fecha})),
+    ...(patient.notas||[]).map(x=>({...x,tipo:"nota",icon:"📝",color:"#74c69d"})),
+    ...patientConsultas.map(x=>({...x,tipo:"consulta",icon:"💰",color:"#f4a261",fecha:x.fecha})),
+  ].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map((item,i)=>(<div key={i} style={{display:"flex",gap:14,marginBottom:14}}><div style={{width:36,height:36,borderRadius:"50%",background:item.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{item.icon}</div><div style={{...S.card,flex:1,padding:14}}><div style={{fontSize:11,color:"#7a9a8a",marginBottom:4,fontWeight:600}}>{typeof item.fecha==="string"&&item.fecha.includes("-")?new Date(item.fecha).toLocaleDateString("es-AR"):item.fecha}</div>{item.tipo==="plan"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Plan generado</div><div style={{fontSize:13,color:"#5a7a6a"}}>{item.objetivo}</div></>}{item.tipo==="med"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Medición registrada</div><div style={{fontSize:13,color:"#5a7a6a"}}>Peso: {item.peso}kg · IMC: {item.imc}</div></>}{item.tipo==="nota"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Nota de evolución</div><div style={{fontSize:13,color:"#5a7a6a",marginTop:2}}>{item.texto}</div></>}{item.tipo==="consulta"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Consulta registrada</div><div style={{fontSize:13,color:"#5a7a6a"}}>{item.tipo_consulta||item.tipo} · {fmtMoney(item.monto)}</div>{item.obs&&<div style={{fontSize:12,color:"#7a9a8a",fontStyle:"italic",marginTop:2}}>{item.obs}</div>}</>}</div></div>))}</div>}
+
   {deleteConfirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}><div style={{...S.card,maxWidth:360,width:"90%",textAlign:"center"}}><div style={{fontSize:32,marginBottom:12}}>⚠️</div><h3 style={{margin:"0 0 8px",color:"#1a3d2b"}}>¿Eliminar a {patient.nombre}?</h3><p style={{fontSize:14,color:"#5a7a6a",marginBottom:20}}>Esta acción no se puede deshacer.</p><div style={{display:"flex",gap:10}}><button onClick={()=>setDeleteConfirm(false)} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={()=>{onDelete(patient.id);}} style={{...S.btnPrimary,flex:1,background:"#c0392b"}}>Sí, eliminar</button></div></div></div>}</div>);
 }
 
@@ -583,5 +494,12 @@ export default function App() {
   const handleAddConsulta=async(c)=>{dispatch({type:"ADD_CONSULTA",c});try{await sbInsertConsulta(c);}catch(e){console.error("Error guardando consulta:",e);}};
   const handleDeletePatient=async(id)=>{dispatch({type:"DELETE_PATIENT",id});await sbDelete(id);go("patients");};
   if(!loaded)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f5faf7",fontFamily:"sans-serif"}}><div style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{color:"#2d6a4f",fontWeight:600,fontSize:16}}>JL Nutrición</p><p style={{color:"#7a9a8a",fontSize:13}}>Conectando con la base de datos...</p></div></div>);
-  return (<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f5ee 0%,#f5f9f7 50%,#e0f0e8 100%)",fontFamily:"'DM Sans',system-ui,sans-serif"}}><style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');*{box-sizing:border-box}input:focus,select:focus,textarea:focus{border-color:#2d6a4f!important;box-shadow:0 0 0 3px rgba(45,106,79,.1)!important;outline:none}`}</style><div style={{background:"#fff",borderBottom:"1.5px solid #e8f0ec",padding:"0 20px",position:"sticky",top:0,zIndex:100}}><div style={{maxWidth:980,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍏</div><span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>JL Nutrición</span><span style={{fontSize:11,color:saveStatus==="saving"?"#f4a261":saveStatus==="saved"?"#52b788":saveStatus==="error"?"#e63946":"transparent",fontWeight:600,transition:"color .3s"}}>{saveStatus==="saving"?"● guardando...":saveStatus==="saved"?"✓ guardado":saveStatus==="error"?"⚠ error":"·"}</span></div><div style={{display:"flex",alignItems:"center",gap:4}}>{[["patients","👥 Pacientes"],["stats","📊 Estadísticas"],["plan","✨ Nuevo plan"]].map(([id,label])=>(<button key={id} onClick={()=>{setNavTab(id);go(id);}} style={{padding:"7px 14px",border:"none",borderRadius:9,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:navTab===id?"#2d6a4f":"transparent",color:navTab===id?"#fff":"#5a7a6a"}}>{label}</button>))}</div></div></div><div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>{screen==="patients"&&<PatientList patients={state.patients} onSelect={id=>go("detail",id)} onNew={()=>go("new-patient")}/>}{screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} onAddConsulta={handleAddConsulta} onSelect={id=>go("detail",id)}/>}{screen==="new-patient"&&<NewPatient onSave={p=>{dispatch({type:"ADD_PATIENT",p});go("detail",p.id);}} onCancel={()=>go("patients")}/>}{screen==="detail"&&patient&&<PatientDetail patient={patient} dispatch={dispatch} onGeneratePlan={()=>go("plan-patient")} onBack={()=>go("patients")} onDelete={handleDeletePatient}/>}{screen==="plan-patient"&&patient&&<PlanGenerator prefill={{nombre:patient.nombre,edad:patient.edad,peso:patient.peso,altura:patient.altura,sexo:patient.sexo,objetivo:patient.objetivo||"",nivelActividad:"",alergias:[],patologias:[],preferencias:"",aversiones:"",cantidadComidas:"4",tipoPlan:"Estándar"}} onSavePlan={plan=>{dispatch({type:"ADD_PLAN",pid:patient.id,plan});const c={id:uid(),pacienteId:patient.id,pacienteNombre:patient.nombre,fecha:todayISO(),monto:plan.monto||0,tipo:"Plan generado",obs:`Plan: ${plan.objetivo}`};handleAddConsulta(c);go("detail",patient.id);}} onBack={()=>go("detail",patient.id)}/>}{screen==="plan"&&<PlanGenerator onBack={()=>{setNavTab("patients");go("patients");}}/>}</div></div>);
+  return (<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f5ee 0%,#f5f9f7 50%,#e0f0e8 100%)",fontFamily:"'DM Sans',system-ui,sans-serif"}}><style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');*{box-sizing:border-box}input:focus,select:focus,textarea:focus{border-color:#2d6a4f!important;box-shadow:0 0 0 3px rgba(45,106,79,.1)!important;outline:none}`}</style><div style={{background:"#fff",borderBottom:"1.5px solid #e8f0ec",padding:"0 20px",position:"sticky",top:0,zIndex:100}}><div style={{maxWidth:980,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍏</div><span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>JL Nutrición</span><span style={{fontSize:11,color:saveStatus==="saving"?"#f4a261":saveStatus==="saved"?"#52b788":saveStatus==="error"?"#e63946":"transparent",fontWeight:600,transition:"color .3s"}}>{saveStatus==="saving"?"● guardando...":saveStatus==="saved"?"✓ guardado":saveStatus==="error"?"⚠ error":"·"}</span></div><div style={{display:"flex",alignItems:"center",gap:4}}>{[["patients","👥 Pacientes"],["stats","📊 Estadísticas"],["plan","✨ Nuevo plan"]].map(([id,label])=>(<button key={id} onClick={()=>{setNavTab(id);go(id);}} style={{padding:"7px 14px",border:"none",borderRadius:9,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:navTab===id?"#2d6a4f":"transparent",color:navTab===id?"#fff":"#5a7a6a"}}>{label}</button>))}</div></div></div><div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>
+    {screen==="patients"&&<PatientList patients={state.patients} onSelect={id=>go("detail",id)} onNew={()=>go("new-patient")}/>}
+    {screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} onAddConsulta={handleAddConsulta} onSelect={id=>go("detail",id)}/>}
+    {screen==="new-patient"&&<NewPatient onSave={p=>{dispatch({type:"ADD_PATIENT",p});go("detail",p.id);}} onCancel={()=>go("patients")}/>}
+    {screen==="detail"&&patient&&<PatientDetail patient={patient} dispatch={dispatch} consultas={state.consultas} onAddConsulta={handleAddConsulta} onGeneratePlan={()=>go("plan-patient")} onBack={()=>go("patients")} onDelete={handleDeletePatient}/>}
+    {screen==="plan-patient"&&patient&&<PlanGenerator prefill={{nombre:patient.nombre,edad:patient.edad,peso:patient.peso,altura:patient.altura,sexo:patient.sexo,objetivo:patient.objetivo||"",nivelActividad:"",alergias:[],patologias:[],preferencias:"",aversiones:"",cantidadComidas:"4",tipoPlan:"Estándar"}} onSavePlan={plan=>{dispatch({type:"ADD_PLAN",pid:patient.id,plan});const c={id:uid(),pacienteId:patient.id,pacienteNombre:patient.nombre,fecha:todayISO(),monto:plan.monto||0,tipo:"Plan generado",obs:`Plan: ${plan.objetivo}`};handleAddConsulta(c);go("detail",patient.id);}} onBack={()=>go("detail",patient.id)}/>}
+    {screen==="plan"&&<PlanGenerator onBack={()=>{setNavTab("patients");go("patients");}}/>}
+  </div></div>);
 }
