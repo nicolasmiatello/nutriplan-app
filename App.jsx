@@ -64,6 +64,35 @@ async function sbDelete(id) {
   await fetch(`${SUPABASE_URL}/rest/v1/patients?id=eq.${id}`,{method:"DELETE",headers:sbHeaders});
 }
 
+// ─── SUPABASE CONSULTAS ───────────────────────────────────────────────────────
+async function sbLoadConsultas() {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/consultas?select=*&order=created_at.desc`,{headers:sbHeaders});
+  if(!r.ok) return [];
+  const rows = await r.json();
+  return rows.map(row=>({
+    id:row.id,
+    pacienteId:row.paciente_id,
+    pacienteNombre:row.paciente_nombre,
+    fecha:row.fecha,
+    monto:parseFloat(row.monto)||0,
+    tipo:row.tipo,
+    obs:row.obs||""
+  }));
+}
+
+async function sbInsertConsulta(c) {
+  const body = JSON.stringify({
+    id:c.id,
+    paciente_id:c.pacienteId,
+    paciente_nombre:c.pacienteNombre,
+    fecha:c.fecha,
+    monto:c.monto||0,
+    tipo:c.tipo||"",
+    obs:c.obs||""
+  });
+  await fetch(`${SUPABASE_URL}/rest/v1/consultas`,{method:"POST",headers:sbHeaders,body});
+}
+
 // ─── PDF EXPORT ───────────────────────────────────────────────────────────────
 function exportPDF({ paciente, plan, notasNutricionista="" }) {
   const fecha = new Date().toLocaleDateString("es-AR");
@@ -189,7 +218,6 @@ function StatsDashboard({patients,consultas}) {
   const totalMes = consultasMes.reduce((s,c)=>s+(parseFloat(c.monto)||0),0);
   const promedio = consultasMes.length?totalMes/consultasMes.length:0;
 
-  // Datos últimos 6 meses
   const last6 = Array.from({length:6},(_,i)=>{
     const d = new Date(thisYear,thisMonth-5+i,1);
     const m = d.getMonth(); const y = d.getFullYear();
@@ -275,19 +303,12 @@ function ConsultationForm({patients,onSave,onCancel}) {
 }
 
 // ─── PATIENTS & STATS ─────────────────────────────────────────────────────────
-function PatientsStats({patients,consultas,dispatch,onSelect}) {
+function PatientsStats({patients,consultas,onAddConsulta,onSelect}) {
   const [tab,setTab] = useState("pacientes");
   const [showConsultaForm,setShowConsultaForm] = useState(false);
   const [search,setSearch] = useState("");
-  const [deleteConfirm,setDeleteConfirm] = useState(null);
 
   const filtered = patients.filter(p=>p.nombre.toLowerCase().includes(search.toLowerCase()));
-
-  const handleDelete = async (id) => {
-    dispatch({type:"DELETE_PATIENT",id});
-    await sbDelete(id);
-    setDeleteConfirm(null);
-  };
 
   return (
     <div>
@@ -298,7 +319,7 @@ function PatientsStats({patients,consultas,dispatch,onSelect}) {
 
       {showConsultaForm&&(
         <div style={{marginBottom:20}}>
-          <ConsultationForm patients={patients} onSave={c=>{dispatch({type:"ADD_CONSULTA",c});setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/>
+          <ConsultationForm patients={patients} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/>
         </div>
       )}
 
@@ -330,7 +351,6 @@ function PatientsStats({patients,consultas,dispatch,onSelect}) {
               </div>
               <div style={{display:"flex",gap:8,flexShrink:0}}>
                 <button onClick={()=>onSelect(p.id)} style={S.btnOutline}>Ver ficha</button>
-                <button onClick={()=>setDeleteConfirm(p.id)} style={S.btnDanger}>🗑</button>
               </div>
             </div>
           ))}
@@ -352,20 +372,6 @@ function PatientsStats({patients,consultas,dispatch,onSelect}) {
               <div style={{fontWeight:700,fontSize:16,color:"#2d6a4f"}}>{fmtMoney(c.monto)}</div>
             </div>
           ))}
-        </div>
-      )}
-
-      {deleteConfirm&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}>
-          <div style={{...S.card,maxWidth:360,width:"90%",textAlign:"center"}}>
-            <div style={{fontSize:32,marginBottom:12}}>⚠️</div>
-            <h3 style={{margin:"0 0 8px",color:"#1a3d2b"}}>¿Eliminar paciente?</h3>
-            <p style={{fontSize:14,color:"#5a7a6a",marginBottom:20}}>Esta acción no se puede deshacer. Se eliminarán todos los datos, planes y notas del paciente.</p>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>setDeleteConfirm(null)} style={{...S.btnGhost,flex:1}}>Cancelar</button>
-              <button onClick={()=>handleDelete(deleteConfirm)} style={{...S.btnPrimary,flex:1,background:"#c0392b"}}>Sí, eliminar</button>
-            </div>
-          </div>
         </div>
       )}
     </div>
@@ -460,12 +466,12 @@ function PlanViewer({plan,paciente,onClose,onUpdate}) {
   const [editing,setEditing] = useState(false);
   const [texto,setTexto] = useState(plan.texto||"");
   const [expanded,setExpanded] = useState(false);
-  const [notasNutri,setNotasNutri] = useState("");
+  const [notasNutri,setNotasNutri] = useState(plan.notasNutri||"");
   const [saved,setSaved] = useState(false);
   const isLong = texto.length > 1500;
 
   const handleSave = () => {
-    onUpdate({...plan,texto});
+    onUpdate({...plan,texto,notasNutri});
     setEditing(false);
     setSaved(true);
     setTimeout(()=>setSaved(false),2000);
@@ -491,6 +497,10 @@ function PlanViewer({plan,paciente,onClose,onUpdate}) {
         <div>
           <textarea value={texto} onChange={e=>setTexto(e.target.value)} rows={20}
             style={{...S.input,resize:"vertical",fontSize:13,lineHeight:1.75,marginBottom:10}}/>
+          <div style={{marginBottom:10}}>
+            <label style={S.label}>Notas del nutricionista (se guardan con el plan y aparecen en el PDF)</label>
+            <textarea value={notasNutri} onChange={e=>setNotasNutri(e.target.value)} rows={2} placeholder="Indicaciones adicionales..." style={{...S.input,resize:"vertical"}}/>
+          </div>
           <button onClick={handleSave} style={{...S.btnPrimary,width:"100%"}}>
             {saved?"✓ Guardado":"💾 Guardar cambios"}
           </button>
@@ -515,6 +525,9 @@ function PlanViewer({plan,paciente,onClose,onUpdate}) {
         <div style={{marginTop:12}}>
           <label style={S.label}>Notas del nutricionista (aparecen en el PDF)</label>
           <textarea value={notasNutri} onChange={e=>setNotasNutri(e.target.value)} rows={2} placeholder="Indicaciones adicionales..." style={{...S.input,resize:"vertical"}}/>
+          <button onClick={()=>{onUpdate({...plan,texto,notasNutri});setSaved(true);setTimeout(()=>setSaved(false),2000);}} style={{...S.btnGhost,width:"100%",marginTop:6,fontSize:12}}>
+            {saved?"✓ Notas guardadas":"💾 Guardar notas"}
+          </button>
         </div>
       )}
     </div>
@@ -1054,7 +1067,7 @@ INSTRUCCIONES DE FORMATO:
                       <div style={{display:"flex",gap:10}}>
                         <button onClick={()=>setShowMontoModal(false)} style={{...S.btnGhost,flex:1}}>Cancelar</button>
                         <button onClick={()=>{
-                          onSavePlan({id:uid(),fecha:today(),objetivo:form.objetivo,texto:plan,monto:parseFloat(monto)||0});
+                          onSavePlan({id:uid(),fecha:today(),objetivo:form.objetivo,texto:plan,notasNutri,monto:parseFloat(monto)||0});
                           setSaved(true);
                           setShowMontoModal(false);
                           setTimeout(()=>setSaved(false),3000);
@@ -1081,13 +1094,20 @@ export default function App() {
   const [loaded,setLoaded] = useState(false);
   const [saveStatus,setSaveStatus] = useState("idle");
 
+  // ── Carga inicial: patients + consultas desde Supabase ──
   useEffect(()=>{
-    sbLoadAll().then(patients=>{
-      dispatch({type:"LOAD",patients,consultas:[]});
-      setLoaded(true);
-    }).catch(()=>{dispatch({type:"LOAD",patients:[],consultas:[]});setLoaded(true);});
+    Promise.all([sbLoadAll(), sbLoadConsultas()])
+      .then(([patients, consultas])=>{
+        dispatch({type:"LOAD",patients,consultas});
+        setLoaded(true);
+      })
+      .catch(()=>{
+        dispatch({type:"LOAD",patients:[],consultas:[]});
+        setLoaded(true);
+      });
   },[]);
 
+  // ── Autosave patients ──
   useEffect(()=>{
     if(!loaded) return;
     setSaveStatus("saving");
@@ -1103,6 +1123,12 @@ export default function App() {
 
   const patient = state.patients.find(p=>p.id===selectedId);
   const go=(s,id=null)=>{setScreen(s);if(id)setSelectedId(id);};
+
+  // ── Handler async: dispatch + Supabase (sin async en reducer) ──
+  const handleAddConsulta = async (c) => {
+    dispatch({type:"ADD_CONSULTA",c});
+    try { await sbInsertConsulta(c); } catch(e) { console.error("Error guardando consulta:",e); }
+  };
 
   const handleDeletePatient = async(id)=>{
     dispatch({type:"DELETE_PATIENT",id});
@@ -1152,7 +1178,7 @@ export default function App() {
 
       <div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>
         {screen==="patients"&&<PatientList patients={state.patients} onSelect={id=>go("detail",id)} onNew={()=>go("new-patient")}/>}
-        {screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} dispatch={dispatch} onSelect={id=>go("detail",id)}/>}
+        {screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} onAddConsulta={handleAddConsulta} onSelect={id=>go("detail",id)}/>}
         {screen==="new-patient"&&<NewPatient onSave={p=>{dispatch({type:"ADD_PATIENT",p});go("detail",p.id);}} onCancel={()=>go("patients")}/>}
         {screen==="detail"&&patient&&(
           <PatientDetail patient={patient} dispatch={dispatch}
@@ -1165,7 +1191,8 @@ export default function App() {
             prefill={{nombre:patient.nombre,edad:patient.edad,peso:patient.peso,altura:patient.altura,sexo:patient.sexo,objetivo:patient.objetivo||"",nivelActividad:"",alergias:[],patologias:[],preferencias:"",aversiones:"",cantidadComidas:"4",tipoPlan:"Estándar"}}
             onSavePlan={plan=>{
               dispatch({type:"ADD_PLAN",pid:patient.id,plan});
-              dispatch({type:"ADD_CONSULTA",c:{id:uid(),pacienteId:patient.id,pacienteNombre:patient.nombre,fecha:todayISO(),monto:plan.monto||0,tipo:"Plan generado",obs:`Plan: ${plan.objetivo}`}});
+              const c = {id:uid(),pacienteId:patient.id,pacienteNombre:patient.nombre,fecha:todayISO(),monto:plan.monto||0,tipo:"Plan generado",obs:`Plan: ${plan.objetivo}`};
+              handleAddConsulta(c);
               go("detail",patient.id);
             }}
             onBack={()=>go("detail",patient.id)}/>
