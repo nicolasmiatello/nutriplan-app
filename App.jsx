@@ -28,9 +28,9 @@ function reducer(state,action) {
     case "ADD_PLAN": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,planes:[action.plan,...p.planes]}:p)};
     case "UPDATE_PLAN": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,planes:p.planes.map(pl=>pl.id===action.plan.id?action.plan:pl)}:p)};
     case "UPDATE_CLINICA": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,clinica:action.clinica}:p)};
-    case "ADD_CONSULTA":
-  
-  return { ...state, consultas:[action.c,...(state.consultas||[])] };
+    case "ADD_CONSULTA": return {...state,consultas:[action.c,...(state.consultas||[])]};
+    case "LOAD": return {...state,patients:action.patients,consultas:action.consultas||[]};
+    default: return state;
   }
 }
 
@@ -59,23 +59,7 @@ async function sbUpsert(patient) {
   });
   await fetch(`${SUPABASE_URL}/rest/v1/patients`,{method:"POST",headers:sbHeaders,body});
 }
-async function sbInsertConsulta(consulta) {
-  const body = JSON.stringify({
-    id: consulta.id,
-    paciente_id: consulta.pacienteId,
-    paciente_nombre: consulta.pacienteNombre,
-    fecha: consulta.fecha,
-    monto: consulta.monto || 0,
-    tipo: consulta.tipo || "",
-    obs: consulta.obs || ""
-  });
 
-  await fetch(`${SUPABASE_URL}/rest/v1/consultas`, {
-    method: "POST",
-    headers: sbHeaders,
-    body
-  });
-}
 async function sbDelete(id) {
   await fetch(`${SUPABASE_URL}/rest/v1/patients?id=eq.${id}`,{method:"DELETE",headers:sbHeaders});
 }
