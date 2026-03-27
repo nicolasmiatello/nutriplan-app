@@ -29,7 +29,11 @@ function reducer(state,action) {
     case "UPDATE_PLAN": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,planes:p.planes.map(pl=>pl.id===action.plan.id?action.plan:pl)}:p)};
     case "UPDATE_CLINICA": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,clinica:action.clinica}:p)};
     case "ADD_CONSULTA": return {...state,consultas:[action.c,...(state.consultas||[])]};
-    case "LOAD": return {...state,patients:action.patients,consultas:action.consultas||[]};
+    case "LOAD_EVENTOS": return {...state,eventos:action.eventos||[]};
+    case "ADD_EVENTO": return {...state,eventos:[action.e,...(state.eventos||[])]};
+    case "UPDATE_EVENTO": return {...state,eventos:(state.eventos||[]).map(e=>e.id===action.e.id?action.e:e)};
+    case "DELETE_EVENTO": return {...state,eventos:(state.eventos||[]).filter(e=>e.id!==action.id)};
+    case "LOAD": return {...state,patients:action.patients,consultas:action.consultas||[],eventos:action.eventos||[]};
     default: return state;
   }
 }
@@ -80,6 +84,43 @@ async function sbInsertConsulta(c) {
     fecha:c.fecha,monto:c.monto||0,tipo:c.tipo||"",obs:c.obs||""
   });
   await fetch(`${SUPABASE_URL}/rest/v1/consultas`,{method:"POST",headers:sbHeaders,body});
+}
+
+async function sbLoadEventos() {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/eventos?select=*&order=fecha.asc`,{headers:sbHeaders});
+  if(!r.ok) return [];
+  const rows = await r.json();
+  return rows.map(row=>({
+    id:row.id,pacienteId:row.paciente_id,pacienteNombre:row.paciente_nombre,
+    tipo:row.tipo||"seguimiento",titulo:row.titulo,descripcion:row.descripcion||"",
+    fecha:row.fecha,hora:row.hora||"",notificar:row.notificar||false,
+    notificarVia:row.notificar_via||"",completado:row.completado||false
+  }));
+}
+
+async function sbInsertEvento(e) {
+  const body = JSON.stringify({
+    id:e.id,paciente_id:e.pacienteId,paciente_nombre:e.pacienteNombre,
+    tipo:e.tipo||"seguimiento",titulo:e.titulo,descripcion:e.descripcion||"",
+    fecha:e.fecha,hora:e.hora||"",notificar:e.notificar||false,
+    notificar_via:e.notificarVia||"",completado:e.completado||false
+  });
+  await fetch(`${SUPABASE_URL}/rest/v1/eventos`,{method:"POST",headers:sbHeaders,body});
+}
+
+async function sbUpdateEvento(e) {
+  const body = JSON.stringify({
+    paciente_id:e.pacienteId,paciente_nombre:e.pacienteNombre,
+    tipo:e.tipo,titulo:e.titulo,descripcion:e.descripcion||"",
+    fecha:e.fecha,hora:e.hora||"",notificar:e.notificar||false,
+    notificar_via:e.notificarVia||"",completado:e.completado||false,
+    updated_at:new Date().toISOString()
+  });
+  await fetch(`${SUPABASE_URL}/rest/v1/eventos?id=eq.${e.id}`,{method:"PATCH",headers:{...sbHeaders,"Prefer":"return=minimal"},body});
+}
+
+async function sbDeleteEvento(id) {
+  await fetch(`${SUPABASE_URL}/rest/v1/eventos?id=eq.${id}`,{method:"DELETE",headers:sbHeaders});
 }
 
 // ─── GENERADOR DE PROMPT ──────────────────────────────────────────────────────
@@ -410,6 +451,191 @@ function PatientsStats({patients,consultas,onAddConsulta,onSelect}) {
   return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>Pacientes y Estadísticas</h2><button onClick={()=>setShowConsultaForm(true)} style={S.btnPrimary}>+ Registrar consulta</button></div>{showConsultaForm&&<div style={{marginBottom:20}}><ConsultationForm patients={patients} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/></div>}<div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4}}>{[["pacientes","👥 Pacientes"],["stats","📊 Estadísticas"],["consultas","📋 Consultas"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:tab===id?"#fff":"transparent",color:tab===id?"#2d6a4f":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>{tab==="pacientes"&&<div><input placeholder="🔍 Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<p style={{color:"#aaa",textAlign:"center",padding:"40px 0",fontSize:14}}>No hay pacientes registrados</p>:filtered.map(p=>(<div key={p.id} style={{...S.card,marginBottom:12,display:"flex",alignItems:"center",gap:14}}><div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:15}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo].filter(Boolean).join(" · ")}{p.fechaCreacion&&` · Desde ${p.fechaCreacion}`}</div></div><div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={()=>onSelect(p.id)} style={S.btnOutline}>Ver ficha</button></div></div>))}</div>}{tab==="stats"&&<StatsDashboard patients={patients} consultas={consultas}/>}{tab==="consultas"&&<div>{(!consultas||consultas.length===0)?<p style={{color:"#aaa",textAlign:"center",padding:"40px 0",fontSize:14}}>No hay consultas registradas aún</p>:[...consultas].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(c=>(<div key={c.id} style={{...S.card,marginBottom:10,display:"flex",alignItems:"center",gap:14}}><div style={{flex:1}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{c.pacienteNombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{c.tipo} · {new Date(c.fecha).toLocaleDateString("es-AR")}</div>{c.obs&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:2,fontStyle:"italic"}}>{c.obs}</div>}</div><div style={{fontWeight:700,fontSize:16,color:"#2d6a4f"}}>{fmtMoney(c.monto)}</div></div>))}</div>}</div>);
 }
 
+// ─── EVENTO FORM ──────────────────────────────────────────────────────────────
+const EVENTO_TIPOS = [
+  {id:"turno",label:"📅 Turno",color:"#2d6a4f"},
+  {id:"seguimiento",label:"🔄 Seguimiento",color:"#e76f51"},
+  {id:"recordatorio",label:"🔔 Recordatorio",color:"#f4a261"},
+];
+
+function EventForm({patients,onSave,onCancel,prefillPatientId,prefillDate,editEvento}) {
+  const [form,setForm]=useState(editEvento?{
+    pacienteId:editEvento.pacienteId||"",titulo:editEvento.titulo||"",tipo:editEvento.tipo||"seguimiento",
+    fecha:editEvento.fecha||todayISO(),hora:editEvento.hora||"",descripcion:editEvento.descripcion||"",
+    notificar:editEvento.notificar||false,notificarVia:editEvento.notificarVia||""
+  }:{
+    pacienteId:prefillPatientId||"",titulo:"",tipo:"seguimiento",
+    fecha:prefillDate||todayISO(),hora:"",descripcion:"",notificar:false,notificarVia:""
+  });
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const valid=form.titulo&&form.fecha;
+  const handleSave=()=>{
+    const p=patients.find(x=>x.id===form.pacienteId);
+    onSave({
+      id:editEvento?.id||uid(),pacienteId:form.pacienteId,pacienteNombre:p?.nombre||"",
+      tipo:form.tipo,titulo:form.titulo,descripcion:form.descripcion,
+      fecha:form.fecha,hora:form.hora,notificar:form.notificar,
+      notificarVia:form.notificarVia,completado:editEvento?.completado||false
+    });
+  };
+  return (<div style={S.card}><h3 style={{margin:"0 0 16px",color:"#1a3d2b",fontSize:16}}>{editEvento?"✏️ Editar evento":"➕ Nuevo evento"}</h3>
+    <Field label="Título *" value={form.titulo} onChange={v=>set("titulo",v)} placeholder="Ej: Seguimiento semanal, Control peso..."/>
+    <div style={{marginBottom:14}}><label style={S.label}>Tipo de evento</label><div style={{display:"flex",gap:8,marginTop:5}}>{EVENTO_TIPOS.map(t=><button key={t.id} onClick={()=>set("tipo",t.id)} style={{padding:"6px 14px",borderRadius:20,fontSize:12,cursor:"pointer",border:form.tipo===t.id?`2px solid ${t.color}`:"2px solid #d8e8df",background:form.tipo===t.id?t.color+"18":"#f0f4f1",color:form.tipo===t.id?t.color:"#3a3a3a",fontFamily:"inherit",fontWeight:600}}>{t.label}</button>)}</div></div>
+    {!prefillPatientId&&<div style={{marginBottom:14}}><label style={S.label}>Paciente (opcional)</label><select value={form.pacienteId} onChange={e=>set("pacienteId",e.target.value)} style={S.input}><option value="">Sin paciente asignado</option>{patients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <Field label="Fecha *" type="date" value={form.fecha} onChange={v=>set("fecha",v)}/>
+      <Field label="Hora" type="time" value={form.hora} onChange={v=>set("hora",v)}/>
+    </div>
+    <Field label="Descripción (opcional)" value={form.descripcion} onChange={v=>set("descripcion",v)} placeholder="Notas sobre este evento..." rows={2}/>
+    <div style={{marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+      <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:13,color:"#1a3d2b",fontWeight:600}}>
+        <input type="checkbox" checked={form.notificar} onChange={e=>set("notificar",e.target.checked)} style={{width:16,height:16,accentColor:"#2d6a4f"}}/>
+        Notificar paciente
+      </label>
+      {form.notificar&&<div style={{display:"flex",gap:6}}>{["whatsapp","email"].map(v=><button key={v} onClick={()=>set("notificarVia",v)} style={{padding:"4px 12px",borderRadius:16,fontSize:11,cursor:"pointer",border:form.notificarVia===v?"2px solid #2d6a4f":"2px solid #d8e8df",background:form.notificarVia===v?"#2d6a4f":"#f0f4f1",color:form.notificarVia===v?"#fff":"#5a7a6a",fontFamily:"inherit",fontWeight:600}}>{v==="whatsapp"?"📱 WhatsApp":"📧 Email"}</button>)}</div>}
+    </div>
+    <div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={handleSave} disabled={!valid} style={{...S.btnPrimary,flex:2,opacity:valid?1:.5}}>{editEvento?"Guardar cambios":"Crear evento"}</button></div>
+  </div>);
+}
+
+// ─── CALENDAR VIEW ────────────────────────────────────────────────────────────
+const DIAS_SEMANA = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+function CalendarView({eventos,patients,onAddEvento,onUpdateEvento,onDeleteEvento,onSelectPatient,filterPatientId}) {
+  const [currentDate,setCurrentDate]=useState(new Date());
+  const [showForm,setShowForm]=useState(false);
+  const [selectedDate,setSelectedDate]=useState(null);
+  const [editingEvento,setEditingEvento]=useState(null);
+  const [viewMode,setViewMode]=useState("month"); // month | list
+
+  const year=currentDate.getFullYear();const month=currentDate.getMonth();
+  const firstDay=new Date(year,month,1);const lastDay=new Date(year,month+1,0);
+  const startDow=(firstDay.getDay()+6)%7; // Monday=0
+  const daysInMonth=lastDay.getDate();
+  const todayStr=todayISO();
+
+  const filteredEventos=(eventos||[]).filter(e=>filterPatientId?e.pacienteId===filterPatientId:true);
+
+  const eventsByDate=useMemo(()=>{
+    const map={};
+    filteredEventos.forEach(e=>{if(e.fecha){if(!map[e.fecha])map[e.fecha]=[];map[e.fecha].push(e);}});
+    return map;
+  },[filteredEventos]);
+
+  const monthEventos=filteredEventos.filter(e=>{
+    if(!e.fecha) return false;
+    const d=new Date(e.fecha+"T12:00:00");
+    return d.getMonth()===month&&d.getFullYear()===year;
+  }).sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||"").localeCompare(b.hora||""));
+
+  const prevMonth=()=>setCurrentDate(new Date(year,month-1,1));
+  const nextMonth=()=>setCurrentDate(new Date(year,month+1,1));
+  const goToday=()=>setCurrentDate(new Date());
+
+  const getEventColor=(tipo)=>{const t=EVENTO_TIPOS.find(x=>x.id===tipo);return t?t.color:"#7a9a8a";};
+
+  const todayEventos=filteredEventos.filter(e=>e.fecha===todayStr&&!e.completado);
+  const pendientes=filteredEventos.filter(e=>!e.completado&&e.fecha<todayStr);
+
+  const handleToggleCompletado=(evento)=>{
+    const updated={...evento,completado:!evento.completado};
+    onUpdateEvento(updated);
+  };
+
+  const handleDeleteEvento=(id)=>{
+    if(confirm("¿Eliminar este evento?")) onDeleteEvento(id);
+  };
+
+  const calendarCells=[];
+  for(let i=0;i<startDow;i++) calendarCells.push(null);
+  for(let d=1;d<=daysInMonth;d++) calendarCells.push(d);
+  while(calendarCells.length%7!==0) calendarCells.push(null);
+
+  const renderEventCard=(e,compact=false)=>{
+    const color=getEventColor(e.tipo);
+    return (<div key={e.id} style={{background:e.completado?"#f0f4f1":color+"12",borderLeft:`3px solid ${e.completado?"#ccc":color}`,borderRadius:8,padding:compact?"6px 8px":"10px 14px",marginBottom:compact?4:8,opacity:e.completado?.6:1,transition:"all .15s"}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <button onClick={()=>handleToggleCompletado(e)} title={e.completado?"Marcar pendiente":"Marcar completado"} style={{width:18,height:18,borderRadius:4,border:`2px solid ${e.completado?"#aaa":color}`,background:e.completado?color:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",padding:0,flexShrink:0}}>{e.completado?"✓":""}</button>
+            <span style={{fontWeight:700,fontSize:compact?12:14,color:e.completado?"#999":"#1a3d2b",textDecoration:e.completado?"line-through":"none"}}>{e.titulo}</span>
+          </div>
+          {!compact&&<div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>
+            {e.hora&&<span>{e.hora} · </span>}
+            {e.pacienteNombre&&<span style={{cursor:onSelectPatient?"pointer":"default",textDecoration:onSelectPatient?"underline":"none"}} onClick={()=>onSelectPatient&&e.pacienteId&&onSelectPatient(e.pacienteId)}>{e.pacienteNombre}</span>}
+            {!e.pacienteNombre&&<span style={{fontStyle:"italic"}}>Sin paciente</span>}
+            {e.notificar&&<span> · {e.notificarVia==="whatsapp"?"📱":"📧"}</span>}
+          </div>}
+          {!compact&&e.descripcion&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:3,fontStyle:"italic"}}>{e.descripcion}</div>}
+        </div>
+        {!compact&&<div style={{display:"flex",gap:4,flexShrink:0}}>
+          <button onClick={()=>{setEditingEvento(e);setShowForm(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>✏️</button>
+          <button onClick={()=>handleDeleteEvento(e.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>🗑</button>
+        </div>}
+      </div>
+    </div>);
+  };
+
+  return (<div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
+      <h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>{filterPatientId?"📅 Agenda del paciente":"📅 Agenda"}</h2>
+      <button onClick={()=>{setEditingEvento(null);setSelectedDate(null);setShowForm(true);}} style={S.btnPrimary}>+ Nuevo evento</button>
+    </div>
+
+    {/* Alertas de hoy y pendientes */}
+    {(todayEventos.length>0||pendientes.length>0)&&<div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+      {todayEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #2d6a4f",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#2d6a4f",marginBottom:4}}>📌 Hoy tenés {todayEventos.length} evento{todayEventos.length>1?"s":""}</div>{todayEventos.slice(0,3).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{e.hora&&`${e.hora} — `}{e.titulo}{e.pacienteNombre&&` (${e.pacienteNombre})`}</div>)}</div>}
+      {pendientes.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #e76f51",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#e76f51",marginBottom:4}}>⚠️ {pendientes.length} evento{pendientes.length>1?"s":""} vencido{pendientes.length>1?"s":""}</div>{pendientes.slice(0,3).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{new Date(e.fecha+"T12:00:00").toLocaleDateString("es-AR")} — {e.titulo}</div>)}</div>}
+    </div>}
+
+    {showForm&&<div style={{marginBottom:20}}><EventForm patients={patients} prefillPatientId={filterPatientId} prefillDate={selectedDate} editEvento={editingEvento} onSave={e=>{if(editingEvento){onUpdateEvento(e);}else{onAddEvento(e);}setShowForm(false);setEditingEvento(null);}} onCancel={()=>{setShowForm(false);setEditingEvento(null);}}/></div>}
+
+    {/* Toggle vista */}
+    <div style={{display:"flex",gap:4,marginBottom:16,background:"#f0f4f1",borderRadius:10,padding:4,maxWidth:240}}>
+      {[["month","📅 Mes"],["list","📋 Lista"]].map(([id,label])=>(
+        <button key={id} onClick={()=>setViewMode(id)} style={{flex:1,padding:"6px 10px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",background:viewMode===id?"#fff":"transparent",color:viewMode===id?"#2d6a4f":"#5a7a6a",boxShadow:viewMode===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>
+      ))}
+    </div>
+
+    {viewMode==="month"&&<div>
+      {/* Nav del mes */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+        <button onClick={prevMonth} style={{...S.btnGhost,padding:"6px 12px"}}>◀</button>
+        <div style={{textAlign:"center"}}>
+          <span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>{MESES_FULL[month]} {year}</span>
+          <button onClick={goToday} style={{marginLeft:10,padding:"2px 10px",borderRadius:12,border:"1px solid #d8e8df",background:"#f5faf7",fontSize:11,cursor:"pointer",fontFamily:"inherit",color:"#2d6a4f",fontWeight:600}}>Hoy</button>
+        </div>
+        <button onClick={nextMonth} style={{...S.btnGhost,padding:"6px 12px"}}>▶</button>
+      </div>
+
+      {/* Grilla del calendario */}
+      <div style={{...S.card,padding:12,overflowX:"auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:1,minWidth:560}}>
+          {DIAS_SEMANA.map(d=><div key={d} style={{padding:"6px 4px",textAlign:"center",fontSize:11,fontWeight:700,color:"#5a7a6a",textTransform:"uppercase"}}>{d}</div>)}
+          {calendarCells.map((day,i)=>{
+            if(day===null) return <div key={`empty-${i}`} style={{padding:4,minHeight:80,background:"#fafcfb",borderRadius:6}}/>;
+            const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+            const dayEvents=eventsByDate[dateStr]||[];
+            const isToday=dateStr===todayStr;
+            const isPast=dateStr<todayStr;
+            return (<div key={dateStr} onClick={()=>{setSelectedDate(dateStr);setEditingEvento(null);setShowForm(true);}} style={{padding:4,minHeight:80,background:isToday?"#e8f5ee":"#fff",borderRadius:6,cursor:"pointer",border:isToday?"2px solid #52b788":"1px solid #f0f4f1",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background=isToday?"#d4edda":"#f5faf7"} onMouseLeave={e=>e.currentTarget.style.background=isToday?"#e8f5ee":"#fff"}>
+              <div style={{fontSize:13,fontWeight:isToday?800:600,color:isToday?"#2d6a4f":isPast?"#aaa":"#1a3d2b",marginBottom:2,textAlign:"right",padding:"0 2px"}}>{day}</div>
+              {dayEvents.slice(0,3).map(ev=>(<div key={ev.id} onClick={e=>{e.stopPropagation();setEditingEvento(ev);setShowForm(true);}} style={{fontSize:10,padding:"1px 4px",borderRadius:4,marginBottom:1,background:ev.completado?"#eee":getEventColor(ev.tipo)+"20",color:ev.completado?"#aaa":getEventColor(ev.tipo),fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textDecoration:ev.completado?"line-through":"none",cursor:"pointer"}}>{ev.hora&&`${ev.hora} `}{ev.titulo}</div>))}
+              {dayEvents.length>3&&<div style={{fontSize:9,color:"#7a9a8a",textAlign:"center"}}>+{dayEvents.length-3} más</div>}
+            </div>);
+          })}
+        </div>
+      </div>
+    </div>}
+
+    {viewMode==="list"&&<div>
+      {monthEventos.length===0?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:36,marginBottom:8}}>📅</div><p style={{color:"#7a9a8a",fontSize:14}}>No hay eventos en {MESES_FULL[month]}</p></div>:
+      monthEventos.map(e=>renderEventCard(e))}
+    </div>}
+  </div>);
+}
+
 function PatientList({patients,onSelect,onNew}) {
   const [search,setSearch]=useState("");const filtered=patients.filter(p=>p.nombre.toLowerCase().includes(search.toLowerCase()));
   return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>👥 Pacientes</h2><button onClick={onNew} style={S.btnPrimary}>+ Nuevo paciente</button></div><input placeholder="🔍 Buscar por nombre..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<div style={{textAlign:"center",padding:"60px 20px"}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{color:"#7a9a8a",fontSize:15}}>No hay pacientes aún</p><button onClick={onNew} style={{...S.btnPrimary,marginTop:12}}>Agregar primera paciente</button></div>:filtered.map(p=>(<div key={p.id} onClick={()=>onSelect(p.id)} style={{...S.card,marginBottom:12,display:"flex",alignItems:"center",gap:14,cursor:"pointer",transition:"box-shadow .2s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 20px rgba(45,106,79,.15)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)"}><div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:18,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:15}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo,p.planes?.length&&`${p.planes.length} plan${p.planes.length!==1?"es":""}`].filter(Boolean).join(" · ")}</div></div><span style={{color:"#52b788",fontSize:20}}>›</span></div>))}</div>);
@@ -426,8 +652,8 @@ function PlanViewer({plan,paciente,onClose,onUpdate}) {
   return (<div style={{...S.card,marginBottom:16}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}><div><div style={{fontWeight:700,color:"#1a3d2b",fontSize:15}}>{plan.objetivo}</div><div style={{fontSize:12,color:"#7a9a8a"}}>{plan.fecha}</div></div><div style={{display:"flex",gap:8}}><button onClick={()=>setEditing(!editing)} style={{...S.btnGhost,fontSize:12,padding:"6px 12px"}}>{editing?"✕ Cancelar":"✏️ Editar"}</button><button onClick={()=>exportPDF({paciente,plan:{...plan,texto},notasNutricionista:notasNutri})} style={{...S.btnOutline,fontSize:12,padding:"6px 12px"}}>📄 PDF</button><button onClick={onClose} style={{...S.btnGhost,fontSize:12,padding:"6px 12px"}}>✕</button></div></div>{editing?<div><textarea value={texto} onChange={e=>setTexto(e.target.value)} rows={20} style={{...S.input,resize:"vertical",fontSize:13,lineHeight:1.75,marginBottom:10}}/><div style={{marginBottom:10}}><label style={S.label}>Notas del nutricionista (se guardan con el plan y aparecen en el PDF)</label><textarea value={notasNutri} onChange={e=>setNotasNutri(e.target.value)} rows={2} placeholder="Indicaciones adicionales..." style={{...S.input,resize:"vertical"}}/></div><button onClick={handleSave} style={{...S.btnPrimary,width:"100%"}}>{saved?"✓ Guardado":"💾 Guardar cambios"}</button></div>:<div><div style={{background:"#f8faf9",borderRadius:10,padding:"16px",maxHeight:expanded?"none":"400px",overflow:"hidden",position:"relative"}}><pre style={{margin:0,fontSize:13,lineHeight:1.75,color:"#2a2a2a",fontFamily:"inherit",whiteSpace:"pre-wrap",wordBreak:"break-word"}}>{texto}</pre>{isLong&&!expanded&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:80,background:"linear-gradient(transparent,#f8faf9)"}}/>}</div>{isLong&&<button onClick={()=>setExpanded(!expanded)} style={{...S.btnGhost,width:"100%",marginTop:8,fontSize:13}}>{expanded?"▲ Mostrar menos":"▼ Ver plan completo"}</button>}</div>}{!editing&&<div style={{marginTop:12}}><label style={S.label}>Notas del nutricionista (aparecen en el PDF)</label><textarea value={notasNutri} onChange={e=>setNotasNutri(e.target.value)} rows={2} placeholder="Indicaciones adicionales..." style={{...S.input,resize:"vertical"}}/><button onClick={()=>{onUpdate({...plan,texto,notasNutri});setSaved(true);setTimeout(()=>setSaved(false),2000);}} style={{...S.btnGhost,width:"100%",marginTop:6,fontSize:12}}>{saved?"✓ Notas guardadas":"💾 Guardar notas"}</button></div>}</div>);
 }
 
-// ─── PATIENT DETAIL (con pestaña Consultas + consultas en Timeline) ───────────
-function PatientDetail({patient,dispatch,consultas,onAddConsulta,onGeneratePlan,onBack,onDelete}) {
+// ─── PATIENT DETAIL (con pestaña Consultas + Agenda + consultas en Timeline) ──
+function PatientDetail({patient,dispatch,consultas,eventos,onAddConsulta,onAddEvento,onUpdateEvento,onDeleteEvento,onGeneratePlan,onBack,onDelete}) {
   const [tab,setTab]=useState("clinica");const [clinica,setClinica]=useState(patient.clinica||initialClinica);const [clinicaSaved,setClinicaSaved]=useState(false);const [newMedicion,setNewMedicion]=useState({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});const [newNota,setNewNota]=useState("");const [showMedForm,setShowMedForm]=useState(false);const [viewingPlan,setViewingPlan]=useState(null);const [deleteConfirm,setDeleteConfirm]=useState(false);const [showConsultaForm,setShowConsultaForm]=useState(false);
   const setC=(k,v)=>setClinica(c=>({...c,[k]:v}));
   const saveClinica=()=>{dispatch({type:"UPDATE_CLINICA",pid:patient.id,clinica});setClinicaSaved(true);setTimeout(()=>setClinicaSaved(false),2000);};
@@ -438,7 +664,7 @@ function PatientDetail({patient,dispatch,consultas,onAddConsulta,onGeneratePlan,
   const patientConsultas = (consultas||[]).filter(c=>c.pacienteId===patient.id);
   const totalCobrado = patientConsultas.reduce((s,c)=>s+(parseFloat(c.monto)||0),0);
 
-  const tabs=[["clinica","📋 Clínica"],["antrop","📏 Antropometría"],["evol","📝 Evolución"],["planes","🥗 Planes"],["consultas","💰 Consultas"],["timeline","⏱ Timeline"]];
+  const tabs=[["clinica","📋 Clínica"],["antrop","📏 Antropometría"],["evol","📝 Evolución"],["planes","🥗 Planes"],["consultas","💰 Consultas"],["agenda","📅 Agenda"],["timeline","⏱ Timeline"]];
 
   return (<div><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}><button onClick={onBack} style={S.btnGhost}>← Volver</button><div style={{flex:1}}><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>{patient.nombre}</h2></div><div style={{display:"flex",gap:8}}><button onClick={onGeneratePlan} style={S.btnPrimary}>✨ Nuevo plan</button><button onClick={()=>setDeleteConfirm(true)} style={S.btnDanger}>🗑 Eliminar</button></div></div><div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#2d6a4f":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>
 
@@ -463,12 +689,15 @@ function PatientDetail({patient,dispatch,consultas,onAddConsulta,onGeneratePlan,
     [...patientConsultas].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(c=>(<div key={c.id} style={{...S.card,marginBottom:10,display:"flex",alignItems:"center",gap:14}}><div style={{width:36,height:36,borderRadius:"50%",background:"#e8f5ee",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>💰</div><div style={{flex:1}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{c.tipo}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{new Date(c.fecha).toLocaleDateString("es-AR")}</div>{c.obs&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:2,fontStyle:"italic"}}>{c.obs}</div>}</div><div style={{fontWeight:700,fontSize:16,color:"#2d6a4f"}}>{fmtMoney(c.monto)}</div></div>))}
   </div>}
 
+  {tab==="agenda"&&<CalendarView eventos={eventos} patients={[patient]} filterPatientId={patient.id} onAddEvento={onAddEvento} onUpdateEvento={onUpdateEvento} onDeleteEvento={onDeleteEvento}/>}
+
   {tab==="timeline"&&<div>{[
-    ...(patient.planes||[]).map(x=>({...x,tipo:"plan",icon:"🥗",color:"#2d6a4f"})),
-    ...(patient.mediciones||[]).map(x=>({...x,tipo:"med",icon:"📏",color:"#52b788",fecha:x.fecha})),
-    ...(patient.notas||[]).map(x=>({...x,tipo:"nota",icon:"📝",color:"#74c69d"})),
-    ...patientConsultas.map(x=>({...x,tipo:"consulta",icon:"💰",color:"#f4a261",fecha:x.fecha})),
-  ].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map((item,i)=>(<div key={i} style={{display:"flex",gap:14,marginBottom:14}}><div style={{width:36,height:36,borderRadius:"50%",background:item.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{item.icon}</div><div style={{...S.card,flex:1,padding:14}}><div style={{fontSize:11,color:"#7a9a8a",marginBottom:4,fontWeight:600}}>{typeof item.fecha==="string"&&item.fecha.includes("-")?new Date(item.fecha).toLocaleDateString("es-AR"):item.fecha}</div>{item.tipo==="plan"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Plan generado</div><div style={{fontSize:13,color:"#5a7a6a"}}>{item.objetivo}</div></>}{item.tipo==="med"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Medición registrada</div><div style={{fontSize:13,color:"#5a7a6a"}}>Peso: {item.peso}kg · IMC: {item.imc}</div></>}{item.tipo==="nota"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Nota de evolución</div><div style={{fontSize:13,color:"#5a7a6a",marginTop:2}}>{item.texto}</div></>}{item.tipo==="consulta"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Consulta registrada</div><div style={{fontSize:13,color:"#5a7a6a"}}>{item.tipo_consulta||item.tipo} · {fmtMoney(item.monto)}</div>{item.obs&&<div style={{fontSize:12,color:"#7a9a8a",fontStyle:"italic",marginTop:2}}>{item.obs}</div>}</>}</div></div>))}</div>}
+    ...(patient.planes||[]).map(x=>({...x,_tipo:"plan",icon:"🥗",color:"#2d6a4f"})),
+    ...(patient.mediciones||[]).map(x=>({...x,_tipo:"med",icon:"📏",color:"#52b788",fecha:x.fecha})),
+    ...(patient.notas||[]).map(x=>({...x,_tipo:"nota",icon:"📝",color:"#74c69d"})),
+    ...patientConsultas.map(x=>({...x,_tipo:"consulta",icon:"💰",color:"#f4a261",fecha:x.fecha})),
+    ...((eventos||[]).filter(e=>e.pacienteId===patient.id)).map(x=>({...x,_tipo:"evento",icon:x.tipo==="turno"?"📅":x.tipo==="seguimiento"?"🔄":"🔔",color:x.tipo==="turno"?"#2d6a4f":x.tipo==="seguimiento"?"#e76f51":"#f4a261"})),
+  ].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map((item,i)=>(<div key={i} style={{display:"flex",gap:14,marginBottom:14}}><div style={{width:36,height:36,borderRadius:"50%",background:item.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{item.icon}</div><div style={{...S.card,flex:1,padding:14}}><div style={{fontSize:11,color:"#7a9a8a",marginBottom:4,fontWeight:600}}>{typeof item.fecha==="string"&&item.fecha.includes("-")?new Date(item.fecha+"T12:00:00").toLocaleDateString("es-AR"):item.fecha}</div>{item._tipo==="plan"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Plan generado</div><div style={{fontSize:13,color:"#5a7a6a"}}>{item.objetivo}</div></>}{item._tipo==="med"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Medición registrada</div><div style={{fontSize:13,color:"#5a7a6a"}}>Peso: {item.peso}kg · IMC: {item.imc}</div></>}{item._tipo==="nota"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Nota de evolución</div><div style={{fontSize:13,color:"#5a7a6a",marginTop:2}}>{item.texto}</div></>}{item._tipo==="consulta"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>Consulta registrada</div><div style={{fontSize:13,color:"#5a7a6a"}}>{item.tipo_consulta||item.tipo} · {fmtMoney(item.monto)}</div>{item.obs&&<div style={{fontSize:12,color:"#7a9a8a",fontStyle:"italic",marginTop:2}}>{item.obs}</div>}</>}{item._tipo==="evento"&&<><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{item.titulo}</div><div style={{fontSize:13,color:"#5a7a6a"}}>{item.tipo==="turno"?"Turno":item.tipo==="seguimiento"?"Seguimiento":"Recordatorio"}{item.hora&&` · ${item.hora}`}{item.completado?" · ✓ Completado":""}</div>{item.descripcion&&<div style={{fontSize:12,color:"#7a9a8a",fontStyle:"italic",marginTop:2}}>{item.descripcion}</div>}</>}</div></div>))}</div>}
 
   {deleteConfirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}><div style={{...S.card,maxWidth:360,width:"90%",textAlign:"center"}}><div style={{fontSize:32,marginBottom:12}}>⚠️</div><h3 style={{margin:"0 0 8px",color:"#1a3d2b"}}>¿Eliminar a {patient.nombre}?</h3><p style={{fontSize:14,color:"#5a7a6a",marginBottom:20}}>Esta acción no se puede deshacer.</p><div style={{display:"flex",gap:10}}><button onClick={()=>setDeleteConfirm(false)} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={()=>{onDelete(patient.id);}} style={{...S.btnPrimary,flex:1,background:"#c0392b"}}>Sí, eliminar</button></div></div></div>}</div>);
 }
@@ -487,18 +716,23 @@ function PlanGenerator({prefill,onSavePlan,onBack}) {
 
 // ─── APP PRINCIPAL ─────────────────────────────────────────────────────────────
 export default function App() {
-  const [state,dispatch]=useReducer(reducer,{patients:[],consultas:[]});const [screen,setScreen]=useState("patients");const [selectedId,setSelectedId]=useState(null);const [navTab,setNavTab]=useState("patients");const [loaded,setLoaded]=useState(false);const [saveStatus,setSaveStatus]=useState("idle");
-  useEffect(()=>{Promise.all([sbLoadAll(),sbLoadConsultas()]).then(([patients,consultas])=>{dispatch({type:"LOAD",patients,consultas});setLoaded(true);}).catch(()=>{dispatch({type:"LOAD",patients:[],consultas:[]});setLoaded(true);});},[]);
+  const [state,dispatch]=useReducer(reducer,{patients:[],consultas:[],eventos:[]});const [screen,setScreen]=useState("patients");const [selectedId,setSelectedId]=useState(null);const [navTab,setNavTab]=useState("patients");const [loaded,setLoaded]=useState(false);const [saveStatus,setSaveStatus]=useState("idle");
+  useEffect(()=>{Promise.all([sbLoadAll(),sbLoadConsultas(),sbLoadEventos()]).then(([patients,consultas,eventos])=>{dispatch({type:"LOAD",patients,consultas,eventos});setLoaded(true);}).catch(()=>{dispatch({type:"LOAD",patients:[],consultas:[],eventos:[]});setLoaded(true);});},[]);
   useEffect(()=>{if(!loaded)return;setSaveStatus("saving");const t=setTimeout(async()=>{try{await Promise.all(state.patients.map(p=>sbUpsert(p)));setSaveStatus("saved");}catch{setSaveStatus("error");}setTimeout(()=>setSaveStatus("idle"),2000);},800);return()=>clearTimeout(t);},[state.patients,loaded]);
   const patient=state.patients.find(p=>p.id===selectedId);const go=(s,id=null)=>{setScreen(s);if(id)setSelectedId(id);};
   const handleAddConsulta=async(c)=>{dispatch({type:"ADD_CONSULTA",c});try{await sbInsertConsulta(c);}catch(e){console.error("Error guardando consulta:",e);}};
   const handleDeletePatient=async(id)=>{dispatch({type:"DELETE_PATIENT",id});await sbDelete(id);go("patients");};
+  const handleAddEvento=async(e)=>{dispatch({type:"ADD_EVENTO",e});try{await sbInsertEvento(e);}catch(err){console.error("Error guardando evento:",err);}};
+  const handleUpdateEvento=async(e)=>{dispatch({type:"UPDATE_EVENTO",e});try{await sbUpdateEvento(e);}catch(err){console.error("Error actualizando evento:",err);}};
+  const handleDeleteEvento=async(id)=>{dispatch({type:"DELETE_EVENTO",id});try{await sbDeleteEvento(id);}catch(err){console.error("Error eliminando evento:",err);}};
+  const todayPendientes=(state.eventos||[]).filter(e=>e.fecha===todayISO()&&!e.completado).length;
   if(!loaded)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f5faf7",fontFamily:"sans-serif"}}><div style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{color:"#2d6a4f",fontWeight:600,fontSize:16}}>JL Nutrición</p><p style={{color:"#7a9a8a",fontSize:13}}>Conectando con la base de datos...</p></div></div>);
-  return (<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f5ee 0%,#f5f9f7 50%,#e0f0e8 100%)",fontFamily:"'DM Sans',system-ui,sans-serif"}}><style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');*{box-sizing:border-box}input:focus,select:focus,textarea:focus{border-color:#2d6a4f!important;box-shadow:0 0 0 3px rgba(45,106,79,.1)!important;outline:none}`}</style><div style={{background:"#fff",borderBottom:"1.5px solid #e8f0ec",padding:"0 20px",position:"sticky",top:0,zIndex:100}}><div style={{maxWidth:980,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍏</div><span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>JL Nutrición</span><span style={{fontSize:11,color:saveStatus==="saving"?"#f4a261":saveStatus==="saved"?"#52b788":saveStatus==="error"?"#e63946":"transparent",fontWeight:600,transition:"color .3s"}}>{saveStatus==="saving"?"● guardando...":saveStatus==="saved"?"✓ guardado":saveStatus==="error"?"⚠ error":"·"}</span></div><div style={{display:"flex",alignItems:"center",gap:4}}>{[["patients","👥 Pacientes"],["stats","📊 Estadísticas"],["plan","✨ Nuevo plan"]].map(([id,label])=>(<button key={id} onClick={()=>{setNavTab(id);go(id);}} style={{padding:"7px 14px",border:"none",borderRadius:9,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:navTab===id?"#2d6a4f":"transparent",color:navTab===id?"#fff":"#5a7a6a"}}>{label}</button>))}</div></div></div><div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>
+  return (<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f5ee 0%,#f5f9f7 50%,#e0f0e8 100%)",fontFamily:"'DM Sans',system-ui,sans-serif"}}><style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');*{box-sizing:border-box}input:focus,select:focus,textarea:focus{border-color:#2d6a4f!important;box-shadow:0 0 0 3px rgba(45,106,79,.1)!important;outline:none}`}</style><div style={{background:"#fff",borderBottom:"1.5px solid #e8f0ec",padding:"0 20px",position:"sticky",top:0,zIndex:100}}><div style={{maxWidth:980,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍏</div><span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>JL Nutrición</span><span style={{fontSize:11,color:saveStatus==="saving"?"#f4a261":saveStatus==="saved"?"#52b788":saveStatus==="error"?"#e63946":"transparent",fontWeight:600,transition:"color .3s"}}>{saveStatus==="saving"?"● guardando...":saveStatus==="saved"?"✓ guardado":saveStatus==="error"?"⚠ error":"·"}</span></div><div style={{display:"flex",alignItems:"center",gap:4}}>{[["patients","👥 Pacientes"],["agenda","📅 Agenda"],["stats","📊 Estadísticas"],["plan","✨ Nuevo plan"]].map(([id,label])=>(<button key={id} onClick={()=>{setNavTab(id);go(id);}} style={{padding:"7px 14px",border:"none",borderRadius:9,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:navTab===id?"#2d6a4f":"transparent",color:navTab===id?"#fff":"#5a7a6a",position:"relative"}}>{label}{id==="agenda"&&todayPendientes>0&&<span style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:"#e76f51",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{todayPendientes}</span>}</button>))}</div></div></div><div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>
     {screen==="patients"&&<PatientList patients={state.patients} onSelect={id=>go("detail",id)} onNew={()=>go("new-patient")}/>}
+    {screen==="agenda"&&<CalendarView eventos={state.eventos} patients={state.patients} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onSelectPatient={id=>go("detail",id)}/>}
     {screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} onAddConsulta={handleAddConsulta} onSelect={id=>go("detail",id)}/>}
     {screen==="new-patient"&&<NewPatient onSave={p=>{dispatch({type:"ADD_PATIENT",p});go("detail",p.id);}} onCancel={()=>go("patients")}/>}
-    {screen==="detail"&&patient&&<PatientDetail patient={patient} dispatch={dispatch} consultas={state.consultas} onAddConsulta={handleAddConsulta} onGeneratePlan={()=>go("plan-patient")} onBack={()=>go("patients")} onDelete={handleDeletePatient}/>}
+    {screen==="detail"&&patient&&<PatientDetail patient={patient} dispatch={dispatch} consultas={state.consultas} eventos={state.eventos} onAddConsulta={handleAddConsulta} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onGeneratePlan={()=>go("plan-patient")} onBack={()=>go("patients")} onDelete={handleDeletePatient}/>}
     {screen==="plan-patient"&&patient&&<PlanGenerator prefill={{nombre:patient.nombre,edad:patient.edad,peso:patient.peso,altura:patient.altura,sexo:patient.sexo,objetivo:patient.objetivo||"",nivelActividad:"",alergias:[],patologias:[],preferencias:"",aversiones:"",cantidadComidas:"4",tipoPlan:"Estándar"}} onSavePlan={plan=>{dispatch({type:"ADD_PLAN",pid:patient.id,plan});const c={id:uid(),pacienteId:patient.id,pacienteNombre:patient.nombre,fecha:todayISO(),monto:plan.monto||0,tipo:"Plan generado",obs:`Plan: ${plan.objetivo}`};handleAddConsulta(c);go("detail",patient.id);}} onBack={()=>go("detail",patient.id)}/>}
     {screen==="plan"&&<PlanGenerator onBack={()=>{setNavTab("patients");go("patients");}}/>}
   </div></div>);
