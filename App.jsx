@@ -705,13 +705,14 @@ function FertilDashboard({fertilCases,patients,appointments,onSelectCase,onNewCa
   const ingresosMes=fertilCases.filter(c=>{const d=new Date(c.createdAt);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;}).reduce((s,c)=>s+(c.amountPaid||0),0);
   const totalAcumulado=fertilCases.reduce((s,c)=>s+(c.amountPaid||0),0);
   const nowISO=now.toISOString();const proximosTurnos=(appointments||[]).filter(a=>a.programType==="fertil"&&a.status==="programada"&&a.startAt>nowISO).sort((a,b)=>a.startAt.localeCompare(b.startAt)).slice(0,5);
-  const alertas=[];activas.forEach(c=>{if(c.paymentStatus==="pendiente")alertas.push({type:"pago",msg:`${patients.find(p=>p.id===c.patientId)?.nombre||"Paciente"} - pago pendiente`,caseId:c.id});});
+  const alertas=[];activas.forEach(c=>{if(c.paymentStatus==="pendiente"){const pName=patients.find(p=>p.id===c.patientId);alertas.push({type:"pago",msg:(pName?pName.nombre:"Paciente")+" - pago pendiente",caseId:c.id});}});
+  const renderTurno=(a)=>{const p=patients.find(x=>x.id===a.patientId);const pName=p&&p.nombre?p.nombre:"Paciente";return(<div key={a.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #f0f4f1"}}><div style={{width:28,height:28,borderRadius:"50%",background:"#f3e5f5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}}>{"💜"}</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:"#1a3d2b"}}>{pName}</div><div style={{fontSize:11,color:"#7a9a8a"}}>{a.title+" · "+fmtDateTime(a.startAt)}</div></div></div>);};
   const statCard=(icon,label,value,sub,color="#7b2d8b")=>(<div style={{...S.card,flex:1,minWidth:130}}><div style={{fontSize:20,marginBottom:4}}>{icon}</div><div style={{fontSize:20,fontWeight:700,color}}>{value}</div><div style={{fontSize:11,fontWeight:600,color:"#1a3d2b",marginTop:2}}>{label}</div>{sub&&<div style={{fontSize:10,color:"#7a9a8a",marginTop:1}}>{sub}</div>}</div>);
   return(<div>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:24}}>💜</span><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#7b2d8b"}}>Programa Fértil</h2></div><button onClick={onNewCase} style={S.btnFertil}>+ Nueva paciente Fértil</button></div>
     <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>{statCard("👩","Activas",activas.length,"en programa")}{statCard("✅","Finalizadas",fertilCases.filter(c=>c.status==="finalizada").length,"completaron")}{statCard("💰","Ingresos del mes",fmtMoney(ingresosMes),"programa Fértil")}{statCard("📊","Total acumulado",fmtMoney(totalAcumulado),"histórico")}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
-      <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>📅 Próximos turnos Fértil</h4>{proximosTurnos.length===0?<p style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Sin turnos programados</p>:proximosTurnos.map(a=>{const p=patients.find(x=>x.id===a.patientId);return(<div key={a.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #f0f4f1"}}><div style={{width:28,height:28,borderRadius:"50%",background:"#f3e5f5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}}>💜</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:"#1a3d2b"}}>{p?.nombre||"Paciente"}</div><div style={{fontSize:11,color:"#7a9a8a"}}>{a.title} · {fmtDateTime(a.startAt)}</div></div></div>);})}</div>
+      <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>{"📅 Próximos turnos Fértil"}</h4>{proximosTurnos.length===0?<p style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Sin turnos programados</p>:proximosTurnos.map(renderTurno)}</div>
       <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#e76f51"}}>⚠️ Alertas</h4>{alertas.length===0?<p style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Sin alertas</p>:alertas.map((a,i)=>(<div key={i} onClick={()=>onSelectCase(a.caseId)} style={{padding:"8px 10px",background:"#fff5f0",borderRadius:8,marginBottom:6,fontSize:12,color:"#c0392b",cursor:"pointer",fontWeight:600}}>{a.msg}</div>))}</div>
     </div>
   </div>);
@@ -720,33 +721,29 @@ function FertilDashboard({fertilCases,patients,appointments,onSelectCase,onNewCa
 function FertilPatientList({fertilCases,patients,appointments,onSelectCase}){
   const [search,setSearch]=useState("");const [filterStatus,setFilterStatus]=useState("all");
   const filtered=fertilCases.filter(c=>{if(filterStatus!=="all"&&c.status!==filterStatus)return false;const p=patients.find(x=>x.id===c.patientId);if(search&&p&&!p.nombre.toLowerCase().includes(search.toLowerCase()))return false;return true;});
-  return(<div>
-    <input placeholder="🔍 Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:12}}/>
-    <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>{[["all","Todas"],["activa","Activas"],["lead","Leads"],["pausada","Pausadas"],["finalizada","Finalizadas"]].map(([k,l])=>(<button key={k} onClick={()=>setFilterStatus(k)} style={{padding:"5px 12px",borderRadius:20,fontSize:11,cursor:"pointer",border:filterStatus===k?"2px solid #7b2d8b":"2px solid #d8e8df",background:filterStatus===k?"#7b2d8b":"#f0f4f1",color:filterStatus===k?"#fff":"#5a7a6a",fontFamily:"inherit",fontWeight:600}}>{l}</button>))}</div>
-    ... : filtered.map(c => {
-  const p = patients.find(x => x.id === c.patientId);
-  return (
-    <div
-      
-    key={c.id}
-    onClick={() => onSelectCase(c.id)}
-    style={{
-      ...S.card,
-      marginBottom: 10,
-      cursor: "pointer",
-      borderLeft: "4px solid " + FERTIL_STATUS_COLORS[c.status]
-    }}
-  >
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#7b2d8b,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{p?.nombre?.charAt(0)||"?"}</div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><span style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{p?.nombre||"Paciente"}</span><Badge label={FERTIL_STATUS_LABELS[c.status]} color={FERTIL_STATUS_COLORS[c.status]+"22"} text={FERTIL_STATUS_COLORS[c.status]}/><Badge label={FERTIL_PAYMENT_LABELS[c.paymentStatus]} color={FERTIL_PAYMENT_COLORS[c.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[c.paymentStatus]}/></div>
-            <div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>Semana {c.currentWeek}/8 · {caseAppts.filter(a=>a.status==="realizada").length}/5 consultas · {fmtMoney(c.amountPaid)}/{fmtMoney(c.totalPrice)}{nextAppt?` · Próx: ${fmtDateTime(nextAppt.startAt)}`:""}</div>
-          </div><span style={{color:"#a855f7",fontSize:20}}>›</span>
+  const renderCase=(c)=>{
+    const p=patients.find(x=>x.id===c.patientId);
+    const caseAppts=(appointments||[]).filter(a=>a.fertilCaseId===c.id);
+    const realized=caseAppts.filter(a=>a.status==="realizada").length;
+    const nextAppt=caseAppts.filter(a=>a.status==="programada"&&a.startAt>new Date().toISOString()).sort((a,b)=>a.startAt.localeCompare(b.startAt))[0];
+    const pName=p&&p.nombre?p.nombre:"Paciente";
+    const pInitial=p&&p.nombre?p.nombre.charAt(0):"?";
+    return(<div key={c.id} onClick={()=>onSelectCase(c.id)} style={{...S.card,marginBottom:10,cursor:"pointer",borderLeft:"4px solid "+(FERTIL_STATUS_COLORS[c.status]||"#aaa"),transition:"box-shadow .2s"}} onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 20px rgba(123,45,139,.12)";}} onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)";}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#7b2d8b,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{pInitial}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><span style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{pName}</span><Badge label={FERTIL_STATUS_LABELS[c.status]} color={(FERTIL_STATUS_COLORS[c.status]||"#aaa")+"22"} text={FERTIL_STATUS_COLORS[c.status]||"#aaa"}/><Badge label={FERTIL_PAYMENT_LABELS[c.paymentStatus]} color={(FERTIL_PAYMENT_COLORS[c.paymentStatus]||"#aaa")+"22"} text={FERTIL_PAYMENT_COLORS[c.paymentStatus]||"#aaa"}/></div>
+          <div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>{"Semana "+c.currentWeek+"/8 · "+realized+"/5 consultas · "+fmtMoney(c.amountPaid)+"/"+fmtMoney(c.totalPrice)+(nextAppt?" · Próx: "+fmtDateTime(nextAppt.startAt):"")}</div>
         </div>
+        <span style={{color:"#a855f7",fontSize:20}}>{"›"}</span>
       </div>
-  )
-})}
+    </div>);
+  };
+  const statusButtons=[["all","Todas"],["activa","Activas"],["lead","Leads"],["pausada","Pausadas"],["finalizada","Finalizadas"]];
+  return(<div>
+    <input placeholder="Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:12}}/>
+    <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>{statusButtons.map(function(item){var k=item[0];var lab=item[1];return(<button key={k} onClick={function(){setFilterStatus(k);}} style={{padding:"5px 12px",borderRadius:20,fontSize:11,cursor:"pointer",border:filterStatus===k?"2px solid #7b2d8b":"2px solid #d8e8df",background:filterStatus===k?"#7b2d8b":"#f0f4f1",color:filterStatus===k?"#fff":"#5a7a6a",fontFamily:"inherit",fontWeight:600}}>{lab}</button>);})}</div>
+    {filtered.length===0?<p style={{color:"#aaa",textAlign:"center",padding:"40px 0",fontSize:13}}>No hay pacientes Fértil</p>:filtered.map(renderCase)}
   </div>);
 }
 
@@ -794,11 +791,18 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
     </div>}
 
     {tab==="consultas"&&<div>
-      {caseAppts.map(a=>{const createdRecently=Math.abs(new Date(a.startAt).getTime()-new Date(fc.createdAt).getTime())<60000;const effectivelyScheduled=new Date(a.startAt).getFullYear()>2020&&!createdRecently;
-        return(<div key={a.id} style={{...S.card,marginBottom:10,borderLeft:`4px solid ${a.status==="realizada"?"#52b788":a.status==="cancelada"?"#ccc":"#7b2d8b"}`}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{a.title}</span><Badge label={a.status==="realizada"?"✓ Realizada":a.status==="cancelada"?"Cancelada":effectivelyScheduled?"Programada":"Pendiente"} color={a.status==="realizada"?"#e8f5ee":a.status==="cancelada"?"#f0f0f0":effectivelyScheduled?"#f3e5f5":"#fff5f0"} text={a.status==="realizada"?"#52b788":a.status==="cancelada"?"#aaa":effectivelyScheduled?"#7b2d8b":"#e76f51"}/></div>{effectivelyScheduled&&<div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>{fmtDateTime(a.startAt)}</div>}</div>
-          <div style={{display:"flex",gap:6}}>{a.status!=="realizada"&&<button onClick={()=>{setScheduleAppt(a);setSchedForm({date:effectivelyScheduled?new Date(a.startAt).toISOString().split("T")[0]:"",time:effectivelyScheduled?new Date(a.startAt).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}):""});}} style={{...S.btnGhost,fontSize:11,padding:"5px 10px"}}>{effectivelyScheduled?"📅 Reprogramar":"📅 Programar"}</button>}{a.status==="programada"&&<button onClick={()=>onUpdateAppointment({...a,status:"realizada"})} style={{...S.btnGhost,fontSize:11,padding:"5px 10px",background:"#e8f5ee",color:"#2d6a4f"}}>✓ Realizada</button>}</div>
-        </div>{a.notes&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:6,fontStyle:"italic"}}>{a.notes}</div>}</div>);})}
-      {scheduleAppt&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}><div style={{...S.card,maxWidth:400,width:"90%"}}><h3 style={{margin:"0 0 16px",color:"#7b2d8b",fontSize:16}}>📅 {scheduleAppt.title}</h3><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha *" type="date" value={schedForm.date} onChange={v=>setSchedForm(f=>({...f,date:v}))}/><Field label="Hora *" type="time" value={schedForm.time} onChange={v=>setSchedForm(f=>({...f,time:v}))}/></div>{hasConflict&&<div style={{background:"#fff5f0",border:"1px solid #f5c6c6",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:12,color:"#c0392b",fontWeight:600}}>⚠️ Hay un conflicto de horario con otro turno</div>}<div style={{display:"flex",gap:10}}><button onClick={()=>setScheduleAppt(null)} style={{...S.btnGhost,flex:1}}>Cancelar</button><button disabled={!schedForm.date||!schedForm.time||hasConflict} onClick={()=>{const sAt=new Date(`${schedForm.date}T${schedForm.time}`).toISOString();const eAt=new Date(new Date(`${schedForm.date}T${schedForm.time}`).getTime()+3600000).toISOString();onUpdateAppointment({...scheduleAppt,startAt:sAt,endAt:eAt,status:"programada"});setScheduleAppt(null);}} style={{...S.btnFertil,flex:2,opacity:(!schedForm.date||!schedForm.time||hasConflict)?.5:1}}>Confirmar</button></div></div></div>}
+      {caseAppts.map(function(a){
+        var createdRecently=Math.abs(new Date(a.startAt).getTime()-new Date(fc.createdAt).getTime())<60000;
+        var effectivelyScheduled=new Date(a.startAt).getFullYear()>2020&&!createdRecently;
+        var borderColor=a.status==="realizada"?"#52b788":a.status==="cancelada"?"#ccc":"#7b2d8b";
+        var badgeLabel=a.status==="realizada"?"✓ Realizada":a.status==="cancelada"?"Cancelada":effectivelyScheduled?"Programada":"Pendiente";
+        var badgeColor=a.status==="realizada"?"#e8f5ee":a.status==="cancelada"?"#f0f0f0":effectivelyScheduled?"#f3e5f5":"#fff5f0";
+        var badgeText=a.status==="realizada"?"#52b788":a.status==="cancelada"?"#aaa":effectivelyScheduled?"#7b2d8b":"#e76f51";
+        return(<div key={a.id} style={{...S.card,marginBottom:10,borderLeft:"4px solid "+borderColor}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{a.title}</span><Badge label={badgeLabel} color={badgeColor} text={badgeText}/></div>{effectivelyScheduled&&<div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>{fmtDateTime(a.startAt)}</div>}</div>
+          <div style={{display:"flex",gap:6}}>{a.status!=="realizada"&&<button onClick={function(){setScheduleAppt(a);setSchedForm({date:effectivelyScheduled?new Date(a.startAt).toISOString().split("T")[0]:"",time:effectivelyScheduled?new Date(a.startAt).toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit",hour12:false}):""});}} style={{...S.btnGhost,fontSize:11,padding:"5px 10px"}}>{effectivelyScheduled?"Reprogramar":"Programar"}</button>}{a.status==="programada"&&<button onClick={function(){onUpdateAppointment({...a,status:"realizada"});}} style={{...S.btnGhost,fontSize:11,padding:"5px 10px",background:"#e8f5ee",color:"#2d6a4f"}}>{"✓ Realizada"}</button>}</div>
+        </div>{a.notes&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:6,fontStyle:"italic"}}>{a.notes}</div>}</div>);
+      })}
+      {scheduleAppt&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}><div style={{...S.card,maxWidth:400,width:"90%"}}><h3 style={{margin:"0 0 16px",color:"#7b2d8b",fontSize:16}}>{"📅 "+scheduleAppt.title}</h3><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha *" type="date" value={schedForm.date} onChange={v=>setSchedForm(f=>({...f,date:v}))}/><Field label="Hora *" type="time" value={schedForm.time} onChange={v=>setSchedForm(f=>({...f,time:v}))}/></div>{hasConflict&&<div style={{background:"#fff5f0",border:"1px solid #f5c6c6",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:12,color:"#c0392b",fontWeight:600}}>{"⚠️ Hay un conflicto de horario con otro turno"}</div>}<div style={{display:"flex",gap:10}}><button onClick={()=>setScheduleAppt(null)} style={{...S.btnGhost,flex:1}}>Cancelar</button><button disabled={!schedForm.date||!schedForm.time||hasConflict} onClick={()=>{const sAt=new Date(schedForm.date+"T"+schedForm.time).toISOString();const eAt=new Date(new Date(schedForm.date+"T"+schedForm.time).getTime()+3600000).toISOString();onUpdateAppointment({...scheduleAppt,startAt:sAt,endAt:eAt,status:"programada"});setScheduleAppt(null);}} style={{...S.btnFertil,flex:2,opacity:(!schedForm.date||!schedForm.time||hasConflict)?0.5:1}}>Confirmar</button></div></div></div>}
     </div>}
 
     {tab==="seguimientos"&&<div>
