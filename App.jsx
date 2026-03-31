@@ -723,8 +723,20 @@ function FertilPatientList({fertilCases,patients,appointments,onSelectCase}){
   return(<div>
     <input placeholder="🔍 Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:12}}/>
     <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>{[["all","Todas"],["activa","Activas"],["lead","Leads"],["pausada","Pausadas"],["finalizada","Finalizadas"]].map(([k,l])=>(<button key={k} onClick={()=>setFilterStatus(k)} style={{padding:"5px 12px",borderRadius:20,fontSize:11,cursor:"pointer",border:filterStatus===k?"2px solid #7b2d8b":"2px solid #d8e8df",background:filterStatus===k?"#7b2d8b":"#f0f4f1",color:filterStatus===k?"#fff":"#5a7a6a",fontFamily:"inherit",fontWeight:600}}>{l}</button>))}</div>
-    {filtered.length===0?<p style={{color:"#aaa",textAlign:"center",padding:"40px 0",fontSize:13}}>No hay pacientes Fértil</p>:filtered.map(c=>{const p=patients.find(x=>x.id===c.patientId);const caseAppts=(appointments||[]).filter(a=>a.fertilCaseId===c.id);const nextAppt=caseAppts.filter(a=>a.status==="programada"&&a.startAt>new Date().toISOString()).sort((a,b)=>a.startAt.localeCompare(b.startAt))[0];
-      return(<div key={c.id} onClick={()=>onSelectCase(c.id)} style={{...S.card,marginBottom:10,cursor:"pointer",borderLeft:`4px solid ${FERTIL_STATUS_COLORS[c.status]}`,transition:"box-shadow .2s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 20px rgba(123,45,139,.12)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)"}}>
+    ... : filtered.map(c => {
+  const p = patients.find(x => x.id === c.patientId);
+  return (
+    <div
+      
+    key={c.id}
+    onClick={() => onSelectCase(c.id)}
+    style={{
+      ...S.card,
+      marginBottom: 10,
+      cursor: "pointer",
+      borderLeft: "4px solid " + FERTIL_STATUS_COLORS[c.status]
+    }}
+  >
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#7b2d8b,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{p?.nombre?.charAt(0)||"?"}</div>
           <div style={{flex:1,minWidth:0}}>
@@ -732,7 +744,9 @@ function FertilPatientList({fertilCases,patients,appointments,onSelectCase}){
             <div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>Semana {c.currentWeek}/8 · {caseAppts.filter(a=>a.status==="realizada").length}/5 consultas · {fmtMoney(c.amountPaid)}/{fmtMoney(c.totalPrice)}{nextAppt?` · Próx: ${fmtDateTime(nextAppt.startAt)}`:""}</div>
           </div><span style={{color:"#a855f7",fontSize:20}}>›</span>
         </div>
-      </div>);})}
+      </div>
+  )
+})}
   </div>);
 }
 
