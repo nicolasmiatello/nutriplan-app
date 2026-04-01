@@ -841,7 +841,7 @@ function FertilNewCase({patients,fertilCases,onSave,onCancel}){
   </div>);
 }
 
-function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,patients,allAppointments,dispatch,onUpdateCase,onUpdateAppointment,onAddFollowup,onAddLab,onAddTask,onUpdateTask,onDeleteTask,onBack,onGoToPatient}){
+function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,patients,allAppointments,dispatch,onUpdateCase,onUpdateAppointment,onAddFollowup,onAddLab,onAddTask,onUpdateTask,onDeleteTask,onDeleteCase,onBack,onGoToPatient}){
   const [tab,setTab]=useState("resumen");const fc=fertilCase;
   const caseAppts=(appointments||[]).filter(a=>a.fertilCaseId===fc.id).sort((a,b)=>(a.consultationNumber||0)-(b.consultationNumber||0));
   const caseFollowups=(followups||[]).filter(f=>f.fertilCaseId===fc.id);const caseLabs=(labs||[]).filter(l=>l.fertilCaseId===fc.id);const caseTasks=(tasks||[]).filter(t=>t.fertilCaseId===fc.id);
@@ -850,12 +850,15 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
   const [showFollowupForm,setShowFollowupForm]=useState(false);const [ffForm,setFfForm]=useState({weekNumber:fc.currentWeek,date:todayISO(),weight:"",symptoms:"",mood:"",sleepQuality:"",digestion:"",adherence:"",notes:""});
   const [showLabForm,setShowLabForm]=useState(false);const [labForm,setLabForm]=useState({date:todayISO(),labType:"",results:"",notes:""});
   const [newTaskTitle,setNewTaskTitle]=useState("");
+  const [deleteConfirm,setDeleteConfirm]=useState(false);
+  const [showLabForm,setShowLabForm]=useState(false);const [labForm,setLabForm]=useState({date:todayISO(),labType:"",results:"",notes:""});
+  const [newTaskTitle,setNewTaskTitle]=useState("");
   const checkConflict=(date,time)=>{if(!date||!time)return false;const startAt=new Date(`${date}T${time}`);const endAt=new Date(startAt.getTime()+3600000);return(allAppointments||[]).some(a=>{if(a.id===scheduleAppt?.id||a.status==="cancelada")return false;const aS=new Date(a.startAt);const aE=a.endAt?new Date(a.endAt):new Date(aS.getTime()+3600000);return startAt<aE&&endAt>aS;});};
   const hasConflict=scheduleAppt&&schedForm.date&&schedForm.time?checkConflict(schedForm.date,schedForm.time):false;
   const tabs=[["resumen","📋 Resumen"],["pago","💰 Pago"],["consultas","📅 Consultas"],["seguimientos","📝 Seguimientos"],["analisis","🔬 Análisis"],["tareas","✅ Tareas"]];
   return(<div>
     <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}><button onClick={onBack} style={S.btnGhost}>← Volver</button><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>💜</span><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#7b2d8b"}}>{patient?.nombre||"Paciente"}</h2><Badge label={FERTIL_STATUS_LABELS[fc.status]} color={FERTIL_STATUS_COLORS[fc.status]+"22"} text={FERTIL_STATUS_COLORS[fc.status]}/></div><div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>Semana {fc.currentWeek}/8 · Inicio: {fmtDate(fc.startDate)}</div></div>
-      <div style={{display:"flex",gap:6}}><button onClick={()=>onGoToPatient(fc.patientId)} style={S.btnOutline}>Ver ficha completa</button>{fc.status==="activa"&&<select value={fc.currentWeek} onChange={e=>onUpdateCase({...fc,currentWeek:parseInt(e.target.value)})} style={{...S.input,width:110,fontSize:12}}>{[1,2,3,4,5,6,7,8].map(w=><option key={w} value={w}>Semana {w}</option>)}</select>}<select value={fc.status} onChange={e=>onUpdateCase({...fc,status:e.target.value})} style={{...S.input,width:110,fontSize:12}}>{Object.entries(FERTIL_STATUS_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
+      <div style={{display:"flex",gap:6}}><button onClick={()=>onGoToPatient(fc.patientId)} style={S.btnOutline}>Ver ficha completa</button>{fc.status==="activa"&&<select value={fc.currentWeek} onChange={e=>onUpdateCase({...fc,currentWeek:parseInt(e.target.value)})} style={{...S.input,width:110,fontSize:12}}>{[1,2,3,4,5,6,7,8].map(w=><option key={w} value={w}>Semana {w}</option>)}</select>}<select value={fc.status} onChange={e=>onUpdateCase({...fc,status:e.target.value})} style={{...S.input,width:110,fontSize:12}}>{Object.entries(FERTIL_STATUS_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select><button onClick={function(){setDeleteConfirm(true);}} style={S.btnDanger}>{"🗑"}</button></div>
     </div>
     <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#7b2d8b":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>
 
@@ -897,6 +900,7 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
       <div style={{display:"flex",gap:8,marginBottom:16}}><input value={newTaskTitle} onChange={e=>setNewTaskTitle(e.target.value)} placeholder="Nueva tarea..." style={{...S.input,flex:1}} onKeyDown={e=>{if(e.key==="Enter"&&newTaskTitle.trim()){onAddTask({id:uid(),fertilCaseId:fc.id,title:newTaskTitle.trim(),done:false,dueDate:null});setNewTaskTitle("");}}}/><button disabled={!newTaskTitle.trim()} onClick={()=>{onAddTask({id:uid(),fertilCaseId:fc.id,title:newTaskTitle.trim(),done:false,dueDate:null});setNewTaskTitle("");}} style={{...S.btnFertil,opacity:newTaskTitle.trim()?1:.5}}>+ Agregar</button></div>
       {caseTasks.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>Sin tareas</p>:caseTasks.map(t=>(<div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:t.done?"#f8f8f8":"#fff",borderRadius:10,marginBottom:6,border:"1px solid #f0f4f1"}}><button onClick={()=>onUpdateTask({...t,done:!t.done})} style={{width:20,height:20,borderRadius:4,border:`2px solid ${t.done?"#52b788":"#7b2d8b"}`,background:t.done?"#52b788":"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff",padding:0,flexShrink:0}}>{t.done?"✓":""}</button><span style={{flex:1,fontSize:13,color:t.done?"#aaa":"#1a3d2b",textDecoration:t.done?"line-through":"none"}}>{t.title}</span><button onClick={()=>onDeleteTask(t.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,padding:"2px 4px",color:"#ccc"}}>✕</button></div>))}
     </div>}
+    {deleteConfirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200}}><div style={{...S.card,maxWidth:400,width:"90%",textAlign:"center"}}><div style={{fontSize:32,marginBottom:12}}>{"⚠️"}</div><h3 style={{margin:"0 0 8px",color:"#7b2d8b"}}>{"¿Eliminar este caso Fértil?"}</h3><p style={{fontSize:13,color:"#5a7a6a",marginBottom:8}}>{"Se eliminará el caso, sus consultas, seguimientos, análisis y tareas."}</p><p style={{fontSize:12,color:"#e76f51",fontWeight:600,marginBottom:20}}>{"El paciente NO se elimina de la lista general."}</p><div style={{display:"flex",gap:10}}><button onClick={function(){setDeleteConfirm(false);}} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={function(){onDeleteCase(fc.id);}} style={{...S.btnPrimary,flex:1,background:"#c0392b"}}>{"Sí, eliminar caso"}</button></div></div></div>}
   </div>);
 }
 
@@ -1082,6 +1086,27 @@ function FertilModule({state,dispatch,patients,onGoToPatient}){
     onAddTask={async t=>{dispatch({type:"ADD_FERTIL_TASK",t});await sbInsertFertilTask(t);}}
     onUpdateTask={async t=>{dispatch({type:"UPDATE_FERTIL_TASK",t});await sbUpdateFertilTask(t);}}
     onDeleteTask={async id=>{dispatch({type:"DELETE_FERTIL_TASK",id});await sbDeleteFertilTask(id);}}
+    onDeleteCase={async function(caseId){
+      var fc=fertilCases.find(function(c){return c.id===caseId;});
+      if(!fc)return;
+      // Eliminar appointments del caso
+      var cAppts=appointments.filter(function(a){return a.fertilCaseId===caseId;});
+      for(var a of cAppts){dispatch({type:"DELETE_APPOINTMENT",id:a.id});try{await sbDeleteAppointment(a.id);}catch(e){}}
+      // Eliminar followups
+      var cFups=followups.filter(function(f){return f.fertilCaseId===caseId;});
+      for(var f of cFups){try{await fetch(SUPABASE_URL+"/rest/v1/fertil_followups?id=eq."+f.id,{method:"DELETE",headers:sbHeaders});}catch(e){}}
+      // Eliminar labs
+      var cLabs=labs.filter(function(l){return l.fertilCaseId===caseId;});
+      for(var l of cLabs){try{await fetch(SUPABASE_URL+"/rest/v1/fertil_labs?id=eq."+l.id,{method:"DELETE",headers:sbHeaders});}catch(e){}}
+      // Eliminar tasks
+      var cTasks=tasks.filter(function(t){return t.fertilCaseId===caseId;});
+      for(var t of cTasks){try{await sbDeleteFertilTask(t.id);}catch(e){}}
+      // Eliminar el caso
+      try{await fetch(SUPABASE_URL+"/rest/v1/fertil_cases?id=eq."+caseId,{method:"DELETE",headers:sbHeaders});}catch(e){}
+      // Actualizar state
+      dispatch({type:"LOAD_FERTIL",cases:fertilCases.filter(function(c){return c.id!==caseId;}),appointments:appointments.filter(function(a){return a.fertilCaseId!==caseId;}),followups:followups.filter(function(f){return f.fertilCaseId!==caseId;}),labs:labs.filter(function(l){return l.fertilCaseId!==caseId;}),tasks:tasks.filter(function(t){return t.fertilCaseId!==caseId;}),leads:state.fertilLeads||[]});
+      setSubScreen("dashboard");setSelectedCaseId(null);
+    }}
     onBack={()=>setSubScreen("dashboard")} onGoToPatient={onGoToPatient}/>;
 
   return(<div>
