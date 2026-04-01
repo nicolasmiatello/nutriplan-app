@@ -850,7 +850,7 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
   const [showFollowupForm,setShowFollowupForm]=useState(false);const [ffForm,setFfForm]=useState({weekNumber:fc.currentWeek,date:todayISO(),weight:"",symptoms:"",mood:"",sleepQuality:"",digestion:"",adherence:"",notes:""});
   const [showLabForm,setShowLabForm]=useState(false);const [labForm,setLabForm]=useState({date:todayISO(),labType:"",results:"",notes:""});
   const [newTaskTitle,setNewTaskTitle]=useState("");
-  const [newTaskTitle,setNewTaskTitle]=useState("");
+  const [deleteConfirm,setDeleteConfirm]=useState(false);
   const checkConflict=(date,time)=>{if(!date||!time)return false;const startAt=new Date(`${date}T${time}`);const endAt=new Date(startAt.getTime()+3600000);return(allAppointments||[]).some(a=>{if(a.id===scheduleAppt?.id||a.status==="cancelada")return false;const aS=new Date(a.startAt);const aE=a.endAt?new Date(a.endAt):new Date(aS.getTime()+3600000);return startAt<aE&&endAt>aS;});};
   const hasConflict=scheduleAppt&&schedForm.date&&schedForm.time?checkConflict(schedForm.date,schedForm.time):false;
   const tabs=[["resumen","📋 Resumen"],["pago","💰 Pago"],["consultas","📅 Consultas"],["seguimientos","📝 Seguimientos"],["analisis","🔬 Análisis"],["tareas","✅ Tareas"]];
