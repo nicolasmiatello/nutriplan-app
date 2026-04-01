@@ -1321,20 +1321,71 @@ function PlanViewer({plan,paciente,onClose,onUpdate}) {
 }
 
 // ─── PATIENT DETAIL (con pestaña Consultas + Agenda + consultas en Timeline) ──
-function PatientDetail({patient,dispatch,consultas,eventos,appointments,onAddConsulta,onAddEvento,onUpdateEvento,onDeleteEvento,onGeneratePlan,onBack,onDelete}) {
+function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCases,onAddConsulta,onAddEvento,onUpdateEvento,onDeleteEvento,onGeneratePlan,onBack,onDelete,onGoToFertil}) {
   const [tab,setTab]=useState("clinica");const [clinica,setClinica]=useState(patient.clinica||initialClinica);const [clinicaSaved,setClinicaSaved]=useState(false);const [newMedicion,setNewMedicion]=useState({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});const [newNota,setNewNota]=useState("");const [showMedForm,setShowMedForm]=useState(false);const [viewingPlan,setViewingPlan]=useState(null);const [deleteConfirm,setDeleteConfirm]=useState(false);const [showConsultaForm,setShowConsultaForm]=useState(false);
   const setC=(k,v)=>setClinica(c=>({...c,[k]:v}));
   const saveClinica=()=>{dispatch({type:"UPDATE_CLINICA",pid:patient.id,clinica});setClinicaSaved(true);setTimeout(()=>setClinicaSaved(false),2000);};
   const addMedicion=()=>{const m={id:uid(),...newMedicion,imc:calcIMC(newMedicion.peso,patient.altura)};dispatch({type:"ADD_MEDICION",pid:patient.id,m});setNewMedicion({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});setShowMedForm(false);};
   const addNota=()=>{if(!newNota.trim())return;dispatch({type:"ADD_NOTA",pid:patient.id,n:{id:uid(),fecha:today(),texto:newNota}});setNewNota("");};
 
-  // Consultas de este paciente
   const patientConsultas = (consultas||[]).filter(c=>c.pacienteId===patient.id);
   const totalCobrado = patientConsultas.reduce((s,c)=>s+(parseFloat(c.monto)||0),0);
 
+  // Summary data
+  var fertilCase=(fertilCases||[]).find(function(c){return c.patientId===patient.id&&(c.status==="activa"||c.status==="lead");});
+  var lastPlan=patient.planes&&patient.planes.length>0?patient.planes[0]:null;
+  var lastConsulta=patientConsultas.length>0?[...patientConsultas].sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);})[0]:null;
+  var lastMedicion=patient.mediciones&&patient.mediciones.length>0?patient.mediciones[0]:null;
+  var imc=lastMedicion?lastMedicion.imc:calcIMC(patient.peso,patient.altura);
+
   const tabs=[["clinica","📋 Clínica"],["antrop","📏 Antropometría"],["evol","📝 Evolución"],["planes","🥗 Planes"],["consultas","💰 Consultas"],["agenda","📅 Agenda"],["timeline","⏱ Timeline"]];
 
-  return (<div><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}><button onClick={onBack} style={S.btnGhost}>← Volver</button><div style={{flex:1}}><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>{patient.nombre}</h2></div><div style={{display:"flex",gap:8}}><button onClick={onGeneratePlan} style={S.btnPrimary}>✨ Nuevo plan</button><button onClick={()=>setDeleteConfirm(true)} style={S.btnDanger}>🗑 Eliminar</button></div></div><div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#2d6a4f":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>
+  return (<div>
+    {/* Header */}
+    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+      <button onClick={onBack} style={S.btnGhost}>{"← Volver"}</button>
+      <div style={{flex:1}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>{patient.nombre}</h2>
+          {fertilCase&&<span onClick={onGoToFertil} style={{background:"#7b2d8b",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:12,cursor:"pointer"}}>{"💜 FÉRTIL"}</span>}
+        </div>
+        {patient.objetivo&&<div style={{fontSize:13,color:"#7a9a8a",marginTop:2}}>{patient.objetivo}</div>}
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={onGeneratePlan} style={S.btnPrimary}>{"✨ Nuevo plan"}</button>
+        <button onClick={function(){setDeleteConfirm(true);}} style={S.btnDanger}>{"🗑 Eliminar"}</button>
+      </div>
+    </div>
+
+    {/* Summary cards */}
+    <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
+      <div style={{...S.card,flex:1,minWidth:100,padding:"12px 16px"}}>
+        <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Edad</div>
+        <div style={{fontSize:18,fontWeight:700,color:"#1a3d2b",marginTop:2}}>{patient.edad?patient.edad+" años":"—"}</div>
+      </div>
+      <div style={{...S.card,flex:1,minWidth:100,padding:"12px 16px"}}>
+        <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Peso / IMC</div>
+        <div style={{fontSize:18,fontWeight:700,color:"#1a3d2b",marginTop:2}}>{(lastMedicion?lastMedicion.peso:patient.peso)||"—"}<span style={{fontSize:12,fontWeight:400,color:"#7a9a8a"}}>{" kg"}{imc&&imc!=="—"?" · IMC "+imc:""}</span></div>
+      </div>
+      <div style={{...S.card,flex:1,minWidth:100,padding:"12px 16px"}}>
+        <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Último plan</div>
+        <div style={{fontSize:13,fontWeight:600,color:"#1a3d2b",marginTop:2}}>{lastPlan?lastPlan.objetivo||lastPlan.fecha:"Sin planes"}</div>
+        {lastPlan&&<div style={{fontSize:11,color:"#7a9a8a"}}>{lastPlan.fecha}</div>}
+      </div>
+      <div style={{...S.card,flex:1,minWidth:100,padding:"12px 16px"}}>
+        <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Consultas</div>
+        <div style={{fontSize:18,fontWeight:700,color:"#1a3d2b",marginTop:2}}>{patientConsultas.length}</div>
+        <div style={{fontSize:11,color:"#52b788",fontWeight:600}}>{fmtMoney(totalCobrado)}</div>
+      </div>
+      {fertilCase&&<div style={{...S.card,flex:1,minWidth:100,padding:"12px 16px",borderTop:"3px solid #7b2d8b"}}>
+        <div style={{fontSize:10,color:"#7b2d8b",fontWeight:600,textTransform:"uppercase"}}>Fértil</div>
+        <div style={{fontSize:13,fontWeight:700,color:"#7b2d8b",marginTop:2}}>{"Semana "+fertilCase.currentWeek+"/8"}</div>
+        <div style={{fontSize:11,color:"#7a9a8a"}}><Badge label={FERTIL_PAYMENT_LABELS[fertilCase.paymentStatus]} color={FERTIL_PAYMENT_COLORS[fertilCase.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[fertilCase.paymentStatus]}/></div>
+      </div>}
+    </div>
+
+    {/* Tabs */}
+    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#2d6a4f":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>
 
   {tab==="clinica"&&<div style={S.card}><SectionHead>Historia Clínica</SectionHead><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Motivo de consulta" value={clinica.motivo} onChange={v=>setC("motivo",v)} rows={2}/><Field label="Diagnóstico nutricional" value={clinica.diagnostico} onChange={v=>setC("diagnostico",v)} rows={2}/><Field label="Antecedentes" value={clinica.antecedentes} onChange={v=>setC("antecedentes",v)} rows={2}/><Field label="Medicación" value={clinica.medicacion} onChange={v=>setC("medicacion",v)} rows={2}/><Field label="Patologías" value={clinica.patologias} onChange={v=>setC("patologias",v)} rows={2}/><Field label="Alergias / Intolerancias" value={clinica.alergias} onChange={v=>setC("alergias",v)} rows={2}/><Field label="Síntomas digestivos" value={clinica.digestivo} onChange={v=>setC("digestivo",v)} rows={2}/><Field label="Calidad del sueño" value={clinica.sueno} onChange={v=>setC("sueno",v)} rows={2}/><Field label="Nivel de estrés" value={clinica.estres} onChange={v=>setC("estres",v)} rows={2}/><Field label="Actividad física" value={clinica.actividad} onChange={v=>setC("actividad",v)} rows={2}/></div><button onClick={saveClinica} style={{...S.btnPrimary,width:"100%"}}>{clinicaSaved?"✓ Guardado":"Guardar historia clínica"}</button></div>}
 
@@ -1459,7 +1510,7 @@ export default function App() {
     {screen==="agenda"&&<CalendarView eventos={state.eventos} patients={state.patients} appointments={state.appointments} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onSelectPatient={id=>go("detail",id)}/>}
     {screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} fertilCases={state.fertilCases} appointments={state.appointments} onAddConsulta={handleAddConsulta} onSelect={id=>go("detail",id)}/>}
     {screen==="new-patient"&&<NewPatient onSave={p=>{dispatch({type:"ADD_PATIENT",p});go("detail",p.id);}} onCancel={()=>go("patients")}/>}
-    {screen==="detail"&&patient&&<PatientDetail patient={patient} dispatch={dispatch} consultas={state.consultas} eventos={state.eventos} appointments={state.appointments} onAddConsulta={handleAddConsulta} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onGeneratePlan={()=>go("plan-patient")} onBack={()=>go("patients")} onDelete={handleDeletePatient}/>}
+    {screen==="detail"&&patient&&<PatientDetail patient={patient} dispatch={dispatch} consultas={state.consultas} eventos={state.eventos} appointments={state.appointments} fertilCases={state.fertilCases} onAddConsulta={handleAddConsulta} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onGeneratePlan={()=>go("plan-patient")} onBack={()=>go("patients")} onDelete={handleDeletePatient} onGoToFertil={()=>{setNavTab("fertil");go("fertil");}}/>}
     {screen==="plan-patient"&&patient&&<PlanGenerator prefill={{nombre:patient.nombre,edad:patient.edad,peso:patient.peso,altura:patient.altura,sexo:patient.sexo,objetivo:patient.objetivo||"",nivelActividad:"",alergias:[],patologias:[],preferencias:"",aversiones:"",cantidadComidas:"4",tipoPlan:"Estándar"}} onSavePlan={plan=>{dispatch({type:"ADD_PLAN",pid:patient.id,plan});const c={id:uid(),pacienteId:patient.id,pacienteNombre:patient.nombre,fecha:todayISO(),monto:plan.monto||0,tipo:"Plan generado",obs:`Plan: ${plan.objetivo}`};handleAddConsulta(c);go("detail",patient.id);}} onBack={()=>go("detail",patient.id)}/>}
     {screen==="plan"&&<PlanGenerator onBack={()=>{setNavTab("patients");go("patients");}}/>}
   </div></div>);
