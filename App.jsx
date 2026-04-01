@@ -901,7 +901,7 @@ function FertilNewCase({patients,fertilCases,onSave,onCancel}){
         var paid=parseFloat(form.amountPaid)||0;
         var payStatus=paid>=price&&price>0?"pago":paid>0?"parcial":"pendiente";
         var newCase={id:caseId,patientId:form.patientId,status:"activa",startDate:todayISO(),currentWeek:1,mainCondition:form.mainCondition,objective:form.objective,notes:form.notes,totalPrice:price,paymentStatus:payStatus,paymentMethod:form.paymentMethod,installments:parseInt(form.installments)||1,amountPaid:paid,createdAt:new Date().toISOString()};
-        var appts=FERTIL_CONSULT_TYPES.map(function(ct){return{id:uid(),patientId:form.patientId,fertilCaseId:caseId,programType:"fertil",consultationNumber:ct.num,consultationType:ct.type,title:"Fértil - "+ct.label,startAt:new Date().toISOString(),endAt:null,status:"programada",notes:""};});
+        var appts=FERTIL_CONSULT_TYPES.map(function(ct){return{id:uid(),patientId:form.patientId,fertilCaseId:caseId,programType:"fertil",consultationNumber:ct.num,consultationType:ct.type,title:"Fértil - "+ct.label,startAt:"2000-01-01T00:00:00.000Z",endAt:null,status:"programada",notes:""};});
         onSave(newCase,appts);
       }} style={{...S.btnFertil,flex:2,opacity:valid?1:0.5}}>{"💜 Crear caso y generar consultas"}</button></div>
     </div>
