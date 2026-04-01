@@ -1383,7 +1383,6 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
             <button onClick={function(){if(confirm("¿Eliminar este evento vencido?"))onDeleteEvento(e.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,padding:"2px 6px",color:C.danger,flexShrink:0}} title="Eliminar evento">{"✕"}</button>
           </div>);})}
         </div>}
-        </div>}
 
         {/* Todo tranquilo */}
         {fertilProgramadas.length===0&&pagosPendientes.length===0&&leadsNuevos.length===0&&leadsSeguimientoHoy.length===0&&eventosVencidos.length===0&&<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:36,marginBottom:8}}>{"✨"}</div><p style={{color:"#52b788",fontWeight:600,fontSize:14}}>{"Todo al día"}</p><p style={{color:"#7a9a8a",fontSize:12}}>{"No hay alertas ni pendientes"}</p></div>}
