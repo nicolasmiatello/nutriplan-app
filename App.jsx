@@ -897,11 +897,70 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
   const checkConflict=(date,time)=>{if(!date||!time)return false;const startAt=new Date(`${date}T${time}`);const endAt=new Date(startAt.getTime()+3600000);return(allAppointments||[]).some(a=>{if(a.id===scheduleAppt?.id||a.status==="cancelada")return false;const aS=new Date(a.startAt);const aE=a.endAt?new Date(a.endAt):new Date(aS.getTime()+3600000);return startAt<aE&&endAt>aS;});};
   const hasConflict=scheduleAppt&&schedForm.date&&schedForm.time?checkConflict(schedForm.date,schedForm.time):false;
   const tabs=[["resumen","📋 Resumen"],["pago","💰 Pago"],["consultas","📅 Consultas"],["seguimientos","📝 Seguimientos"],["analisis","🔬 Análisis"],["tareas","✅ Tareas"]];
+
+  // Executive summary data
+  var realizadas=caseAppts.filter(function(a){return a.status==="realizada";}).length;
+  var nextAppt=caseAppts.filter(function(a){
+    if(a.status!=="programada")return false;
+    var createdRecently=Math.abs(new Date(a.startAt).getTime()-new Date(fc.createdAt).getTime())<60000;
+    return!createdRecently&&new Date(a.startAt).getFullYear()>2020;
+  }).sort(function(a,b){return a.startAt.localeCompare(b.startAt);})[0];
+  var lastFollowup=caseFollowups.length>0?caseFollowups.sort(function(a,b){return new Date(b.date)-new Date(a.date);})[0]:null;
+  var restante=fc.totalPrice-fc.amountPaid;
+  var payColor=fc.paymentStatus==="pago"?"#52b788":fc.paymentStatus==="parcial"?"#f4a261":"#e76f51";
+
   return(<div>
-    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}><button onClick={onBack} style={S.btnGhost}>← Volver</button><div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>💜</span><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#7b2d8b"}}>{patient?.nombre||"Paciente"}</h2><Badge label={FERTIL_STATUS_LABELS[fc.status]} color={FERTIL_STATUS_COLORS[fc.status]+"22"} text={FERTIL_STATUS_COLORS[fc.status]}/></div><div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>Semana {fc.currentWeek}/8 · Inicio: {fmtDate(fc.startDate)}</div></div>
-      <div style={{display:"flex",gap:6}}><button onClick={()=>onGoToPatient(fc.patientId)} style={S.btnOutline}>Ver ficha completa</button>{fc.status==="activa"&&<select value={fc.currentWeek} onChange={e=>onUpdateCase({...fc,currentWeek:parseInt(e.target.value)})} style={{...S.input,width:110,fontSize:12}}>{[1,2,3,4,5,6,7,8].map(w=><option key={w} value={w}>Semana {w}</option>)}</select>}<select value={fc.status} onChange={e=>onUpdateCase({...fc,status:e.target.value})} style={{...S.input,width:110,fontSize:12}}>{Object.entries(FERTIL_STATUS_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select><button onClick={function(){setDeleteConfirm(true);}} style={S.btnDanger}>{"🗑"}</button></div>
+    {/* Header */}
+    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+      <button onClick={onBack} style={S.btnGhost}>{"← Volver"}</button>
+      <div style={{flex:1}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:22}}>{"💜"}</span>
+          <h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#7b2d8b"}}>{patient&&patient.nombre?patient.nombre:"Paciente"}</h2>
+          <Badge label={FERTIL_STATUS_LABELS[fc.status]} color={(FERTIL_STATUS_COLORS[fc.status]||"#aaa")+"22"} text={FERTIL_STATUS_COLORS[fc.status]||"#aaa"}/>
+        </div>
+        {fc.mainCondition&&<div style={{fontSize:13,color:"#7a9a8a",marginTop:2}}>{fc.mainCondition}</div>}
+      </div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        <button onClick={function(){onGoToPatient(fc.patientId);}} style={S.btnOutline}>{"Ver ficha"}</button>
+        {fc.status==="activa"&&<select value={fc.currentWeek} onChange={function(e){onUpdateCase({...fc,currentWeek:parseInt(e.target.value)});}} style={{...S.input,width:110,fontSize:12}}>{[1,2,3,4,5,6,7,8].map(function(w){return <option key={w} value={w}>{"Semana "+w}</option>;})}</select>}
+        <select value={fc.status} onChange={function(e){onUpdateCase({...fc,status:e.target.value});}} style={{...S.input,width:110,fontSize:12}}>{Object.entries(FERTIL_STATUS_LABELS).map(function(entry){return <option key={entry[0]} value={entry[0]}>{entry[1]}</option>;})}</select>
+        <button onClick={function(){setDeleteConfirm(true);}} style={S.btnDanger}>{"🗑"}</button>
+      </div>
     </div>
-    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#7b2d8b":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>
+
+    {/* Executive summary cards */}
+    <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
+      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:"3px solid #7b2d8b"}}>
+        <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Semana actual</div>
+        <div style={{fontSize:28,fontWeight:700,color:"#7b2d8b",marginTop:4}}>{fc.currentWeek}<span style={{fontSize:14,fontWeight:400,color:"#7a9a8a"}}>{" / 8"}</span></div>
+        <div style={{fontSize:11,color:"#7a9a8a",marginTop:2}}>{"Inicio: "+fmtDate(fc.startDate)}</div>
+      </div>
+      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:nextAppt?"3px solid #52b788":"3px solid #e0e0e0"}}>
+        <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Próxima consulta</div>
+        {nextAppt?<div><div style={{fontSize:15,fontWeight:700,color:"#1a3d2b",marginTop:4}}>{fmtDate(nextAppt.startAt.split("T")[0])}</div><div style={{fontSize:11,color:"#7a9a8a"}}>{nextAppt.title}</div></div>:<div style={{fontSize:13,fontWeight:600,color:"#aaa",marginTop:4}}>{"Sin programar"}</div>}
+      </div>
+      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:"3px solid "+payColor}}>
+        <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Estado de pago</div>
+        <div style={{marginTop:4}}><Badge label={FERTIL_PAYMENT_LABELS[fc.paymentStatus]} color={payColor+"22"} text={payColor}/></div>
+        <div style={{fontSize:12,color:payColor,fontWeight:700,marginTop:4}}>{restante>0?fmtMoney(restante)+" restante":"Pago completo"}</div>
+      </div>
+      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:"3px solid #52b788"}}>
+        <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Consultas</div>
+        <div style={{display:"flex",alignItems:"baseline",gap:4,marginTop:4}}>
+          <span style={{fontSize:28,fontWeight:700,color:"#1a3d2b"}}>{realizadas}</span>
+          <span style={{fontSize:14,color:"#7a9a8a"}}>{"/ 5"}</span>
+        </div>
+        <div style={{display:"flex",gap:3,marginTop:4}}>{FERTIL_CONSULT_TYPES.map(function(ct){var a=caseAppts.find(function(x){return x.consultationNumber===ct.num;});var done=a&&a.status==="realizada";return <div key={ct.num} style={{width:14,height:14,borderRadius:3,background:done?"#52b788":"#e0e0e0"}}></div>;})}</div>
+      </div>
+      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:"3px solid "+(lastFollowup?"#a855f7":"#e0e0e0")}}>
+        <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Último seguimiento</div>
+        {lastFollowup?<div><div style={{fontSize:13,fontWeight:700,color:"#1a3d2b",marginTop:4}}>{"Semana "+lastFollowup.weekNumber}</div><div style={{fontSize:11,color:"#7a9a8a"}}>{fmtDate(lastFollowup.date)}{lastFollowup.weight?" · "+lastFollowup.weight+" kg":""}</div></div>:<div style={{fontSize:13,fontWeight:600,color:"#aaa",marginTop:4}}>{"Sin seguimientos"}</div>}
+      </div>
+    </div>
+
+    {/* Tabs */}
+    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(function(item){var id=item[0];var label=item[1];return(<button key={id} onClick={function(){setTab(id);}} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#7b2d8b":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>);})}</div>
 
     {tab==="resumen"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div style={S.card}><h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>Datos del caso</h4><div style={{fontSize:13,color:"#1a3d2b",lineHeight:2}}><div><strong>Condición:</strong> {fc.mainCondition||"—"}</div><div><strong>Objetivo:</strong> {fc.objective||"—"}</div><div><strong>Semana:</strong> {fc.currentWeek}/8</div><div><strong>Consultas:</strong> {caseAppts.filter(a=>a.status==="realizada").length}/5</div>{fc.notes&&<div><strong>Notas:</strong> {fc.notes}</div>}</div></div><div style={S.card}><h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>💰 Resumen de pago</h4><div style={{fontSize:13,color:"#1a3d2b",lineHeight:2}}><div><strong>Total:</strong> {fmtMoney(fc.totalPrice)}</div><div><strong>Pagado:</strong> <span style={{color:"#52b788",fontWeight:700}}>{fmtMoney(fc.amountPaid)}</span></div><div><strong>Restante:</strong> <span style={{color:fc.totalPrice-fc.amountPaid>0?"#e76f51":"#52b788",fontWeight:700}}>{fmtMoney(fc.totalPrice-fc.amountPaid)}</span></div><div><strong>Estado:</strong> <Badge label={FERTIL_PAYMENT_LABELS[fc.paymentStatus]} color={FERTIL_PAYMENT_COLORS[fc.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[fc.paymentStatus]}/></div></div></div></div>}
 
