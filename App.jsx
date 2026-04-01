@@ -43,7 +43,7 @@ function reducer(state,action) {
     case "UPDATE_EVENTO": return {...state,eventos:(state.eventos||[]).map(e=>e.id===action.e.id?action.e:e)};
     case "DELETE_EVENTO": return {...state,eventos:(state.eventos||[]).filter(e=>e.id!==action.id)};
     // Fértil
-    case "LOAD_FERTIL": return {...state,fertilCases:action.cases||[],appointments:action.appointments||[],fertilFollowups:action.followups||[],fertilLabs:action.labs||[],fertilTasks:action.tasks||[]};
+    case "LOAD_FERTIL": return {...state,fertilCases:action.cases||[],appointments:action.appointments||[],fertilFollowups:action.followups||[],fertilLabs:action.labs||[],fertilTasks:action.tasks||[],fertilLeads:action.leads||[]};
     case "ADD_FERTIL_CASE": return {...state,fertilCases:[action.c,...(state.fertilCases||[])]};
     case "UPDATE_FERTIL_CASE": return {...state,fertilCases:(state.fertilCases||[]).map(c=>c.id===action.c.id?action.c:c)};
     case "ADD_APPOINTMENT": return {...state,appointments:[action.a,...(state.appointments||[])]};
@@ -54,6 +54,11 @@ function reducer(state,action) {
     case "ADD_FERTIL_TASK": return {...state,fertilTasks:[action.t,...(state.fertilTasks||[])]};
     case "UPDATE_FERTIL_TASK": return {...state,fertilTasks:(state.fertilTasks||[]).map(t=>t.id===action.t.id?action.t:t)};
     case "DELETE_FERTIL_TASK": return {...state,fertilTasks:(state.fertilTasks||[]).filter(t=>t.id!==action.id)};
+    // Leads
+    case "LOAD_LEADS": return {...state,fertilLeads:action.leads||[]};
+    case "ADD_LEAD": return {...state,fertilLeads:[action.l,...(state.fertilLeads||[])]};
+    case "UPDATE_LEAD": return {...state,fertilLeads:(state.fertilLeads||[]).map(l=>l.id===action.l.id?action.l:l)};
+    case "DELETE_LEAD": return {...state,fertilLeads:(state.fertilLeads||[]).filter(l=>l.id!==action.id)};
     case "LOAD": return {...state,patients:action.patients,consultas:action.consultas||[],eventos:action.eventos||[]};
     default: return state;
   }
@@ -159,6 +164,12 @@ async function sbLoadFertilTasks(){try{const r=await fetch(`${SUPABASE_URL}/rest
 async function sbInsertFertilTask(t){const body=JSON.stringify({id:t.id,fertil_case_id:t.fertilCaseId,title:t.title,done:t.done||false,due_date:t.dueDate||null});await fetch(`${SUPABASE_URL}/rest/v1/fertil_tasks`,{method:"POST",headers:sbHeaders,body});}
 async function sbUpdateFertilTask(t){const body=JSON.stringify({title:t.title,done:t.done,due_date:t.dueDate||null});await fetch(`${SUPABASE_URL}/rest/v1/fertil_tasks?id=eq.${t.id}`,{method:"PATCH",headers:{...sbHeaders,"Prefer":"return=minimal"},body});}
 async function sbDeleteFertilTask(id){await fetch(`${SUPABASE_URL}/rest/v1/fertil_tasks?id=eq.${id}`,{method:"DELETE",headers:sbHeaders});}
+
+// ─── SUPABASE LEADS ──────────────────────────────────────────────────────────
+async function sbLoadLeads(){try{var r=await fetch(SUPABASE_URL+"/rest/v1/fertil_leads?select=*&order=created_at.desc",{headers:sbHeaders});if(!r.ok)return[];return(await r.json()).map(function(row){return{id:row.id,nombre:row.nombre||"",instagram:row.instagram||"",telefono:row.telefono||"",origen:row.origen||"instagram",estado:row.estado||"nuevo",interes:row.interes||"indefinido",ultimaInteraccion:row.ultima_interaccion||"",proximoSeguimiento:row.proximo_seguimiento||"",accionPendiente:row.accion_pendiente||"",notas:row.notas||"",createdAt:row.created_at};});}catch(e){return[];}}
+async function sbInsertLead(l){var body=JSON.stringify({id:l.id,nombre:l.nombre,instagram:l.instagram||"",telefono:l.telefono||"",origen:l.origen||"instagram",estado:l.estado||"nuevo",interes:l.interes||"indefinido",ultima_interaccion:l.ultimaInteraccion||"",proximo_seguimiento:l.proximoSeguimiento||"",accion_pendiente:l.accionPendiente||"",notas:l.notas||""});await fetch(SUPABASE_URL+"/rest/v1/fertil_leads",{method:"POST",headers:sbHeaders,body:body});}
+async function sbUpdateLead(l){var body=JSON.stringify({nombre:l.nombre,instagram:l.instagram||"",telefono:l.telefono||"",origen:l.origen,estado:l.estado,interes:l.interes,ultima_interaccion:l.ultimaInteraccion||"",proximo_seguimiento:l.proximoSeguimiento||"",accion_pendiente:l.accionPendiente||"",notas:l.notas||""});await fetch(SUPABASE_URL+"/rest/v1/fertil_leads?id=eq."+l.id,{method:"PATCH",headers:{...sbHeaders,"Prefer":"return=minimal"},body:body});}
+async function sbDeleteLead(id){await fetch(SUPABASE_URL+"/rest/v1/fertil_leads?id=eq."+id,{method:"DELETE",headers:sbHeaders});}
 
 // ─── GENERADOR DE PROMPT ──────────────────────────────────────────────────────
 function buildPrompt(form) {
@@ -577,7 +588,7 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
 
   const filteredEventos=(eventos||[]).filter(e=>filterPatientId?e.pacienteId===filterPatientId:true);
   // Merge Fértil appointments into calendar
-  const appointmentEvents=(appointments||[]).filter(a=>filterPatientId?a.patientId===filterPatientId:true).filter(a=>{const dt=new Date(a.startAt);return dt.getFullYear()>2020;}).map(a=>{const dt=new Date(a.startAt);const p=patients.find(x=>x.id===a.patientId);return{id:"appt-"+a.id,pacienteId:a.patientId,pacienteNombre:p?.nombre||"",tipo:"fertil",titulo:a.title,descripcion:a.notes||"",fecha:dt.toISOString().split("T")[0],hora:dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}),completado:a.status==="realizada",_isAppointment:true};});
+  const appointmentEvents=(appointments||[]).filter(a=>filterPatientId?a.patientId===filterPatientId:true).filter(a=>{var dt=new Date(a.startAt);return dt.getFullYear()>2020;}).map(function(a){var dt=new Date(a.startAt);var p=patients.find(function(x){return x.id===a.patientId;});var pName=p?p.nombre:"";return{id:"appt-"+a.id,pacienteId:a.patientId,pacienteNombre:pName,tipo:"fertil",titulo:a.title,descripcion:a.notes||"",fecha:dt.toISOString().split("T")[0],hora:dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}),completado:a.status==="realizada",_isAppointment:true};});
   const allEvents=[...filteredEventos,...appointmentEvents];
 
   const eventsByDate=useMemo(()=>{
@@ -599,6 +610,8 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
   const getEventColor=(tipo)=>{if(tipo==="fertil") return "#7b2d8b";const t=EVENTO_TIPOS.find(x=>x.id===tipo);return t?t.color:"#7a9a8a";};
 
   const todayEventos=allEvents.filter(e=>e.fecha===todayStr&&!e.completado);
+  const tomorrowStr=new Date(new Date().getTime()+86400000).toISOString().split("T")[0];
+  const tomorrowEventos=allEvents.filter(e=>e.fecha===tomorrowStr&&!e.completado).sort((a,b)=>(a.hora||"").localeCompare(b.hora||""));
   const pendientes=allEvents.filter(e=>!e.completado&&e.fecha<todayStr);
 
   const handleToggleCompletado=(evento)=>{
@@ -647,9 +660,10 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
     </div>
 
     {/* Alertas de hoy y pendientes */}
-    {(todayEventos.length>0||pendientes.length>0)&&<div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
-      {todayEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #2d6a4f",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#2d6a4f",marginBottom:4}}>📌 Hoy tenés {todayEventos.length} evento{todayEventos.length>1?"s":""}</div>{todayEventos.slice(0,3).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{e.hora&&`${e.hora} — `}{e.titulo}{e.pacienteNombre&&` (${e.pacienteNombre})`}</div>)}</div>}
-      {pendientes.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #e76f51",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#e76f51",marginBottom:4}}>⚠️ {pendientes.length} evento{pendientes.length>1?"s":""} vencido{pendientes.length>1?"s":""}</div>{pendientes.slice(0,3).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{new Date(e.fecha+"T12:00:00").toLocaleDateString("es-AR")} — {e.titulo}</div>)}</div>}
+    {(todayEventos.length>0||tomorrowEventos.length>0||pendientes.length>0)&&<div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+      {todayEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #2d6a4f",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#2d6a4f",marginBottom:4}}>{"📌 Hoy tenés "+todayEventos.length+" evento"+(todayEventos.length>1?"s":"")}</div>{todayEventos.slice(0,4).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{(e.hora?e.hora+" — ":"")+e.titulo+(e.pacienteNombre?" ("+e.pacienteNombre+")":"")}</div>)}</div>}
+      {tomorrowEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #52b788",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#52b788",marginBottom:4}}>{"📋 Mañana: "+tomorrowEventos.length+" paciente"+(tomorrowEventos.length>1?"s":"")}</div>{tomorrowEventos.slice(0,5).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{(e.hora?e.hora+" — ":"")+(e.pacienteNombre?e.pacienteNombre+" · ":"")+e.titulo}</div>)}</div>}
+      {pendientes.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #e76f51",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#e76f51",marginBottom:4}}>{"⚠️ "+pendientes.length+" evento"+(pendientes.length>1?"s":"")+" vencido"+(pendientes.length>1?"s":"")}</div>{pendientes.slice(0,3).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{fmtDate(e.fecha)+" — "+e.titulo}</div>)}</div>}
     </div>}
 
     {showForm&&<div style={{marginBottom:20}}><EventForm patients={patients} prefillPatientId={filterPatientId} prefillDate={selectedDate} editEvento={editingEvento} onSave={e=>{if(editingEvento){onUpdateEvento(e);}else{onAddEvento(e);}setShowForm(false);setEditingEvento(null);}} onCancel={()=>{setShowForm(false);setEditingEvento(null);}}/></div>}
@@ -824,9 +838,176 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
   </div>);
 }
 
+// ─── LEADS MODULE ─────────────────────────────────────────────────────────────
+var LEAD_ESTADOS=[
+  {id:"nuevo",label:"Nuevo",color:"#3b82f6"},
+  {id:"respondido",label:"Respondido",color:"#8b5cf6"},
+  {id:"esperando",label:"Esperando",color:"#f4a261"},
+  {id:"seguimiento",label:"Seguimiento",color:"#e76f51"},
+  {id:"consulta",label:"Consulta",color:"#52b788"},
+  {id:"fertil",label:"Fértil",color:"#7b2d8b"},
+  {id:"descartado",label:"Descartado",color:"#aaa"}
+];
+var LEAD_ORIGENES=[{id:"instagram",label:"Instagram"},{id:"derivacion",label:"Derivación"},{id:"web",label:"Web"},{id:"otro",label:"Otro"}];
+var LEAD_INTERES=[{id:"consulta",label:"Consulta"},{id:"fertil",label:"Fértil"},{id:"indefinido",label:"Indefinido"}];
+
+function getLeadEstadoColor(estado){var e=LEAD_ESTADOS.find(function(x){return x.id===estado;});return e?e.color:"#aaa";}
+function getLeadEstadoLabel(estado){var e=LEAD_ESTADOS.find(function(x){return x.id===estado;});return e?e.label:estado;}
+
+function LeadForm({lead,onSave,onCancel}){
+  var isEdit=!!lead;
+  var [form,setForm]=useState(lead?{nombre:lead.nombre,instagram:lead.instagram,telefono:lead.telefono,origen:lead.origen,estado:lead.estado,interes:lead.interes,proximoSeguimiento:lead.proximoSeguimiento,accionPendiente:lead.accionPendiente,notas:lead.notas}:{nombre:"",instagram:"",telefono:"",origen:"instagram",estado:"nuevo",interes:"indefinido",proximoSeguimiento:"",accionPendiente:"",notas:""});
+  var set=function(k,v){setForm(function(f){var n={...f};n[k]=v;return n;});};
+  var valid=form.nombre.trim();
+  return(<div style={S.card}>
+    <h3 style={{margin:"0 0 16px",color:"#7b2d8b",fontSize:16}}>{isEdit?"✏️ Editar Lead":"➕ Nuevo Lead"}</h3>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <Field label="Nombre *" value={form.nombre} onChange={function(v){set("nombre",v);}} placeholder="Nombre del lead"/>
+      <Field label="Instagram" value={form.instagram} onChange={function(v){set("instagram",v);}} placeholder="@usuario"/>
+    </div>
+    <Field label="Teléfono" value={form.telefono} onChange={function(v){set("telefono",v);}} placeholder="5411XXXXXXXX"/>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+      <div style={{marginBottom:14}}><label style={S.label}>Origen</label><select value={form.origen} onChange={function(e){set("origen",e.target.value);}} style={S.input}>{LEAD_ORIGENES.map(function(o){return <option key={o.id} value={o.id}>{o.label}</option>;})}</select></div>
+      <div style={{marginBottom:14}}><label style={S.label}>Estado</label><select value={form.estado} onChange={function(e){set("estado",e.target.value);}} style={S.input}>{LEAD_ESTADOS.map(function(o){return <option key={o.id} value={o.id}>{o.label}</option>;})}</select></div>
+      <div style={{marginBottom:14}}><label style={S.label}>Interés</label><select value={form.interes} onChange={function(e){set("interes",e.target.value);}} style={S.input}>{LEAD_INTERES.map(function(o){return <option key={o.id} value={o.id}>{o.label}</option>;})}</select></div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <Field label="Próximo seguimiento" type="date" value={form.proximoSeguimiento} onChange={function(v){set("proximoSeguimiento",v);}}/>
+      <Field label="Acción pendiente" value={form.accionPendiente} onChange={function(v){set("accionPendiente",v);}} placeholder="Ej: Enviar info del programa"/>
+    </div>
+    <Field label="Notas" value={form.notas} onChange={function(v){set("notas",v);}} placeholder="Observaciones..." rows={3}/>
+    <div style={{display:"flex",gap:10}}>
+      <button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button>
+      <button disabled={!valid} onClick={function(){
+        var now=new Date().toISOString();
+        onSave({id:isEdit?lead.id:uid(),nombre:form.nombre.trim(),instagram:form.instagram.trim(),telefono:form.telefono.trim(),origen:form.origen,estado:form.estado,interes:form.interes,ultimaInteraccion:now,proximoSeguimiento:form.proximoSeguimiento,accionPendiente:form.accionPendiente,notas:form.notas,createdAt:isEdit?lead.createdAt:now});
+      }} style={{...S.btnFertil,flex:2,opacity:valid?1:0.5}}>{isEdit?"Guardar cambios":"Crear lead"}</button>
+    </div>
+  </div>);
+}
+
+function LeadsList({leads,onAddLead,onUpdateLead,onDeleteLead}){
+  var [search,setSearch]=useState("");
+  var [filterEstado,setFilterEstado]=useState("all");
+  var [showForm,setShowForm]=useState(false);
+  var [editingLead,setEditingLead]=useState(null);
+  var todayStr=todayISO();
+
+  var filtered=leads.filter(function(l){
+    if(filterEstado!=="all"&&l.estado!==filterEstado)return false;
+    if(search&&l.nombre.toLowerCase().indexOf(search.toLowerCase())===-1&&(l.instagram||"").toLowerCase().indexOf(search.toLowerCase())===-1)return false;
+    return true;
+  });
+
+  // Resumen
+  var seguimientoHoy=leads.filter(function(l){return l.proximoSeguimiento===todayStr&&l.estado!=="descartado";});
+  var sinResponder=leads.filter(function(l){return l.estado==="nuevo";});
+  var enSeguimiento=leads.filter(function(l){return l.estado==="seguimiento";});
+  var vencidos=leads.filter(function(l){return l.proximoSeguimiento&&l.proximoSeguimiento<todayStr&&l.estado!=="descartado"&&l.estado!=="fertil"&&l.estado!=="consulta";});
+
+  var handleSave=function(l){
+    if(editingLead){onUpdateLead(l);}else{onAddLead(l);}
+    setShowForm(false);setEditingLead(null);
+  };
+
+  var handleDelete=function(id){
+    if(confirm("¿Eliminar este lead?")){onDeleteLead(id);setEditingLead(null);setShowForm(false);}
+  };
+
+  var waLink=function(tel,nombre){
+    var phone=(tel||"").replace(/[^0-9]/g,"");
+    if(!phone)return null;
+    return "https://wa.me/"+phone+"?text="+encodeURIComponent("Hola "+nombre+"! Te escribo de parte de Julieta Lupardo Nutrición 🌿");
+  };
+
+  // Detail view
+  if(editingLead&&!showForm){
+    var l=editingLead;
+    var estadoColor=getLeadEstadoColor(l.estado);
+    var wa=waLink(l.telefono,l.nombre);
+    return(<div>
+      <button onClick={function(){setEditingLead(null);}} style={S.btnGhost}>{"← Volver a leads"}</button>
+      <div style={{...S.card,marginTop:16,borderLeft:"4px solid "+estadoColor}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div>
+            <h3 style={{margin:0,fontSize:18,fontWeight:700,color:"#1a3d2b"}}>{l.nombre}</h3>
+            <div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>{l.instagram&&("@"+(l.instagram.replace("@",""))+" · ")}{LEAD_ORIGENES.find(function(o){return o.id===l.origen;})?.label||l.origen}</div>
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            {wa&&<a href={wa} target="_blank" rel="noopener noreferrer" style={{...S.btnFertil,padding:"8px 14px",fontSize:12,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4,background:"#25D366"}}>{"📱 WhatsApp"}</a>}
+            <button onClick={function(){setShowForm(true);}} style={{...S.btnOutline,fontSize:12,padding:"8px 14px"}}>{"✏️ Editar"}</button>
+            <button onClick={function(){handleDelete(l.id);}} style={{...S.btnDanger,fontSize:12,padding:"8px 14px"}}>{"🗑"}</button>
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:16}}>
+          <div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Estado</div><div style={{marginTop:4}}><Badge label={getLeadEstadoLabel(l.estado)} color={estadoColor+"22"} text={estadoColor}/></div></div>
+          <div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Interés</div><div style={{marginTop:4,fontSize:14,fontWeight:600,color:"#1a3d2b"}}>{LEAD_INTERES.find(function(x){return x.id===l.interes;})?.label||l.interes}</div></div>
+          <div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Próximo seguimiento</div><div style={{marginTop:4,fontSize:14,fontWeight:600,color:l.proximoSeguimiento&&l.proximoSeguimiento<=todayStr?"#e76f51":"#1a3d2b"}}>{l.proximoSeguimiento?fmtDate(l.proximoSeguimiento):"Sin fecha"}</div></div>
+        </div>
+        {l.accionPendiente&&<div style={{background:"#fff5f0",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:13}}><strong style={{color:"#e76f51"}}>{"Acción pendiente: "}</strong>{l.accionPendiente}</div>}
+        {l.telefono&&<div style={{fontSize:13,color:"#5a7a6a",marginBottom:6}}>{"📞 "+l.telefono}</div>}
+        {l.notas&&<div style={{background:"#f5f0f7",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#1a3d2b",whiteSpace:"pre-wrap"}}>{l.notas}</div>}
+        <div style={{fontSize:11,color:"#aaa",marginTop:12}}>{"Creado: "+fmtDate(l.createdAt?(l.createdAt.split("T")[0]):"")}</div>
+      </div>
+    </div>);
+  }
+
+  // Edit form
+  if(showForm){
+    return(<div>
+      <LeadForm lead={editingLead} onSave={handleSave} onCancel={function(){setShowForm(false);setEditingLead(null);}}/>
+    </div>);
+  }
+
+  // List view
+  var estadoButtons=[["all","Todos"]].concat(LEAD_ESTADOS.map(function(e){return[e.id,e.label];}));
+  return(<div>
+    {/* Resumen */}
+    {(seguimientoHoy.length>0||sinResponder.length>0||vencidos.length>0)&&<div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+      {seguimientoHoy.length>0&&<div style={{...S.card,flex:1,minWidth:180,borderLeft:"4px solid #7b2d8b",padding:"12px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#7b2d8b",marginBottom:4}}>{"📋 Hoy tenés "+seguimientoHoy.length+" seguimiento"+(seguimientoHoy.length>1?"s":"")+" pendiente"+(seguimientoHoy.length>1?"s":"")}</div>{seguimientoHoy.slice(0,3).map(function(l){return <div key={l.id} style={{fontSize:12,color:"#5a7a6a"}}>{l.nombre+(l.accionPendiente?" — "+l.accionPendiente:"")}</div>;})}</div>}
+      {sinResponder.length>0&&<div style={{...S.card,flex:1,minWidth:180,borderLeft:"4px solid #3b82f6",padding:"12px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#3b82f6"}}>{"🆕 "+sinResponder.length+" lead"+(sinResponder.length>1?"s":"")+" sin responder"}</div></div>}
+      {vencidos.length>0&&<div style={{...S.card,flex:1,minWidth:180,borderLeft:"4px solid #e76f51",padding:"12px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#e76f51"}}>{"⚠️ "+vencidos.length+" seguimiento"+(vencidos.length>1?"s":"")+" vencido"+(vencidos.length>1?"s":"")}</div></div>}
+    </div>}
+
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+      <h3 style={{margin:0,fontSize:16,fontWeight:700,color:"#7b2d8b"}}>Leads</h3>
+      <button onClick={function(){setEditingLead(null);setShowForm(true);}} style={S.btnFertil}>{"+ Nuevo lead"}</button>
+    </div>
+
+    <input placeholder="Buscar por nombre o Instagram..." value={search} onChange={function(e){setSearch(e.target.value);}} style={{...S.input,marginBottom:12}}/>
+    <div style={{display:"flex",gap:4,marginBottom:16,flexWrap:"wrap",overflowX:"auto"}}>{estadoButtons.map(function(item){var k=item[0];var lab=item[1];return(<button key={k} onClick={function(){setFilterEstado(k);}} style={{padding:"4px 10px",borderRadius:16,fontSize:11,cursor:"pointer",border:filterEstado===k?"2px solid #7b2d8b":"1px solid #d8e8df",background:filterEstado===k?"#7b2d8b":"#fff",color:filterEstado===k?"#fff":"#5a7a6a",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"}}>{lab}</button>);})}</div>
+
+    {filtered.length===0?<div style={{textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:36,marginBottom:8}}>{"📱"}</div><p style={{color:"#aaa",fontSize:13}}>No hay leads{filterEstado!=="all"?" con este estado":""}</p></div>:
+    filtered.map(function(l){
+      var estadoColor=getLeadEstadoColor(l.estado);
+      var isOverdue=l.proximoSeguimiento&&l.proximoSeguimiento<todayStr&&l.estado!=="descartado"&&l.estado!=="fertil"&&l.estado!=="consulta";
+      var isToday=l.proximoSeguimiento===todayStr;
+      return(<div key={l.id} onClick={function(){setEditingLead(l);}} style={{...S.card,marginBottom:8,cursor:"pointer",borderLeft:"4px solid "+estadoColor,transition:"box-shadow .2s"}} onMouseEnter={function(e){e.currentTarget.style.boxShadow="0 4px 20px rgba(123,45,139,.12)";}} onMouseLeave={function(e){e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)";}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:38,height:38,borderRadius:"50%",background:estadoColor+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0,color:estadoColor,fontWeight:700}}>{l.nombre.charAt(0).toUpperCase()}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{l.nombre}</span>
+              <Badge label={getLeadEstadoLabel(l.estado)} color={estadoColor+"22"} text={estadoColor}/>
+              {l.interes!=="indefinido"&&<Badge label={l.interes==="fertil"?"Fértil":"Consulta"} color={l.interes==="fertil"?"#f3e5f5":"#e8f5ee"} text={l.interes==="fertil"?"#7b2d8b":"#2d6a4f"}/>}
+            </div>
+            <div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>
+              {l.instagram&&("@"+l.instagram.replace("@","")+" · ")}
+              {LEAD_ORIGENES.find(function(o){return o.id===l.origen;})?.label||l.origen}
+              {l.proximoSeguimiento&&<span style={{color:isOverdue?"#e76f51":isToday?"#7b2d8b":"#7a9a8a",fontWeight:isOverdue||isToday?700:400}}>{" · Seg: "+fmtDate(l.proximoSeguimiento)}</span>}
+            </div>
+            {l.accionPendiente&&<div style={{fontSize:12,color:"#e76f51",marginTop:2,fontWeight:600}}>{"→ "+l.accionPendiente}</div>}
+          </div>
+          <span style={{color:"#a855f7",fontSize:20}}>{"›"}</span>
+        </div>
+      </div>);
+    })}
+  </div>);
+}
+
 function FertilModule({state,dispatch,patients,onGoToPatient}){
   const [subScreen,setSubScreen]=useState("dashboard");const [selectedCaseId,setSelectedCaseId]=useState(null);const [subTab,setSubTab]=useState("dashboard");
-  const fertilCases=state.fertilCases||[];const appointments=state.appointments||[];const followups=state.fertilFollowups||[];const labs=state.fertilLabs||[];const tasks=state.fertilTasks||[];
+  const fertilCases=state.fertilCases||[];const appointments=state.appointments||[];const followups=state.fertilFollowups||[];const labs=state.fertilLabs||[];const tasks=state.fertilTasks||[];const leads=state.fertilLeads||[];
   const selectedCase=fertilCases.find(c=>c.id===selectedCaseId);const selectedPatient=selectedCase?patients.find(p=>p.id===selectedCase.patientId):null;
 
   if(subScreen==="new-case")return<FertilNewCase patients={patients} fertilCases={fertilCases} onSave={async(newCase,appts)=>{dispatch({type:"ADD_FERTIL_CASE",c:newCase});await sbUpsertFertilCase(newCase);for(const a of appts){dispatch({type:"ADD_APPOINTMENT",a});await sbUpsertAppointment(a);}setSubScreen("dashboard");}} onCancel={()=>setSubScreen("dashboard")}/>;
@@ -842,9 +1023,10 @@ function FertilModule({state,dispatch,patients,onGoToPatient}){
     onBack={()=>setSubScreen("dashboard")} onGoToPatient={onGoToPatient}/>;
 
   return(<div>
-    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4}}>{[["dashboard","📊 Dashboard"],["pacientes","👩 Pacientes"]].map(([id,label])=>(<button key={id} onClick={()=>setSubTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:subTab===id?"#fff":"transparent",color:subTab===id?"#7b2d8b":"#5a7a6a",boxShadow:subTab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>
+    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4}}>{[["dashboard","📊 Dashboard"],["pacientes","👩 Pacientes"],["leads","📱 Leads"]].map(([id,label])=>(<button key={id} onClick={()=>setSubTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:subTab===id?"#fff":"transparent",color:subTab===id?"#7b2d8b":"#5a7a6a",boxShadow:subTab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}{id==="leads"&&leads.filter(function(l){return l.estado==="nuevo"||l.proximoSeguimiento===todayISO();}).length>0&&<span style={{marginLeft:4,background:"#e76f51",color:"#fff",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{leads.filter(function(l){return l.estado==="nuevo"||l.proximoSeguimiento===todayISO();}).length}</span>}</button>))}</div>
     {subTab==="dashboard"&&<FertilDashboard fertilCases={fertilCases} patients={patients} appointments={appointments} onSelectCase={id=>{setSelectedCaseId(id);setSubScreen("case-detail");}} onNewCase={()=>setSubScreen("new-case")}/>}
     {subTab==="pacientes"&&<><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}><h3 style={{margin:0,fontSize:16,fontWeight:700,color:"#7b2d8b"}}>Pacientes Fértil</h3><button onClick={()=>setSubScreen("new-case")} style={S.btnFertil}>+ Nueva paciente</button></div><FertilPatientList fertilCases={fertilCases} patients={patients} appointments={appointments} onSelectCase={id=>{setSelectedCaseId(id);setSubScreen("case-detail");}}/></>}
+    {subTab==="leads"&&<LeadsList leads={leads} onAddLead={async function(l){dispatch({type:"ADD_LEAD",l:l});await sbInsertLead(l);} } onUpdateLead={async function(l){dispatch({type:"UPDATE_LEAD",l:l});await sbUpdateLead(l);}} onDeleteLead={async function(id){dispatch({type:"DELETE_LEAD",id:id});await sbDeleteLead(id);}}/>}
   </div>);
 }
 
@@ -936,9 +1118,9 @@ export default function App() {
         dispatch({type:"LOAD",patients,consultas,eventos});
       }catch(e){console.error("Error loading base:",e);dispatch({type:"LOAD",patients:[],consultas:[],eventos:[]});}
       try{
-        const [cases,appointments,followups,labs,tasks]=await Promise.all([sbLoadFertilCases(),sbLoadAppointments(),sbLoadFertilFollowups(),sbLoadFertilLabs(),sbLoadFertilTasks()]);
-        dispatch({type:"LOAD_FERTIL",cases,appointments,followups,labs,tasks});
-      }catch(e){console.error("Error loading fertil:",e);dispatch({type:"LOAD_FERTIL",cases:[],appointments:[],followups:[],labs:[],tasks:[]});}
+        const [cases,appointments,followups,labs,tasks,leads]=await Promise.all([sbLoadFertilCases(),sbLoadAppointments(),sbLoadFertilFollowups(),sbLoadFertilLabs(),sbLoadFertilTasks(),sbLoadLeads()]);
+        dispatch({type:"LOAD_FERTIL",cases,appointments,followups,labs,tasks,leads});
+      }catch(e){console.error("Error loading fertil:",e);dispatch({type:"LOAD_FERTIL",cases:[],appointments:[],followups:[],labs:[],tasks:[],leads:[]});}
       setLoaded(true);
     }
     loadAll();
