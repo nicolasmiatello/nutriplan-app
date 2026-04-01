@@ -12,10 +12,34 @@ const initialPlanForm = { nombre:"",edad:"",peso:"",altura:"",sexo:"",objetivo:"
 const initialClinica = { motivo:"",diagnostico:"",antecedentes:"",medicacion:"",patologias:"",alergias:"",digestivo:"",sueno:"",estres:"",actividad:"" };
 
 // Fértil constants
+const C = {
+  // Semánticos — cada color comunica un significado
+  ok:"#52b788",         // verde = hecho, pagado, completado, al día
+  okDark:"#2d6a4f",     // verde oscuro = primario, brand, headers
+  okLight:"#e8f5ee",    // verde fondo = backgrounds ok
+  warn:"#f4a261",       // naranja = atención, parcial, próximo
+  warnLight:"#fff8f0",  // naranja fondo
+  danger:"#e76f51",     // rojo = vencido, pendiente crítico, eliminar
+  dangerDark:"#c0392b", // rojo oscuro = botón eliminar
+  dangerLight:"#fff0f0",// rojo fondo
+  fertil:"#7b2d8b",     // violeta = módulo fértil
+  fertilLight:"#f3e5f5",// violeta fondo
+  fertilAlt:"#a855f7",  // violeta claro = gradiente, acento
+  lead:"#3b82f6",       // azul = leads, nuevo
+  leadLight:"#eff6ff",  // azul fondo
+  muted:"#7a9a8a",      // gris verde = texto secundario
+  mutedLight:"#aaa",    // gris = desactivado, descartado
+  bg:"#f0f4f1",         // fondo general
+  bgCard:"#fff",        // fondo cards
+  text:"#1a3d2b",       // texto principal
+  textSub:"#5a7a6a",    // texto secundario
+  border:"#d8e8df",     // bordes
+  borderLight:"#f0f4f1" // bordes suaves
+};
 const FERTIL_STATUS_LABELS={lead:"Lead",activa:"Activa",pausada:"Pausada",finalizada:"Finalizada"};
-const FERTIL_STATUS_COLORS={lead:"#f4a261",activa:"#7b2d8b",pausada:"#aaa",finalizada:"#52b788"};
+const FERTIL_STATUS_COLORS={lead:C.warn,activa:C.fertil,pausada:C.mutedLight,finalizada:C.ok};
 const FERTIL_PAYMENT_LABELS={pendiente:"Pendiente",parcial:"Parcial",pago:"Pago"};
-const FERTIL_PAYMENT_COLORS={pendiente:"#e76f51",parcial:"#f4a261",pago:"#52b788"};
+const FERTIL_PAYMENT_COLORS={pendiente:C.danger,parcial:C.warn,pago:C.ok};
 const FERTIL_CONSULT_TYPES=[{num:1,type:"inicial",label:"Consulta Inicial"},{num:2,type:"seguimiento",label:"Seguimiento 1"},{num:3,type:"seguimiento",label:"Seguimiento 2"},{num:4,type:"seguimiento",label:"Seguimiento 3"},{num:5,type:"cierre",label:"Consulta de Cierre"}];
 
 function uid() { return Math.random().toString(36).slice(2,9); }
@@ -457,14 +481,14 @@ function exportPDF({ paciente, plan, notasNutricionista="" }) {
 
 // ─── ESTILOS ──────────────────────────────────────────────────────────────────
 const S = {
-  label:{display:"block",fontSize:11,fontWeight:700,color:"#5a7a6a",marginBottom:4,textTransform:"uppercase",letterSpacing:.8},
-  input:{width:"100%",padding:"9px 12px",borderRadius:9,border:"1.5px solid #d8e8df",fontSize:14,fontFamily:"inherit",background:"#fafcfb",outline:"none",boxSizing:"border-box"},
-  card:{background:"#fff",borderRadius:16,boxShadow:"0 2px 16px rgba(45,106,79,.08)",padding:"20px"},
-  btnPrimary:{padding:"10px 18px",background:"#2d6a4f",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
-  btnOutline:{padding:"10px 18px",background:"#fff",color:"#2d6a4f",border:"1.5px solid #2d6a4f",borderRadius:10,fontSize:14,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
-  btnGhost:{padding:"8px 14px",background:"#f0f4f1",color:"#5a7a6a",border:"none",borderRadius:9,fontSize:13,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
-  btnDanger:{padding:"8px 14px",background:"#fff0f0",color:"#c0392b",border:"1.5px solid #f5c6c6",borderRadius:9,fontSize:13,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
-  btnFertil:{padding:"10px 18px",background:"#7b2d8b",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
+  label:{display:"block",fontSize:11,fontWeight:700,color:C.textSub,marginBottom:4,textTransform:"uppercase",letterSpacing:.8},
+  input:{width:"100%",padding:"9px 12px",borderRadius:9,border:"1.5px solid "+C.border,fontSize:14,fontFamily:"inherit",background:"#fafcfb",outline:"none",boxSizing:"border-box"},
+  card:{background:C.bgCard,borderRadius:16,boxShadow:"0 2px 16px rgba(45,106,79,.08)",padding:"20px"},
+  btnPrimary:{padding:"10px 18px",background:C.okDark,color:"#fff",border:"none",borderRadius:10,fontSize:14,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
+  btnOutline:{padding:"10px 18px",background:"#fff",color:C.okDark,border:"1.5px solid "+C.okDark,borderRadius:10,fontSize:14,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
+  btnGhost:{padding:"8px 14px",background:C.bg,color:C.textSub,border:"none",borderRadius:9,fontSize:13,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
+  btnDanger:{padding:"8px 14px",background:C.dangerLight,color:C.dangerDark,border:"1.5px solid #f5c6c6",borderRadius:9,fontSize:13,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
+  btnFertil:{padding:"10px 18px",background:C.fertil,color:"#fff",border:"none",borderRadius:10,fontSize:14,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
 };
 
 const Field = ({label,value,onChange,type="text",placeholder="",rows}) => (<div style={{marginBottom:14}}><label style={S.label}>{label}</label>{rows?<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows} style={{...S.input,resize:"vertical"}}/>:<input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={S.input}/>}</div>);
@@ -497,12 +521,12 @@ function StatsDashboard({patients,consultas,fertilCases,appointments}) {
     {/* Fértil stats */}
     <div style={{borderTop:"2px solid #e8d5f0",paddingTop:20,marginTop:8}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,cursor:"pointer"}} onClick={()=>setShowFertil(!showFertil)}>
-        <span style={{fontSize:18}}>💜</span><h3 style={{margin:0,fontSize:16,fontWeight:700,color:"#7b2d8b"}}>Métricas Fértil</h3><span style={{fontSize:12,color:"#7a9a8a"}}>{showFertil?"▲":"▼"}</span>
+        <span style={{fontSize:18}}>💜</span><h3 style={{margin:0,fontSize:16,fontWeight:700,color:C.fertil}}>Métricas Fértil</h3><span style={{fontSize:12,color:"#7a9a8a"}}>{showFertil?"▲":"▼"}</span>
       </div>
       {showFertil&&<><div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:20}}>{statCard("💜","Pacientes activas",fertilActivas,"en programa","#7b2d8b")}{statCard("✅","Finalizadas",fertilFinalizadas,"completaron")}{statCard("💰","Ingresos Fértil",fmtMoney(fertilTotalIngresos),"total acumulado","#7b2d8b")}{statCard("🎫","Ticket promedio",fmtMoney(fertilTicketPromedio),"por paciente")}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
-          <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>Ingresos Fértil por mes</h4>{last6Fertil.some(d=>d.value>0)?<BarChart data={last6Fertil} color="#7b2d8b" formatValue={v=>`$${Math.round(v/1000)}k`}/>:<p style={{fontSize:13,color:"#aaa",textAlign:"center",padding:"30px 0"}}>Sin datos aún</p>}</div>
-          <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>Estado de pagos</h4><div style={{display:"flex",gap:20,justifyContent:"center",padding:"20px 0"}}><div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:700,color:"#52b788"}}>{fertilPagos}</div><div style={{fontSize:11,color:"#7a9a8a"}}>Pagos</div></div><div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:700,color:"#f4a261"}}>{fc.filter(c=>c.paymentStatus==="parcial").length}</div><div style={{fontSize:11,color:"#7a9a8a"}}>Parciales</div></div><div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:700,color:"#e76f51"}}>{fertilPendientes}</div><div style={{fontSize:11,color:"#7a9a8a"}}>Pendientes</div></div></div><div style={{fontSize:12,textAlign:"center",color:"#5a7a6a"}}>{fertilPctPago}% con pago completo</div></div>
+          <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:C.fertil}}>Ingresos Fértil por mes</h4>{last6Fertil.some(d=>d.value>0)?<BarChart data={last6Fertil} color="#7b2d8b" formatValue={v=>`$${Math.round(v/1000)}k`}/>:<p style={{fontSize:13,color:"#aaa",textAlign:"center",padding:"30px 0"}}>Sin datos aún</p>}</div>
+          <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:C.fertil}}>Estado de pagos</h4><div style={{display:"flex",gap:20,justifyContent:"center",padding:"20px 0"}}><div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:700,color:C.ok}}>{fertilPagos}</div><div style={{fontSize:11,color:"#7a9a8a"}}>Pagos</div></div><div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:700,color:C.warn}}>{fc.filter(c=>c.paymentStatus==="parcial").length}</div><div style={{fontSize:11,color:"#7a9a8a"}}>Parciales</div></div><div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:700,color:C.danger}}>{fertilPendientes}</div><div style={{fontSize:11,color:"#7a9a8a"}}>Pendientes</div></div></div><div style={{fontSize:12,textAlign:"center",color:"#5a7a6a"}}>{fertilPctPago}% con pago completo</div></div>
         </div></>}
     </div>
   </div>);
@@ -524,9 +548,9 @@ function PatientsStats({patients,consultas,fertilCases,appointments,onAddConsult
 
 // ─── EVENTO FORM ──────────────────────────────────────────────────────────────
 const EVENTO_TIPOS = [
-  {id:"turno",label:"📅 Turno",color:"#2d6a4f"},
-  {id:"seguimiento",label:"🔄 Seguimiento",color:"#e76f51"},
-  {id:"recordatorio",label:"🔔 Recordatorio",color:"#f4a261"},
+  {id:"turno",label:"📅 Turno",color:C.okDark},
+  {id:"seguimiento",label:"🔄 Seguimiento",color:C.danger},
+  {id:"recordatorio",label:"🔔 Recordatorio",color:C.warn},
 ];
 
 function EventForm({patients,onSave,onCancel,prefillPatientId,prefillDate,editEvento}) {
@@ -607,7 +631,7 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
   const nextMonth=()=>setCurrentDate(new Date(year,month+1,1));
   const goToday=()=>setCurrentDate(new Date());
 
-  const getEventColor=(tipo)=>{if(tipo==="fertil") return "#7b2d8b";const t=EVENTO_TIPOS.find(x=>x.id===tipo);return t?t.color:"#7a9a8a";};
+  const getEventColor=(tipo)=>{if(tipo==="fertil") return C.fertil;const t=EVENTO_TIPOS.find(x=>x.id===tipo);return t?t.color:C.muted;};
 
   const todayEventos=allEvents.filter(e=>e.fecha===todayStr&&!e.completado);
   const tomorrowStr=new Date(new Date().getTime()+86400000).toISOString().split("T")[0];
@@ -659,9 +683,9 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
 
     {/* Alertas de hoy y pendientes */}
     {(todayEventos.length>0||tomorrowEventos.length>0||pendientes.length>0)&&<div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
-      {todayEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #2d6a4f",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#2d6a4f",marginBottom:4}}>{"📌 Hoy tenés "+todayEventos.length+" evento"+(todayEventos.length>1?"s":"")}</div>{todayEventos.slice(0,4).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{(e.hora?e.hora+" — ":"")+e.titulo+(e.pacienteNombre?" ("+e.pacienteNombre+")":"")}</div>)}</div>}
-      {tomorrowEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #52b788",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#52b788",marginBottom:4}}>{"📋 Mañana: "+tomorrowEventos.length+" paciente"+(tomorrowEventos.length>1?"s":"")}</div>{tomorrowEventos.slice(0,5).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{(e.hora?e.hora+" — ":"")+(e.pacienteNombre?e.pacienteNombre+" · ":"")+e.titulo}</div>)}</div>}
-      {pendientes.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #e76f51",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#e76f51",marginBottom:4}}>{"⚠️ "+pendientes.length+" evento"+(pendientes.length>1?"s":"")+" vencido"+(pendientes.length>1?"s":"")}</div>{pendientes.slice(0,3).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{fmtDate(e.fecha)+" — "+e.titulo}</div>)}</div>}
+      {todayEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid "+C.okDark,padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:C.okDark,marginBottom:4}}>{"📌 Hoy tenés "+todayEventos.length+" evento"+(todayEventos.length>1?"s":"")}</div>{todayEventos.slice(0,4).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{(e.hora?e.hora+" — ":"")+e.titulo+(e.pacienteNombre?" ("+e.pacienteNombre+")":"")}</div>)}</div>}
+      {tomorrowEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid "+C.ok,padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:C.ok,marginBottom:4}}>{"📋 Mañana: "+tomorrowEventos.length+" paciente"+(tomorrowEventos.length>1?"s":"")}</div>{tomorrowEventos.slice(0,5).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{(e.hora?e.hora+" — ":"")+(e.pacienteNombre?e.pacienteNombre+" · ":"")+e.titulo}</div>)}</div>}
+      {pendientes.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #e76f51",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:C.danger,marginBottom:4}}>{"⚠️ "+pendientes.length+" evento"+(pendientes.length>1?"s":"")+" vencido"+(pendientes.length>1?"s":"")}</div>{pendientes.slice(0,3).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{fmtDate(e.fecha)+" — "+e.titulo}</div>)}</div>}
     </div>}
 
     {showForm&&<div style={{marginBottom:20}}><EventForm patients={patients} prefillPatientId={filterPatientId} prefillDate={selectedDate} editEvento={editingEvento} onSave={e=>{if(editingEvento){onUpdateEvento(e);}else{onAddEvento(e);}setShowForm(false);setEditingEvento(null);}} onCancel={()=>{setShowForm(false);setEditingEvento(null);}}/></div>}
@@ -694,7 +718,7 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
             const dayEvents=eventsByDate[dateStr]||[];
             const isToday=dateStr===todayStr;
             const isPast=dateStr<todayStr;
-            return (<div key={dateStr} onClick={()=>{setSelectedDate(dateStr);setEditingEvento(null);setShowForm(true);}} style={{padding:4,minHeight:80,background:isToday?"#e8f5ee":"#fff",borderRadius:6,cursor:"pointer",border:isToday?"2px solid #52b788":"1px solid #f0f4f1",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background=isToday?"#d4edda":"#f5faf7"} onMouseLeave={e=>e.currentTarget.style.background=isToday?"#e8f5ee":"#fff"}>
+            return (<div key={dateStr} onClick={()=>{setSelectedDate(dateStr);setEditingEvento(null);setShowForm(true);}} style={{padding:4,minHeight:80,background:isToday?C.okLight:"#fff",borderRadius:6,cursor:"pointer",border:isToday?"2px solid "+C.ok:"1px solid #f0f4f1",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background=isToday?"#d4edda":"#f5faf7"} onMouseLeave={e=>e.currentTarget.style.background=isToday?"#e8f5ee":"#fff"}>
               <div style={{fontSize:13,fontWeight:isToday?800:600,color:isToday?"#2d6a4f":isPast?"#aaa":"#1a3d2b",marginBottom:2,textAlign:"right",padding:"0 2px"}}>{day}</div>
               {dayEvents.slice(0,3).map(ev=>(<div key={ev.id} onClick={e=>{e.stopPropagation();if(!ev._isAppointment){setEditingEvento(ev);setShowForm(true);}}} style={{fontSize:10,padding:"1px 4px",borderRadius:4,marginBottom:1,background:ev.completado?"#eee":getEventColor(ev.tipo)+"20",color:ev.completado?"#aaa":getEventColor(ev.tipo),fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textDecoration:ev.completado?"line-through":"none",cursor:"pointer"}}>{ev.hora?ev.hora+" ":""}{ev.pacienteNombre?ev.pacienteNombre+" - ":""}{ev.titulo}</div>))}
               {dayEvents.length>3&&<div style={{fontSize:9,color:"#7a9a8a",textAlign:"center"}}>+{dayEvents.length-3} más</div>}
@@ -715,7 +739,7 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
         var manana=monthEventos.filter(function(e){return e.fecha===tomorrowS;});
         var semana=monthEventos.filter(function(e){return e.fecha>tomorrowS&&e.fecha<=weekEndStr;});
         var resto=monthEventos.filter(function(e){return e.fecha>weekEndStr;});
-        var groups=[{label:"Hoy",color:"#2d6a4f",items:hoy},{label:"Mañana",color:"#52b788",items:manana},{label:"Esta semana",color:"#7a9a8a",items:semana},{label:"Resto del mes",color:"#aaa",items:resto}];
+        var groups=[{label:"Hoy",color:C.okDark,items:hoy},{label:"Mañana",color:C.ok,items:manana},{label:"Esta semana",color:C.muted,items:semana},{label:"Resto del mes",color:C.mutedLight,items:resto}];
         return groups.map(function(g){
           if(g.items.length===0)return null;
           return(<div key={g.label} style={{marginBottom:20}}>
@@ -732,8 +756,8 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                       <span style={{fontSize:12,color:"#7a9a8a",fontWeight:600}}>{fmtDate(e.fecha)}{e.hora?" · "+e.hora:""}</span>
-                      {isFertil&&<span style={{background:"#7b2d8b",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"FÉRTIL"}</span>}
-                      {e.completado&&<span style={{background:"#52b788",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"REALIZADA"}</span>}
+                      {isFertil&&<span style={{background:C.fertil,color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"FÉRTIL"}</span>}
+                      {e.completado&&<span style={{background:C.ok,color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"REALIZADA"}</span>}
                     </div>
                     <div style={{fontSize:18,fontWeight:700,color:e.completado?"#aaa":"#1a3d2b",textDecoration:e.completado?"line-through":"none",marginBottom:2}}>{e.pacienteNombre||"Sin paciente"}</div>
                     <div style={{fontSize:13,color:e.completado?"#bbb":"#5a7a6a"}}>{e.titulo}</div>
@@ -764,20 +788,20 @@ function FertilDashboard({fertilCases,patients,appointments,onSelectCase,onNewCa
   const renderTurno=(a)=>{const p=patients.find(x=>x.id===a.patientId);const pName=p&&p.nombre?p.nombre:"Paciente";return(<div key={a.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #f0f4f1"}}><div style={{width:28,height:28,borderRadius:"50%",background:"#f3e5f5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}}>{"💜"}</div><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:"#1a3d2b"}}>{pName}</div><div style={{fontSize:11,color:"#7a9a8a"}}>{a.title+" · "+fmtDateTime(a.startAt)}</div></div></div>);};
   const statCard=(icon,label,value,sub,color="#7b2d8b")=>(<div style={{...S.card,flex:1,minWidth:130}}><div style={{fontSize:20,marginBottom:4}}>{icon}</div><div style={{fontSize:20,fontWeight:700,color}}>{value}</div><div style={{fontSize:11,fontWeight:600,color:"#1a3d2b",marginTop:2}}>{label}</div>{sub&&<div style={{fontSize:10,color:"#7a9a8a",marginTop:1}}>{sub}</div>}</div>);
   return(<div>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:24}}>💜</span><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#7b2d8b"}}>Programa Fértil</h2></div><button onClick={onNewCase} style={S.btnFertil}>+ Nueva paciente Fértil</button></div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:24}}>💜</span><h2 style={{margin:0,fontSize:20,fontWeight:700,color:C.fertil}}>Programa Fértil</h2></div><button onClick={onNewCase} style={S.btnFertil}>+ Nueva paciente Fértil</button></div>
     <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>{statCard("👩","Activas",activas.length,"en programa")}{statCard("✅","Finalizadas",fertilCases.filter(c=>c.status==="finalizada").length,"completaron")}{statCard("💰","Ingresos del mes",fmtMoney(ingresosMes),"programa Fértil")}{statCard("📊","Total acumulado",fmtMoney(totalAcumulado),"histórico")}</div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
-      <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>{"📅 Próximos turnos Fértil"}</h4>{proximosTurnos.length===0?<p style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Sin turnos programados</p>:proximosTurnos.map(renderTurno)}</div>
-      <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#e76f51"}}>⚠️ Alertas</h4>{alertas.length===0?<p style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Sin alertas</p>:alertas.map((a,i)=>(<div key={i} onClick={()=>onSelectCase(a.caseId)} style={{padding:"8px 10px",background:"#fff5f0",borderRadius:8,marginBottom:6,fontSize:12,color:"#c0392b",cursor:"pointer",fontWeight:600}}>{a.msg}</div>))}</div>
+      <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:C.fertil}}>{"📅 Próximos turnos Fértil"}</h4>{proximosTurnos.length===0?<p style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Sin turnos programados</p>:proximosTurnos.map(renderTurno)}</div>
+      <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:C.danger}}>⚠️ Alertas</h4>{alertas.length===0?<p style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Sin alertas</p>:alertas.map((a,i)=>(<div key={i} onClick={()=>onSelectCase(a.caseId)} style={{padding:"8px 10px",background:"#fff5f0",borderRadius:8,marginBottom:6,fontSize:12,color:"#c0392b",cursor:"pointer",fontWeight:600}}>{a.msg}</div>))}</div>
     </div>
 
     {/* Cuadro de seguimiento de consultas */}
     {activas.length>0&&<div style={{...S.card,marginBottom:20}}>
-      <h4 style={{margin:"0 0 14px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>{"📋 Seguimiento de consultas — Pacientes activas"}</h4>
+      <h4 style={{margin:"0 0 14px",fontSize:13,fontWeight:700,color:C.fertil}}>{"📋 Seguimiento de consultas — Pacientes activas"}</h4>
       <div style={{overflowX:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
           <thead>
-            <tr style={{borderBottom:"2px solid #e8d5f0"}}>
+            <tr style={{borderBottom:"2px solid "+C.fertilLight}}>
               <th style={{padding:"8px 12px",textAlign:"left",color:"#7b2d8b",fontWeight:700,fontSize:11,textTransform:"uppercase",minWidth:140}}>Paciente</th>
               {FERTIL_CONSULT_TYPES.map(function(ct){return <th key={ct.num} style={{padding:"8px 6px",textAlign:"center",color:"#5a7a6a",fontWeight:600,fontSize:10,textTransform:"uppercase",minWidth:70}}>{ct.num===1?"Inicial":ct.num===5?"Cierre":"Seg "+( ct.num-1)}</th>;})}
             </tr>
@@ -790,7 +814,7 @@ function FertilDashboard({fertilCases,patients,appointments,onSelectCase,onNewCa
               return(<tr key={c.id} style={{borderBottom:"1px solid #f0f4f1",cursor:"pointer"}} onClick={function(){onSelectCase(c.id);}}>
                 <td style={{padding:"10px 12px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#7b2d8b,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:12,flexShrink:0}}>{pName.charAt(0)}</div>
+                    <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,"+C.fertil+","+C.fertilAlt+")",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:12,flexShrink:0}}>{pName.charAt(0)}</div>
                     <div><div style={{fontWeight:600,color:"#1a3d2b",fontSize:13}}>{pName}</div><div style={{fontSize:10,color:"#7a9a8a"}}>{"Sem "+c.currentWeek+"/8"}</div></div>
                   </div>
                 </td>
@@ -832,7 +856,7 @@ function FertilPatientList({fertilCases,patients,appointments,onSelectCase}){
     const pInitial=p&&p.nombre?p.nombre.charAt(0):"?";
     return(<div key={c.id} onClick={()=>onSelectCase(c.id)} style={{...S.card,marginBottom:10,cursor:"pointer",borderLeft:"4px solid "+(FERTIL_STATUS_COLORS[c.status]||"#aaa"),transition:"box-shadow .2s"}} onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 20px rgba(123,45,139,.12)";}} onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)";}}>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#7b2d8b,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{pInitial}</div>
+        <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,"+C.fertil+","+C.fertilAlt+")",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{pInitial}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}><span style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{pName}</span><Badge label={FERTIL_STATUS_LABELS[c.status]} color={(FERTIL_STATUS_COLORS[c.status]||"#aaa")+"22"} text={FERTIL_STATUS_COLORS[c.status]||"#aaa"}/><Badge label={FERTIL_PAYMENT_LABELS[c.paymentStatus]} color={(FERTIL_PAYMENT_COLORS[c.paymentStatus]||"#aaa")+"22"} text={FERTIL_PAYMENT_COLORS[c.paymentStatus]||"#aaa"}/></div>
           <div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>{"Semana "+c.currentWeek+"/8 · "+realized+"/5 consultas · "+fmtMoney(c.amountPaid)+"/"+fmtMoney(c.totalPrice)+(nextAppt?" · Próx: "+fmtDateTime(nextAppt.startAt):"")}</div>
@@ -852,13 +876,13 @@ function FertilPatientList({fertilCases,patients,appointments,onSelectCase}){
 function FertilNewCase({patients,fertilCases,onSave,onCancel}){
   const availablePatients=patients.filter(p=>!fertilCases.some(c=>c.patientId===p.id&&(c.status==="activa"||c.status==="lead")));
   const [form,setForm]=useState({patientId:"",mainCondition:"",objective:"",notes:"",totalPrice:"",paymentMethod:"transferencia",installments:"1",amountPaid:""});const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.patientId&&form.totalPrice;
-  return(<div style={{maxWidth:560}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}><button onClick={onCancel} style={S.btnGhost}>← Volver</button><h2 style={{margin:0,fontSize:18,fontWeight:700,color:"#7b2d8b"}}>💜 Nueva paciente Fértil</h2></div>
+  return(<div style={{maxWidth:560}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}><button onClick={onCancel} style={S.btnGhost}>← Volver</button><h2 style={{margin:0,fontSize:18,fontWeight:700,color:C.fertil}}>💜 Nueva paciente Fértil</h2></div>
     <div style={S.card}>
       <div style={{marginBottom:14}}><label style={S.label}>Paciente *</label><select value={form.patientId} onChange={e=>set("patientId",e.target.value)} style={S.input}><option value="">Seleccioná una paciente...</option>{availablePatients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>
       <Field label="Condición principal" value={form.mainCondition} onChange={v=>set("mainCondition",v)} placeholder="Ej: SOP, endometriosis, buscando embarazo..."/>
       <Field label="Objetivo del programa" value={form.objective} onChange={v=>set("objective",v)} placeholder="Ej: Mejorar fertilidad, regular ciclo..." rows={2}/>
       <Field label="Notas" value={form.notes} onChange={v=>set("notes",v)} placeholder="Observaciones iniciales..." rows={2}/>
-      <div style={{borderTop:"2px solid #f3e5f5",paddingTop:16,marginTop:8,marginBottom:14}}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:"#7b2d8b"}}>💰 Datos de pago</h4>
+      <div style={{borderTop:"2px solid "+C.fertilLight,paddingTop:16,marginTop:8,marginBottom:14}}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.fertil}}>💰 Datos de pago</h4>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <Field label="Precio del programa ($) *" type="number" value={form.totalPrice} onChange={v=>set("totalPrice",v)} placeholder="200000"/>
           <Field label="Monto ya pagado ($)" type="number" value={form.amountPaid} onChange={v=>set("amountPaid",v)} placeholder="0"/>
@@ -916,7 +940,7 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
       <div style={{flex:1}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:22}}>{"💜"}</span>
-          <h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#7b2d8b"}}>{patient&&patient.nombre?patient.nombre:"Paciente"}</h2>
+          <h2 style={{margin:0,fontSize:22,fontWeight:700,color:C.fertil}}>{patient&&patient.nombre?patient.nombre:"Paciente"}</h2>
           <Badge label={FERTIL_STATUS_LABELS[fc.status]} color={(FERTIL_STATUS_COLORS[fc.status]||"#aaa")+"22"} text={FERTIL_STATUS_COLORS[fc.status]||"#aaa"}/>
         </div>
         {fc.mainCondition&&<div style={{fontSize:13,color:"#7a9a8a",marginTop:2}}>{fc.mainCondition}</div>}
@@ -931,12 +955,12 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
 
     {/* Executive summary cards */}
     <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
-      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:"3px solid #7b2d8b"}}>
+      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:"3px solid "+C.fertil}}>
         <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Semana actual</div>
-        <div style={{fontSize:28,fontWeight:700,color:"#7b2d8b",marginTop:4}}>{fc.currentWeek}<span style={{fontSize:14,fontWeight:400,color:"#7a9a8a"}}>{" / 8"}</span></div>
+        <div style={{fontSize:28,fontWeight:700,color:C.fertil,marginTop:4}}>{fc.currentWeek}<span style={{fontSize:14,fontWeight:400,color:"#7a9a8a"}}>{" / 8"}</span></div>
         <div style={{fontSize:11,color:"#7a9a8a",marginTop:2}}>{"Inicio: "+fmtDate(fc.startDate)}</div>
       </div>
-      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:nextAppt?"3px solid #52b788":"3px solid #e0e0e0"}}>
+      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:nextAppt?"3px solid "+C.ok:"3px solid #e0e0e0"}}>
         <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Próxima consulta</div>
         {nextAppt?<div><div style={{fontSize:15,fontWeight:700,color:"#1a3d2b",marginTop:4}}>{fmtDate(nextAppt.startAt.split("T")[0])}</div><div style={{fontSize:11,color:"#7a9a8a"}}>{nextAppt.title}</div></div>:<div style={{fontSize:13,fontWeight:600,color:"#aaa",marginTop:4}}>{"Sin programar"}</div>}
       </div>
@@ -945,13 +969,13 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
         <div style={{marginTop:4}}><Badge label={FERTIL_PAYMENT_LABELS[fc.paymentStatus]} color={payColor+"22"} text={payColor}/></div>
         <div style={{fontSize:12,color:payColor,fontWeight:700,marginTop:4}}>{restante>0?fmtMoney(restante)+" restante":"Pago completo"}</div>
       </div>
-      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:"3px solid #52b788"}}>
+      <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:"3px solid "+C.ok}}>
         <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Consultas</div>
         <div style={{display:"flex",alignItems:"baseline",gap:4,marginTop:4}}>
           <span style={{fontSize:28,fontWeight:700,color:"#1a3d2b"}}>{realizadas}</span>
           <span style={{fontSize:14,color:"#7a9a8a"}}>{"/ 5"}</span>
         </div>
-        <div style={{display:"flex",gap:3,marginTop:4}}>{FERTIL_CONSULT_TYPES.map(function(ct){var a=caseAppts.find(function(x){return x.consultationNumber===ct.num;});var done=a&&a.status==="realizada";return <div key={ct.num} style={{width:14,height:14,borderRadius:3,background:done?"#52b788":"#e0e0e0"}}></div>;})}</div>
+        <div style={{display:"flex",gap:3,marginTop:4}}>{FERTIL_CONSULT_TYPES.map(function(ct){var a=caseAppts.find(function(x){return x.consultationNumber===ct.num;});var done=a&&a.status==="realizada";return <div key={ct.num} style={{width:14,height:14,borderRadius:3,background:done?C.ok:"#e0e0e0"}}></div>;})}</div>
       </div>
       <div style={{...S.card,flex:1,minWidth:120,padding:"14px 16px",borderTop:"3px solid "+(lastFollowup?"#a855f7":"#e0e0e0")}}>
         <div style={{fontSize:10,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Último seguimiento</div>
@@ -962,9 +986,9 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
     {/* Tabs */}
     <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(function(item){var id=item[0];var label=item[1];return(<button key={id} onClick={function(){setTab(id);}} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#7b2d8b":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>);})}</div>
 
-    {tab==="resumen"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div style={S.card}><h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>Datos del caso</h4><div style={{fontSize:13,color:"#1a3d2b",lineHeight:2}}><div><strong>Condición:</strong> {fc.mainCondition||"—"}</div><div><strong>Objetivo:</strong> {fc.objective||"—"}</div><div><strong>Semana:</strong> {fc.currentWeek}/8</div><div><strong>Consultas:</strong> {caseAppts.filter(a=>a.status==="realizada").length}/5</div>{fc.notes&&<div><strong>Notas:</strong> {fc.notes}</div>}</div></div><div style={S.card}><h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>💰 Resumen de pago</h4><div style={{fontSize:13,color:"#1a3d2b",lineHeight:2}}><div><strong>Total:</strong> {fmtMoney(fc.totalPrice)}</div><div><strong>Pagado:</strong> <span style={{color:"#52b788",fontWeight:700}}>{fmtMoney(fc.amountPaid)}</span></div><div><strong>Restante:</strong> <span style={{color:fc.totalPrice-fc.amountPaid>0?"#e76f51":"#52b788",fontWeight:700}}>{fmtMoney(fc.totalPrice-fc.amountPaid)}</span></div><div><strong>Estado:</strong> <Badge label={FERTIL_PAYMENT_LABELS[fc.paymentStatus]} color={FERTIL_PAYMENT_COLORS[fc.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[fc.paymentStatus]}/></div></div></div></div>}
+    {tab==="resumen"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div style={S.card}><h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:C.fertil}}>Datos del caso</h4><div style={{fontSize:13,color:"#1a3d2b",lineHeight:2}}><div><strong>Condición:</strong> {fc.mainCondition||"—"}</div><div><strong>Objetivo:</strong> {fc.objective||"—"}</div><div><strong>Semana:</strong> {fc.currentWeek}/8</div><div><strong>Consultas:</strong> {caseAppts.filter(a=>a.status==="realizada").length}/5</div>{fc.notes&&<div><strong>Notas:</strong> {fc.notes}</div>}</div></div><div style={S.card}><h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:C.fertil}}>💰 Resumen de pago</h4><div style={{fontSize:13,color:"#1a3d2b",lineHeight:2}}><div><strong>Total:</strong> {fmtMoney(fc.totalPrice)}</div><div><strong>Pagado:</strong> <span style={{color:"#52b788",fontWeight:700}}>{fmtMoney(fc.amountPaid)}</span></div><div><strong>Restante:</strong> <span style={{color:fc.totalPrice-fc.amountPaid>0?"#e76f51":"#52b788",fontWeight:700}}>{fmtMoney(fc.totalPrice-fc.amountPaid)}</span></div><div><strong>Estado:</strong> <Badge label={FERTIL_PAYMENT_LABELS[fc.paymentStatus]} color={FERTIL_PAYMENT_COLORS[fc.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[fc.paymentStatus]}/></div></div></div></div>}
 
-    {tab==="pago"&&<div style={{maxWidth:480}}><div style={{...S.card,borderLeft:"4px solid #7b2d8b",marginBottom:16}}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:16}}><div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Precio total</div><div style={{fontSize:24,fontWeight:700,color:"#1a3d2b"}}>{fmtMoney(fc.totalPrice)}</div></div><div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Pagado</div><div style={{fontSize:24,fontWeight:700,color:"#52b788"}}>{fmtMoney(fc.amountPaid)}</div></div><div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Restante</div><div style={{fontSize:24,fontWeight:700,color:fc.totalPrice-fc.amountPaid>0?"#e76f51":"#52b788"}}>{fmtMoney(fc.totalPrice-fc.amountPaid)}</div></div><div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Estado</div><div style={{marginTop:6}}><Badge label={FERTIL_PAYMENT_LABELS[fc.paymentStatus]} color={FERTIL_PAYMENT_COLORS[fc.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[fc.paymentStatus]}/></div></div></div><div style={{fontSize:12,color:"#7a9a8a"}}>Método: {fc.paymentMethod||"—"} · Cuotas: {fc.installments||1}</div></div>
+    {tab==="pago"&&<div style={{maxWidth:480}}><div style={{...S.card,borderLeft:"4px solid #7b2d8b",marginBottom:16}}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:16}}><div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Precio total</div><div style={{fontSize:24,fontWeight:700,color:"#1a3d2b"}}>{fmtMoney(fc.totalPrice)}</div></div><div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Pagado</div><div style={{fontSize:24,fontWeight:700,color:C.ok}}>{fmtMoney(fc.amountPaid)}</div></div><div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Restante</div><div style={{fontSize:24,fontWeight:700,color:fc.totalPrice-fc.amountPaid>0?"#e76f51":"#52b788"}}>{fmtMoney(fc.totalPrice-fc.amountPaid)}</div></div><div><div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,textTransform:"uppercase"}}>Estado</div><div style={{marginTop:6}}><Badge label={FERTIL_PAYMENT_LABELS[fc.paymentStatus]} color={FERTIL_PAYMENT_COLORS[fc.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[fc.paymentStatus]}/></div></div></div><div style={{fontSize:12,color:"#7a9a8a"}}>Método: {fc.paymentMethod||"—"} · Cuotas: {fc.installments||1}</div></div>
       <button onClick={()=>setShowPayForm(!showPayForm)} style={S.btnFertil}>💰 Registrar pago</button>
       {showPayForm&&<div style={{...S.card,marginTop:12}}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Monto ($)" type="number" value={payForm.amount} onChange={v=>setPayForm(f=>({...f,amount:v}))} placeholder="50000"/><div style={{marginBottom:14}}><label style={S.label}>Método</label><select value={payForm.method} onChange={e=>setPayForm(f=>({...f,method:e.target.value}))} style={S.input}><option value="transferencia">Transferencia</option><option value="efectivo">Efectivo</option><option value="mp">Mercado Pago</option></select></div></div><div style={{display:"flex",gap:10}}><button onClick={()=>setShowPayForm(false)} style={{...S.btnGhost,flex:1}}>Cancelar</button><button disabled={!payForm.amount} onClick={()=>{const newPaid=(fc.amountPaid||0)+parseFloat(payForm.amount);const newStatus=newPaid>=fc.totalPrice?"pago":newPaid>0?"parcial":"pendiente";onUpdateCase({...fc,amountPaid:newPaid,paymentStatus:newStatus,paymentMethod:payForm.method});setPayForm({amount:"",method:fc.paymentMethod});setShowPayForm(false);}} style={{...S.btnFertil,flex:2,opacity:payForm.amount?1:.5}}>Registrar</button></div></div>}
     </div>}
@@ -987,13 +1011,13 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
     {tab==="seguimientos"&&<div>
       <button onClick={()=>setShowFollowupForm(!showFollowupForm)} style={{...S.btnFertil,marginBottom:16}}>+ Nuevo seguimiento</button>
       {showFollowupForm&&<div style={{...S.card,marginBottom:16}}><h4 style={{margin:"0 0 12px",color:"#7b2d8b"}}>📝 Registrar seguimiento</h4><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}><div style={{marginBottom:14}}><label style={S.label}>Semana</label><select value={ffForm.weekNumber} onChange={e=>setFfForm(f=>({...f,weekNumber:parseInt(e.target.value)}))} style={S.input}>{[1,2,3,4,5,6,7,8].map(w=><option key={w} value={w}>Semana {w}</option>)}</select></div><Field label="Fecha" type="date" value={ffForm.date} onChange={v=>setFfForm(f=>({...f,date:v}))}/><Field label="Peso (kg)" type="number" value={ffForm.weight} onChange={v=>setFfForm(f=>({...f,weight:v}))} placeholder="65"/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Síntomas" value={ffForm.symptoms} onChange={v=>setFfForm(f=>({...f,symptoms:v}))} placeholder="Hinchazón, cansancio..." rows={2}/><Field label="Estado de ánimo" value={ffForm.mood} onChange={v=>setFfForm(f=>({...f,mood:v}))} placeholder="Bien, ansiosa..."/><Field label="Sueño" value={ffForm.sleepQuality} onChange={v=>setFfForm(f=>({...f,sleepQuality:v}))} placeholder="Bueno, regular..."/><Field label="Digestión" value={ffForm.digestion} onChange={v=>setFfForm(f=>({...f,digestion:v}))} placeholder="Normal, constipación..."/></div><Field label="Adherencia al plan" value={ffForm.adherence} onChange={v=>setFfForm(f=>({...f,adherence:v}))} placeholder="Buena, parcial..."/><Field label="Notas" value={ffForm.notes} onChange={v=>setFfForm(f=>({...f,notes:v}))} placeholder="Observaciones..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={()=>setShowFollowupForm(false)} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={()=>{onAddFollowup({id:uid(),fertilCaseId:fc.id,...ffForm,weight:parseFloat(ffForm.weight)||null});setShowFollowupForm(false);setFfForm({weekNumber:fc.currentWeek,date:todayISO(),weight:"",symptoms:"",mood:"",sleepQuality:"",digestion:"",adherence:"",notes:""});}} style={{...S.btnFertil,flex:2}}>Guardar</button></div></div>}
-      {caseFollowups.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>Sin seguimientos registrados</p>:caseFollowups.sort((a,b)=>b.weekNumber-a.weekNumber||new Date(b.date)-new Date(a.date)).map(f=>(<div key={f.id} style={{...S.card,marginBottom:10,borderLeft:"3px solid #7b2d8b"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontWeight:700,color:"#7b2d8b",fontSize:13}}>Semana {f.weekNumber}</span><span style={{fontSize:12,color:"#7a9a8a"}}>{fmtDate(f.date)}</span></div><div style={{fontSize:12,color:"#1a3d2b",lineHeight:1.8}}>{f.weight&&<div>Peso: {f.weight} kg</div>}{f.symptoms&&<div>Síntomas: {f.symptoms}</div>}{f.mood&&<div>Ánimo: {f.mood}</div>}{f.sleepQuality&&<div>Sueño: {f.sleepQuality}</div>}{f.digestion&&<div>Digestión: {f.digestion}</div>}{f.adherence&&<div>Adherencia: {f.adherence}</div>}{f.notes&&<div style={{fontStyle:"italic",color:"#5a7a6a",marginTop:4}}>{f.notes}</div>}</div></div>))}
+      {caseFollowups.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>Sin seguimientos registrados</p>:caseFollowups.sort((a,b)=>b.weekNumber-a.weekNumber||new Date(b.date)-new Date(a.date)).map(f=>(<div key={f.id} style={{...S.card,marginBottom:10,borderLeft:"3px solid #7b2d8b"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontWeight:700,color:C.fertil,fontSize:13}}>Semana {f.weekNumber}</span><span style={{fontSize:12,color:"#7a9a8a"}}>{fmtDate(f.date)}</span></div><div style={{fontSize:12,color:"#1a3d2b",lineHeight:1.8}}>{f.weight&&<div>Peso: {f.weight} kg</div>}{f.symptoms&&<div>Síntomas: {f.symptoms}</div>}{f.mood&&<div>Ánimo: {f.mood}</div>}{f.sleepQuality&&<div>Sueño: {f.sleepQuality}</div>}{f.digestion&&<div>Digestión: {f.digestion}</div>}{f.adherence&&<div>Adherencia: {f.adherence}</div>}{f.notes&&<div style={{fontStyle:"italic",color:"#5a7a6a",marginTop:4}}>{f.notes}</div>}</div></div>))}
     </div>}
 
     {tab==="analisis"&&<div>
       <button onClick={()=>setShowLabForm(!showLabForm)} style={{...S.btnFertil,marginBottom:16}}>+ Nuevo análisis</button>
       {showLabForm&&<div style={{...S.card,marginBottom:16}}><h4 style={{margin:"0 0 12px",color:"#7b2d8b"}}>🔬 Registrar análisis</h4><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha" type="date" value={labForm.date} onChange={v=>setLabForm(f=>({...f,date:v}))}/><Field label="Tipo de análisis" value={labForm.labType} onChange={v=>setLabForm(f=>({...f,labType:v}))} placeholder="Hormonal, hemograma..."/></div><Field label="Resultados" value={labForm.results} onChange={v=>setLabForm(f=>({...f,results:v}))} placeholder="Valores relevantes..." rows={3}/><Field label="Notas" value={labForm.notes} onChange={v=>setLabForm(f=>({...f,notes:v}))} placeholder="Observaciones..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={()=>setShowLabForm(false)} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={()=>{onAddLab({id:uid(),fertilCaseId:fc.id,...labForm});setShowLabForm(false);setLabForm({date:todayISO(),labType:"",results:"",notes:""});}} style={{...S.btnFertil,flex:2}}>Guardar</button></div></div>}
-      {caseLabs.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>Sin análisis registrados</p>:caseLabs.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>(<div key={l.id} style={{...S.card,marginBottom:10,borderLeft:"3px solid #a855f7"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontWeight:700,color:"#7b2d8b",fontSize:13}}>{l.labType||"Análisis"}</span><span style={{fontSize:12,color:"#7a9a8a"}}>{fmtDate(l.date)}</span></div>{l.results&&<div style={{fontSize:12,color:"#1a3d2b",whiteSpace:"pre-wrap",marginBottom:4}}>{l.results}</div>}{l.notes&&<div style={{fontSize:12,color:"#5a7a6a",fontStyle:"italic"}}>{l.notes}</div>}</div>))}
+      {caseLabs.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>Sin análisis registrados</p>:caseLabs.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>(<div key={l.id} style={{...S.card,marginBottom:10,borderLeft:"3px solid #a855f7"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontWeight:700,color:C.fertil,fontSize:13}}>{l.labType||"Análisis"}</span><span style={{fontSize:12,color:"#7a9a8a"}}>{fmtDate(l.date)}</span></div>{l.results&&<div style={{fontSize:12,color:"#1a3d2b",whiteSpace:"pre-wrap",marginBottom:4}}>{l.results}</div>}{l.notes&&<div style={{fontSize:12,color:"#5a7a6a",fontStyle:"italic"}}>{l.notes}</div>}</div>))}
     </div>}
 
     {tab==="tareas"&&<div>
@@ -1006,13 +1030,13 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
 
 // ─── LEADS MODULE ─────────────────────────────────────────────────────────────
 var LEAD_ESTADOS=[
-  {id:"nuevo",label:"Nuevo",color:"#3b82f6"},
-  {id:"respondido",label:"Respondido",color:"#8b5cf6"},
-  {id:"esperando",label:"Esperando",color:"#f4a261"},
-  {id:"seguimiento",label:"Seguimiento",color:"#e76f51"},
-  {id:"consulta",label:"Consulta",color:"#52b788"},
-  {id:"fertil",label:"Fértil",color:"#7b2d8b"},
-  {id:"descartado",label:"Descartado",color:"#aaa"}
+  {id:"nuevo",label:"Nuevo",color:C.lead},
+  {id:"respondido",label:"Respondido",color:C.fertilAlt},
+  {id:"esperando",label:"Esperando",color:C.warn},
+  {id:"seguimiento",label:"Seguimiento",color:C.danger},
+  {id:"consulta",label:"Consulta",color:C.ok},
+  {id:"fertil",label:"Fértil",color:C.fertil},
+  {id:"descartado",label:"Descartado",color:C.mutedLight}
 ];
 var LEAD_ORIGENES=[{id:"instagram",label:"Instagram"},{id:"derivacion",label:"Derivación"},{id:"web",label:"Web"},{id:"otro",label:"Otro"}];
 var LEAD_INTERES=[{id:"consulta",label:"Consulta"},{id:"fertil",label:"Fértil"},{id:"indefinido",label:"Indefinido"}];
@@ -1130,13 +1154,13 @@ function LeadsList({leads,onAddLead,onUpdateLead,onDeleteLead}){
   return(<div>
     {/* Resumen */}
     {(seguimientoHoy.length>0||sinResponder.length>0||vencidos.length>0)&&<div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
-      {seguimientoHoy.length>0&&<div style={{...S.card,flex:1,minWidth:180,borderLeft:"4px solid #7b2d8b",padding:"12px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#7b2d8b",marginBottom:4}}>{"📋 Hoy tenés "+seguimientoHoy.length+" seguimiento"+(seguimientoHoy.length>1?"s":"")+" pendiente"+(seguimientoHoy.length>1?"s":"")}</div>{seguimientoHoy.slice(0,3).map(function(l){return <div key={l.id} style={{fontSize:12,color:"#5a7a6a"}}>{l.nombre+(l.accionPendiente?" — "+l.accionPendiente:"")}</div>;})}</div>}
-      {sinResponder.length>0&&<div style={{...S.card,flex:1,minWidth:180,borderLeft:"4px solid #3b82f6",padding:"12px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#3b82f6"}}>{"🆕 "+sinResponder.length+" lead"+(sinResponder.length>1?"s":"")+" sin responder"}</div></div>}
-      {vencidos.length>0&&<div style={{...S.card,flex:1,minWidth:180,borderLeft:"4px solid #e76f51",padding:"12px 16px"}}><div style={{fontSize:13,fontWeight:700,color:"#e76f51"}}>{"⚠️ "+vencidos.length+" seguimiento"+(vencidos.length>1?"s":"")+" vencido"+(vencidos.length>1?"s":"")}</div></div>}
+      {seguimientoHoy.length>0&&<div style={{...S.card,flex:1,minWidth:180,borderLeft:"4px solid #7b2d8b",padding:"12px 16px"}}><div style={{fontSize:13,fontWeight:700,color:C.fertil,marginBottom:4}}>{"📋 Hoy tenés "+seguimientoHoy.length+" seguimiento"+(seguimientoHoy.length>1?"s":"")+" pendiente"+(seguimientoHoy.length>1?"s":"")}</div>{seguimientoHoy.slice(0,3).map(function(l){return <div key={l.id} style={{fontSize:12,color:"#5a7a6a"}}>{l.nombre+(l.accionPendiente?" — "+l.accionPendiente:"")}</div>;})}</div>}
+      {sinResponder.length>0&&<div style={{...S.card,flex:1,minWidth:180,borderLeft:"4px solid #3b82f6",padding:"12px 16px"}}><div style={{fontSize:13,fontWeight:700,color:C.lead}}>{"🆕 "+sinResponder.length+" lead"+(sinResponder.length>1?"s":"")+" sin responder"}</div></div>}
+      {vencidos.length>0&&<div style={{...S.card,flex:1,minWidth:180,borderLeft:"4px solid #e76f51",padding:"12px 16px"}}><div style={{fontSize:13,fontWeight:700,color:C.danger}}>{"⚠️ "+vencidos.length+" seguimiento"+(vencidos.length>1?"s":"")+" vencido"+(vencidos.length>1?"s":"")}</div></div>}
     </div>}
 
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-      <h3 style={{margin:0,fontSize:16,fontWeight:700,color:"#7b2d8b"}}>Leads</h3>
+      <h3 style={{margin:0,fontSize:16,fontWeight:700,color:C.fertil}}>Leads</h3>
       <button onClick={function(){setEditingLead(null);setShowForm(true);}} style={S.btnFertil}>{"+ Nuevo lead"}</button>
     </div>
 
@@ -1212,7 +1236,7 @@ function FertilModule({state,dispatch,patients,onGoToPatient}){
   return(<div>
     <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4}}>{[["dashboard","📊 Dashboard"],["pacientes","👩 Pacientes"],["leads","📱 Leads"]].map(([id,label])=>(<button key={id} onClick={()=>setSubTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:subTab===id?"#fff":"transparent",color:subTab===id?"#7b2d8b":"#5a7a6a",boxShadow:subTab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}{id==="leads"&&leads.filter(function(l){return l.estado==="nuevo"||l.proximoSeguimiento===todayISO();}).length>0&&<span style={{marginLeft:4,background:"#e76f51",color:"#fff",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{leads.filter(function(l){return l.estado==="nuevo"||l.proximoSeguimiento===todayISO();}).length}</span>}</button>))}</div>
     {subTab==="dashboard"&&<FertilDashboard fertilCases={fertilCases} patients={patients} appointments={appointments} onSelectCase={id=>{setSelectedCaseId(id);setSubScreen("case-detail");}} onNewCase={()=>setSubScreen("new-case")}/>}
-    {subTab==="pacientes"&&<><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}><h3 style={{margin:0,fontSize:16,fontWeight:700,color:"#7b2d8b"}}>Pacientes Fértil</h3><button onClick={()=>setSubScreen("new-case")} style={S.btnFertil}>+ Nueva paciente</button></div><FertilPatientList fertilCases={fertilCases} patients={patients} appointments={appointments} onSelectCase={id=>{setSelectedCaseId(id);setSubScreen("case-detail");}}/></>}
+    {subTab==="pacientes"&&<><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}><h3 style={{margin:0,fontSize:16,fontWeight:700,color:C.fertil}}>Pacientes Fértil</h3><button onClick={()=>setSubScreen("new-case")} style={S.btnFertil}>+ Nueva paciente</button></div><FertilPatientList fertilCases={fertilCases} patients={patients} appointments={appointments} onSelectCase={id=>{setSelectedCaseId(id);setSubScreen("case-detail");}}/></>}
     {subTab==="leads"&&<LeadsList leads={leads} onAddLead={async function(l){dispatch({type:"ADD_LEAD",l:l});await sbInsertLead(l);} } onUpdateLead={async function(l){dispatch({type:"UPDATE_LEAD",l:l});await sbUpdateLead(l);}} onDeleteLead={async function(id){dispatch({type:"DELETE_LEAD",id:id});await sbDeleteLead(id);}}/>}
   </div>);
 }
@@ -1304,9 +1328,9 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
 
     {/* Resumen rápido */}
     <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:24}}>
-      {statCard("📅",totalHoy,"Consultas hoy",totalHoy===0?"Día libre":"pendientes","#2d6a4f",onGoToAgenda)}
+      {statCard("📅",totalHoy,"Consultas hoy",totalHoy===0?"Día libre":"pendientes",C.okDark,onGoToAgenda)}
       {statCard("💜",fertilCases.filter(function(c){return c.status==="activa";}).length,"Fértil activas","en programa","#7b2d8b")}
-      {statCard("📱",leadsNuevos.length+leadsSeguimientoHoy.length,"Leads pendientes",(leadsNuevos.length?"nuevos: "+leadsNuevos.length:"")+(leadsSeguimientoHoy.length?" · hoy: "+leadsSeguimientoHoy.length:""),"#3b82f6",leadsNuevos.length+leadsSeguimientoHoy.length>0?onGoToLeads:null)}
+      {statCard("📱",leadsNuevos.length+leadsSeguimientoHoy.length,"Leads pendientes",(leadsNuevos.length?"nuevos: "+leadsNuevos.length:"")+(leadsSeguimientoHoy.length?" · hoy: "+leadsSeguimientoHoy.length:""),C.lead,leadsNuevos.length+leadsSeguimientoHoy.length>0?onGoToLeads:null)}
       {statCard("💰",pagosPendientes.length,"Pagos pendientes",pagosPendientes.length>0?"requieren atención":"todo al día",pagosPendientes.length>0?"#e76f51":"#52b788")}
     </div>
 
@@ -1323,7 +1347,7 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
 
         {/* Mañana */}
         {(eventosMañana.length>0||apptsMañana.length>0)&&<div style={{...S.card}}>
-          <h3 style={{margin:"0 0 14px",fontSize:15,fontWeight:700,color:"#52b788"}}>{"📋 Mañana · "+(eventosMañana.length+apptsMañana.length)+" turno"+(eventosMañana.length+apptsMañana.length>1?"s":"")}</h3>
+          <h3 style={{margin:"0 0 14px",fontSize:15,fontWeight:700,color:C.ok}}>{"📋 Mañana · "+(eventosMañana.length+apptsMañana.length)+" turno"+(eventosMañana.length+apptsMañana.length>1?"s":"")}</h3>
           {apptsMañana.sort(function(a,b){return a.startAt.localeCompare(b.startAt);}).map(renderApptItem)}
           {eventosMañana.sort(function(a,b){return(a.hora||"").localeCompare(b.hora||"");}).map(renderEventoItem)}
         </div>}
@@ -1332,27 +1356,27 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
       {/* Columna derecha: Alertas y pendientes */}
       <div>
         {/* Seguimientos Fértil vencidos */}
-        {fertilProgramadas.length>0&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid #e76f51"}}>
-          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#e76f51"}}>{"⚠️ "+fertilProgramadas.length+" consulta"+(fertilProgramadas.length>1?"s":"")+" Fértil vencida"+(fertilProgramadas.length>1?"s":"")}</h4>
+        {fertilProgramadas.length>0&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid "+C.danger}}>
+          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:C.danger}}>{"⚠️ "+fertilProgramadas.length+" consulta"+(fertilProgramadas.length>1?"s":"")+" Fértil vencida"+(fertilProgramadas.length>1?"s":"")}</h4>
           {fertilProgramadas.slice(0,4).map(function(a){var p=patients.find(function(x){return x.id===a.patientId;});return(<div key={a.id} onClick={function(){if(a.fertilCaseId)onGoToFertilCase(a.fertilCaseId);}} style={{fontSize:12,color:"#5a7a6a",padding:"4px 0",cursor:"pointer"}}>{(p?p.nombre:"Paciente")+" — "+a.title+" ("+fmtDate(a.startAt.split("T")[0])+")"}</div>);})}
         </div>}
 
         {/* Pagos pendientes */}
-        {pagosPendientes.length>0&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid #f4a261"}}>
+        {pagosPendientes.length>0&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid "+C.warn}}>
           <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#f4a261"}}>{"💰 "+pagosPendientes.length+" pago"+(pagosPendientes.length>1?"s":"")+" pendiente"+(pagosPendientes.length>1?"s":"")}</h4>
           {pagosPendientes.map(function(c){var p=patients.find(function(x){return x.id===c.patientId;});return(<div key={c.id} onClick={function(){onGoToFertilCase(c.id);}} style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#5a7a6a",padding:"4px 0",cursor:"pointer"}}><span>{p?p.nombre:"Paciente"}</span><span style={{fontWeight:700,color:c.paymentStatus==="pendiente"?"#e76f51":"#f4a261"}}>{fmtMoney(c.totalPrice-c.amountPaid)+" restante"}</span></div>);})}
         </div>}
 
         {/* Leads */}
-        {(leadsNuevos.length>0||leadsSeguimientoHoy.length>0)&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid #3b82f6"}}>
+        {(leadsNuevos.length>0||leadsSeguimientoHoy.length>0)&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid "+C.lead}}>
           <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#3b82f6"}}>{"📱 Leads que necesitan atención"}</h4>
           {leadsSeguimientoHoy.map(function(l){return(<div key={l.id} onClick={onGoToLeads} style={{fontSize:12,color:"#5a7a6a",padding:"4px 0",cursor:"pointer"}}>{"📋 "+l.nombre+(l.accionPendiente?" — "+l.accionPendiente:"")}</div>);})}
-          {leadsNuevos.map(function(l){return(<div key={l.id} onClick={onGoToLeads} style={{fontSize:12,color:"#3b82f6",padding:"4px 0",cursor:"pointer"}}>{"🆕 "+l.nombre+" — sin responder"}</div>);})}
+          {leadsNuevos.map(function(l){return(<div key={l.id} onClick={onGoToLeads} style={{fontSize:12,color:C.lead,padding:"4px 0",cursor:"pointer"}}>{"🆕 "+l.nombre+" — sin responder"}</div>);})}
         </div>}
 
         {/* Eventos vencidos */}
         {eventosVencidos.length>0&&<div style={{...S.card,borderLeft:"4px solid #e76f51"}}>
-          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#e76f51"}}>{"⏰ "+eventosVencidos.length+" evento"+(eventosVencidos.length>1?"s":"")+" vencido"+(eventosVencidos.length>1?"s":"")}</h4>
+          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:C.danger}}>{"⏰ "+eventosVencidos.length+" evento"+(eventosVencidos.length>1?"s":"")+" vencido"+(eventosVencidos.length>1?"s":"")}</h4>
           {eventosVencidos.slice(0,5).map(function(e){return(<div key={e.id} style={{fontSize:12,color:"#5a7a6a",padding:"4px 0"}}>{fmtDate(e.fecha)+" — "+e.titulo+(e.pacienteNombre?" ("+e.pacienteNombre+")":"")}</div>);})}
         </div>}
 
@@ -1436,9 +1460,9 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
         <div style={{fontSize:18,fontWeight:700,color:"#1a3d2b",marginTop:2}}>{patientConsultas.length}</div>
         <div style={{fontSize:11,color:"#52b788",fontWeight:600}}>{fmtMoney(totalCobrado)}</div>
       </div>
-      {fertilCase&&<div style={{...S.card,flex:1,minWidth:100,padding:"12px 16px",borderTop:"3px solid #7b2d8b"}}>
-        <div style={{fontSize:10,color:"#7b2d8b",fontWeight:600,textTransform:"uppercase"}}>Fértil</div>
-        <div style={{fontSize:13,fontWeight:700,color:"#7b2d8b",marginTop:2}}>{"Semana "+fertilCase.currentWeek+"/8"}</div>
+      {fertilCase&&<div style={{...S.card,flex:1,minWidth:100,padding:"12px 16px",borderTop:"3px solid "+C.fertil}}>
+        <div style={{fontSize:10,color:C.fertil,fontWeight:600,textTransform:"uppercase"}}>Fértil</div>
+        <div style={{fontSize:13,fontWeight:700,color:C.fertil,marginTop:2}}>{"Semana "+fertilCase.currentWeek+"/8"}</div>
         <div style={{fontSize:11,color:"#7a9a8a"}}><Badge label={FERTIL_PAYMENT_LABELS[fertilCase.paymentStatus]} color={FERTIL_PAYMENT_COLORS[fertilCase.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[fertilCase.paymentStatus]}/></div>
       </div>}
     </div>
@@ -1562,7 +1586,7 @@ export default function App() {
   const todayPendientes=(state.eventos||[]).filter(e=>e.fecha===todayISO()&&!e.completado).length;
   const fertilActivas=(state.fertilCases||[]).filter(c=>c.status==="activa").length;
   if(!loaded)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f5faf7",fontFamily:"sans-serif"}}><div style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{color:"#2d6a4f",fontWeight:600,fontSize:16}}>JL Nutrición</p><p style={{color:"#7a9a8a",fontSize:13}}>Conectando con la base de datos...</p></div></div>);
-  return (<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f5ee 0%,#f5f9f7 50%,#e0f0e8 100%)",fontFamily:"'DM Sans',system-ui,sans-serif"}}><style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');*{box-sizing:border-box}input:focus,select:focus,textarea:focus{border-color:#2d6a4f!important;box-shadow:0 0 0 3px rgba(45,106,79,.1)!important;outline:none}`}</style><div style={{background:"#fff",borderBottom:"1.5px solid #e8f0ec",padding:"0 20px",position:"sticky",top:0,zIndex:100}}><div style={{maxWidth:980,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍏</div><span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>JL Nutrición</span><span style={{fontSize:11,color:saveStatus==="saving"?"#f4a261":saveStatus==="saved"?"#52b788":saveStatus==="error"?"#e63946":"transparent",fontWeight:600,transition:"color .3s"}}>{saveStatus==="saving"?"● guardando...":saveStatus==="saved"?"✓ guardado":saveStatus==="error"?"⚠ error":"·"}</span></div><div style={{display:"flex",alignItems:"center",gap:4}}>{[["hoy","🏠 Hoy"],["patients","👥 Pacientes"],["fertil","💜 Fértil"],["agenda","📅 Agenda"],["stats","📊 Estadísticas"],["plan","✨ Nuevo plan"]].map(([id,label])=>(<button key={id} onClick={()=>{setNavTab(id);go(id);}} style={{padding:"7px 14px",border:"none",borderRadius:9,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:navTab===id?(id==="fertil"?"#7b2d8b":"#2d6a4f"):"transparent",color:navTab===id?"#fff":(id==="fertil"?"#7b2d8b":"#5a7a6a"),position:"relative"}}>{label}{id==="agenda"&&todayPendientes>0&&<span style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:"#e76f51",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{todayPendientes}</span>}{id==="fertil"&&fertilActivas>0&&<span style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:"#7b2d8b",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{fertilActivas}</span>}</button>))}</div></div></div><div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>
+  return (<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f5ee 0%,#f5f9f7 50%,#e0f0e8 100%)",fontFamily:"'DM Sans',system-ui,sans-serif"}}><style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');*{box-sizing:border-box}input:focus,select:focus,textarea:focus{border-color:#2d6a4f!important;box-shadow:0 0 0 3px rgba(45,106,79,.1)!important;outline:none}`}</style><div style={{background:"#fff",borderBottom:"1.5px solid #e8f0ec",padding:"0 20px",position:"sticky",top:0,zIndex:100}}><div style={{maxWidth:980,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍏</div><span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>JL Nutrición</span><span style={{fontSize:11,color:saveStatus==="saving"?"#f4a261":saveStatus==="saved"?"#52b788":saveStatus==="error"?"#e63946":"transparent",fontWeight:600,transition:"color .3s"}}>{saveStatus==="saving"?"● guardando...":saveStatus==="saved"?"✓ guardado":saveStatus==="error"?"⚠ error":"·"}</span></div><div style={{display:"flex",alignItems:"center",gap:4}}>{[["hoy","🏠 Hoy"],["patients","👥 Pacientes"],["fertil","💜 Fértil"],["agenda","📅 Agenda"],["stats","📊 Estadísticas"],["plan","✨ Nuevo plan"]].map(([id,label])=>(<button key={id} onClick={()=>{setNavTab(id);go(id);}} style={{padding:"7px 14px",border:"none",borderRadius:9,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:navTab===id?(id==="fertil"?C.fertil:C.okDark):"transparent",color:navTab===id?"#fff":(id==="fertil"?C.fertil:C.textSub),position:"relative"}}>{label}{id==="agenda"&&todayPendientes>0&&<span style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:C.danger,color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{todayPendientes}</span>}{id==="fertil"&&fertilActivas>0&&<span style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:C.fertil,color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{fertilActivas}</span>}</button>))}</div></div></div><div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>
     {screen==="hoy"&&<TodayDashboard state={state} patients={state.patients} onGoToPatient={function(id){setNavTab("patients");go("detail",id);}} onGoToFertilCase={function(caseId){setNavTab("fertil");go("fertil");}} onGoToAgenda={function(){setNavTab("agenda");go("agenda");}} onGoToLeads={function(){setNavTab("fertil");go("fertil");}}/>}
     {screen==="patients"&&<PatientList patients={state.patients} onSelect={id=>go("detail",id)} onNew={()=>go("new-patient")}/>}
     {screen==="fertil"&&<FertilModule state={state} dispatch={dispatch} patients={state.patients} onGoToPatient={id=>{setNavTab("patients");go("detail",id);}}/>}
