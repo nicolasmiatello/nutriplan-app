@@ -1208,7 +1208,32 @@ export default function App() {
   useEffect(()=>{if(!loaded)return;setSaveStatus("saving");const t=setTimeout(async()=>{try{await Promise.all(state.patients.map(p=>sbUpsert(p)));setSaveStatus("saved");}catch{setSaveStatus("error");}setTimeout(()=>setSaveStatus("idle"),2000);},800);return()=>clearTimeout(t);},[state.patients,loaded]);
   const patient=state.patients.find(p=>p.id===selectedId);const go=(s,id=null)=>{setScreen(s);if(id)setSelectedId(id);};
   const handleAddConsulta=async(c)=>{dispatch({type:"ADD_CONSULTA",c});try{await sbInsertConsulta(c);}catch(e){console.error("Error guardando consulta:",e);}};
-  const handleDeletePatient=async(id)=>{dispatch({type:"DELETE_PATIENT",id});await sbDelete(id);go("patients");};
+  const handleDeletePatient=async(id)=>{
+    // Limpiar datos Fértil asociados
+    var casesForPatient=(state.fertilCases||[]).filter(function(c){return c.patientId===id;});
+    var caseIds=casesForPatient.map(function(c){return c.id;});
+    // Eliminar appointments del paciente
+    var apptsToDelete=(state.appointments||[]).filter(function(a){return a.patientId===id;});
+    for(var a of apptsToDelete){dispatch({type:"DELETE_APPOINTMENT",id:a.id});try{await sbDeleteAppointment(a.id);}catch(e){}}
+    // Eliminar followups, labs, tasks de los cases
+    for(var cid of caseIds){
+      var fups=(state.fertilFollowups||[]).filter(function(f){return f.fertilCaseId===cid;});
+      for(var f of fups){try{await fetch(SUPABASE_URL+"/rest/v1/fertil_followups?id=eq."+f.id,{method:"DELETE",headers:sbHeaders});}catch(e){}}
+      var labs=(state.fertilLabs||[]).filter(function(l){return l.fertilCaseId===cid;});
+      for(var l of labs){try{await fetch(SUPABASE_URL+"/rest/v1/fertil_labs?id=eq."+l.id,{method:"DELETE",headers:sbHeaders});}catch(e){}}
+      var tasks=(state.fertilTasks||[]).filter(function(t){return t.fertilCaseId===cid;});
+      for(var t of tasks){try{await sbDeleteFertilTask(t.id);}catch(e){}}
+    }
+    // Eliminar los fertil_cases
+    for(var fc of casesForPatient){try{await fetch(SUPABASE_URL+"/rest/v1/fertil_cases?id=eq."+fc.id,{method:"DELETE",headers:sbHeaders});}catch(e){}}
+    // Eliminar leads con mismo nombre (opcional, por si matchea)
+    // Limpiar del state
+    dispatch({type:"LOAD_FERTIL",cases:(state.fertilCases||[]).filter(function(c){return c.patientId!==id;}),appointments:(state.appointments||[]).filter(function(a){return a.patientId!==id;}),followups:(state.fertilFollowups||[]).filter(function(f){return!caseIds.includes(f.fertilCaseId);}),labs:(state.fertilLabs||[]).filter(function(l){return!caseIds.includes(l.fertilCaseId);}),tasks:(state.fertilTasks||[]).filter(function(t){return!caseIds.includes(t.fertilCaseId);}),leads:state.fertilLeads||[]});
+    // Eliminar paciente
+    dispatch({type:"DELETE_PATIENT",id:id});
+    await sbDelete(id);
+    go("patients");
+  };
   const handleAddEvento=async(e)=>{dispatch({type:"ADD_EVENTO",e});try{await sbInsertEvento(e);}catch(err){console.error("Error guardando evento:",err);}};
   const handleUpdateEvento=async(e)=>{dispatch({type:"UPDATE_EVENTO",e});try{await sbUpdateEvento(e);}catch(err){console.error("Error actualizando evento:",err);}};
   const handleDeleteEvento=async(id)=>{dispatch({type:"DELETE_EVENTO",id});try{await sbDeleteEvento(id);}catch(err){console.error("Error eliminando evento:",err);}};
