@@ -705,8 +705,51 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
     </div>}
 
     {viewMode==="list"&&<div>
-      {monthEventos.length===0?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:36,marginBottom:8}}>📅</div><p style={{color:"#7a9a8a",fontSize:14}}>No hay eventos en {MESES_FULL[month]}</p></div>:
-      monthEventos.map(e=>renderEventCard(e))}
+      {monthEventos.length===0?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:36,marginBottom:8}}>{"📅"}</div><p style={{color:"#7a9a8a",fontSize:14}}>{"No hay eventos en "+MESES_FULL[month]}</p></div>:(function(){
+        var todayS=todayISO();
+        var tomorrowS=new Date(new Date().getTime()+86400000).toISOString().split("T")[0];
+        var now=new Date();
+        var endOfWeek=new Date(now);endOfWeek.setDate(now.getDate()+(7-now.getDay()));
+        var weekEndStr=endOfWeek.toISOString().split("T")[0];
+        var hoy=monthEventos.filter(function(e){return e.fecha===todayS;});
+        var manana=monthEventos.filter(function(e){return e.fecha===tomorrowS;});
+        var semana=monthEventos.filter(function(e){return e.fecha>tomorrowS&&e.fecha<=weekEndStr;});
+        var resto=monthEventos.filter(function(e){return e.fecha>weekEndStr;});
+        var groups=[{label:"Hoy",color:"#2d6a4f",items:hoy},{label:"Mañana",color:"#52b788",items:manana},{label:"Esta semana",color:"#7a9a8a",items:semana},{label:"Resto del mes",color:"#aaa",items:resto}];
+        return groups.map(function(g){
+          if(g.items.length===0)return null;
+          return(<div key={g.label} style={{marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <div style={{width:4,height:20,borderRadius:2,background:g.color}}></div>
+              <h3 style={{margin:0,fontSize:15,fontWeight:700,color:g.color}}>{g.label}</h3>
+              <span style={{fontSize:12,color:"#7a9a8a",fontWeight:600}}>{g.items.length+" evento"+(g.items.length>1?"s":"")}</span>
+            </div>
+            {g.items.map(function(e){
+              var color=getEventColor(e.tipo);
+              var isFertil=e.tipo==="fertil"||e._isAppointment;
+              return(<div key={e.id} style={{background:e.completado?"#f5f5f5":isFertil?"#faf5fc":"#fff",borderLeft:"4px solid "+(e.completado?"#ccc":color),borderRadius:10,padding:"14px 18px",marginBottom:8,opacity:e.completado?0.6:1,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                      <span style={{fontSize:12,color:"#7a9a8a",fontWeight:600}}>{fmtDate(e.fecha)}{e.hora?" · "+e.hora:""}</span>
+                      {isFertil&&<span style={{background:"#7b2d8b",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"FÉRTIL"}</span>}
+                      {e.completado&&<span style={{background:"#52b788",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"REALIZADA"}</span>}
+                    </div>
+                    <div style={{fontSize:18,fontWeight:700,color:e.completado?"#aaa":"#1a3d2b",textDecoration:e.completado?"line-through":"none",marginBottom:2}}>{e.pacienteNombre||"Sin paciente"}</div>
+                    <div style={{fontSize:13,color:e.completado?"#bbb":"#5a7a6a"}}>{e.titulo}</div>
+                    {e.descripcion&&<div style={{fontSize:12,color:"#7a9a8a",marginTop:4,fontStyle:"italic"}}>{e.descripcion}</div>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                    {!e._isAppointment&&!e.completado&&<button onClick={function(){handleToggleCompletado(e);}} style={{width:28,height:28,borderRadius:6,border:"2px solid "+color,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:color,padding:0}} title="Marcar completado">{"✓"}</button>}
+                    {!e._isAppointment&&<button onClick={function(){setEditingEvento(e);setShowForm(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,padding:"4px"}}>{"✏️"}</button>}
+                    {!e._isAppointment&&<button onClick={function(){handleDeleteEvento(e.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,padding:"4px"}}>{"🗑"}</button>}
+                  </div>
+                </div>
+              </div>);
+            })}
+          </div>);
+        });
+      })()}
     </div>}
   </div>);
 }
