@@ -1117,6 +1117,152 @@ function FertilModule({state,dispatch,patients,onGoToPatient}){
   </div>);
 }
 
+// ─── HOY DASHBOARD ────────────────────────────────────────────────────────────
+function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAgenda,onGoToLeads}){
+  var todayStr=todayISO();
+  var tomorrowStr=new Date(new Date().getTime()+86400000).toISOString().split("T")[0];
+  var now=new Date();
+  var nowISO=now.toISOString();
+  var eventos=state.eventos||[];
+  var appointments=state.appointments||[];
+  var fertilCases=state.fertilCases||[];
+  var consultas=state.consultas||[];
+  var leads=state.fertilLeads||[];
+
+  // Consultas/eventos de hoy
+  var eventosHoy=eventos.filter(function(e){return e.fecha===todayStr&&!e.completado;});
+  var apptsHoy=appointments.filter(function(a){return a.startAt&&a.startAt.startsWith(todayStr)&&a.status!=="cancelada";});
+  var totalHoy=eventosHoy.length+apptsHoy.length;
+
+  // Consultas de mañana
+  var eventosMañana=eventos.filter(function(e){return e.fecha===tomorrowStr&&!e.completado;});
+  var apptsMañana=appointments.filter(function(a){return a.startAt&&a.startAt.startsWith(tomorrowStr)&&a.status!=="cancelada";});
+
+  // Seguimientos Fértil vencidos
+  var fertilProgramadas=appointments.filter(function(a){
+    if(a.programType!=="fertil"||a.status!=="programada")return false;
+    var fc=fertilCases.find(function(c){return c.id===a.fertilCaseId;});
+    if(!fc)return false;
+    var createdRecently=Math.abs(new Date(a.startAt).getTime()-new Date(fc.createdAt).getTime())<60000;
+    return!createdRecently&&new Date(a.startAt)<now&&new Date(a.startAt).getFullYear()>2020;
+  });
+
+  // Pagos pendientes Fértil
+  var pagosPendientes=fertilCases.filter(function(c){return c.status==="activa"&&(c.paymentStatus==="pendiente"||c.paymentStatus==="parcial");});
+
+  // Leads sin responder
+  var leadsNuevos=leads.filter(function(l){return l.estado==="nuevo";});
+  var leadsSeguimientoHoy=leads.filter(function(l){return l.proximoSeguimiento===todayStr&&l.estado!=="descartado";});
+
+  // Eventos vencidos
+  var eventosVencidos=eventos.filter(function(e){return!e.completado&&e.fecha<todayStr;});
+
+  // Saludo
+  var hora=now.getHours();
+  var saludo=hora<12?"Buenos días":hora<18?"Buenas tardes":"Buenas noches";
+
+  var statCard=function(icon,value,label,sub,color,onClick){
+    return(<div onClick={onClick} style={{...S.card,flex:1,minWidth:140,cursor:onClick?"pointer":"default",transition:"box-shadow .2s",borderTop:"3px solid "+color}} onMouseEnter={function(e){if(onClick)e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,.1)";}} onMouseLeave={function(e){e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)";}}>
+      <div style={{fontSize:24,marginBottom:6}}>{icon}</div>
+      <div style={{fontSize:28,fontWeight:700,color:color}}>{value}</div>
+      <div style={{fontSize:12,fontWeight:600,color:"#1a3d2b",marginTop:2}}>{label}</div>
+      {sub&&<div style={{fontSize:11,color:"#7a9a8a",marginTop:2}}>{sub}</div>}
+    </div>);
+  };
+
+  var renderApptItem=function(a){
+    var p=patients.find(function(x){return x.id===a.patientId;});
+    var pName=p?p.nombre:"Paciente";
+    var dt=new Date(a.startAt);
+    var hora=dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});
+    var isFertil=a.programType==="fertil";
+    return(<div key={a.id} onClick={function(){if(isFertil&&a.fertilCaseId){onGoToFertilCase(a.fertilCaseId);}else if(p){onGoToPatient(p.id);}}} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:isFertil?"#f9f0fc":"#f5faf7",borderRadius:10,marginBottom:6,cursor:"pointer",borderLeft:"3px solid "+(isFertil?"#7b2d8b":"#2d6a4f")}}>
+      <div style={{width:36,height:36,borderRadius:"50%",background:isFertil?"linear-gradient(135deg,#7b2d8b,#a855f7)":"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:14,flexShrink:0}}>{pName.charAt(0)}</div>
+      <div style={{flex:1}}>
+        <div style={{fontWeight:700,fontSize:15,color:"#1a3d2b"}}>{pName}</div>
+        <div style={{fontSize:12,color:"#7a9a8a"}}>{hora+" · "+a.title}</div>
+      </div>
+      {isFertil&&<Badge label="Fértil" color="#f3e5f5" text="#7b2d8b"/>}
+    </div>);
+  };
+
+  var renderEventoItem=function(e){
+    return(<div key={e.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#f5faf7",borderRadius:10,marginBottom:6,borderLeft:"3px solid #52b788"}}>
+      <div style={{width:36,height:36,borderRadius:"50%",background:"#e8f5ee",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{e.tipo==="turno"?"📅":e.tipo==="seguimiento"?"🔄":"🔔"}</div>
+      <div style={{flex:1}}>
+        <div style={{fontWeight:700,fontSize:15,color:"#1a3d2b"}}>{e.pacienteNombre||e.titulo}</div>
+        <div style={{fontSize:12,color:"#7a9a8a"}}>{(e.hora?e.hora+" · ":"")+e.titulo}</div>
+      </div>
+    </div>);
+  };
+
+  return(<div>
+    <div style={{marginBottom:24}}>
+      <h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>{saludo+", Julieta"}</h2>
+      <p style={{margin:"4px 0 0",fontSize:14,color:"#7a9a8a"}}>{new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p>
+    </div>
+
+    {/* Resumen rápido */}
+    <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:24}}>
+      {statCard("📅",totalHoy,"Consultas hoy",totalHoy===0?"Día libre":"pendientes","#2d6a4f",onGoToAgenda)}
+      {statCard("💜",fertilCases.filter(function(c){return c.status==="activa";}).length,"Fértil activas","en programa","#7b2d8b")}
+      {statCard("📱",leadsNuevos.length+leadsSeguimientoHoy.length,"Leads pendientes",(leadsNuevos.length?"nuevos: "+leadsNuevos.length:"")+(leadsSeguimientoHoy.length?" · hoy: "+leadsSeguimientoHoy.length:""),"#3b82f6",leadsNuevos.length+leadsSeguimientoHoy.length>0?onGoToLeads:null)}
+      {statCard("💰",pagosPendientes.length,"Pagos pendientes",pagosPendientes.length>0?"requieren atención":"todo al día",pagosPendientes.length>0?"#e76f51":"#52b788")}
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+      {/* Columna izquierda: Hoy */}
+      <div>
+        <div style={{...S.card,marginBottom:16}}>
+          <h3 style={{margin:"0 0 14px",fontSize:15,fontWeight:700,color:"#1a3d2b"}}>{"📅 Hoy"+(totalHoy>0?" · "+totalHoy+" turno"+(totalHoy>1?"s":""):"")}</h3>
+          {totalHoy===0?<p style={{fontSize:13,color:"#aaa",textAlign:"center",padding:"20px 0"}}>{"No hay turnos para hoy"}</p>:<div>
+            {apptsHoy.sort(function(a,b){return a.startAt.localeCompare(b.startAt);}).map(renderApptItem)}
+            {eventosHoy.sort(function(a,b){return(a.hora||"").localeCompare(b.hora||"");}).map(renderEventoItem)}
+          </div>}
+        </div>
+
+        {/* Mañana */}
+        {(eventosMañana.length>0||apptsMañana.length>0)&&<div style={{...S.card}}>
+          <h3 style={{margin:"0 0 14px",fontSize:15,fontWeight:700,color:"#52b788"}}>{"📋 Mañana · "+(eventosMañana.length+apptsMañana.length)+" turno"+(eventosMañana.length+apptsMañana.length>1?"s":"")}</h3>
+          {apptsMañana.sort(function(a,b){return a.startAt.localeCompare(b.startAt);}).map(renderApptItem)}
+          {eventosMañana.sort(function(a,b){return(a.hora||"").localeCompare(b.hora||"");}).map(renderEventoItem)}
+        </div>}
+      </div>
+
+      {/* Columna derecha: Alertas y pendientes */}
+      <div>
+        {/* Seguimientos Fértil vencidos */}
+        {fertilProgramadas.length>0&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid #e76f51"}}>
+          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#e76f51"}}>{"⚠️ "+fertilProgramadas.length+" consulta"+(fertilProgramadas.length>1?"s":"")+" Fértil vencida"+(fertilProgramadas.length>1?"s":"")}</h4>
+          {fertilProgramadas.slice(0,4).map(function(a){var p=patients.find(function(x){return x.id===a.patientId;});return(<div key={a.id} onClick={function(){if(a.fertilCaseId)onGoToFertilCase(a.fertilCaseId);}} style={{fontSize:12,color:"#5a7a6a",padding:"4px 0",cursor:"pointer"}}>{(p?p.nombre:"Paciente")+" — "+a.title+" ("+fmtDate(a.startAt.split("T")[0])+")"}</div>);})}
+        </div>}
+
+        {/* Pagos pendientes */}
+        {pagosPendientes.length>0&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid #f4a261"}}>
+          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#f4a261"}}>{"💰 "+pagosPendientes.length+" pago"+(pagosPendientes.length>1?"s":"")+" pendiente"+(pagosPendientes.length>1?"s":"")}</h4>
+          {pagosPendientes.map(function(c){var p=patients.find(function(x){return x.id===c.patientId;});return(<div key={c.id} onClick={function(){onGoToFertilCase(c.id);}} style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#5a7a6a",padding:"4px 0",cursor:"pointer"}}><span>{p?p.nombre:"Paciente"}</span><span style={{fontWeight:700,color:c.paymentStatus==="pendiente"?"#e76f51":"#f4a261"}}>{fmtMoney(c.totalPrice-c.amountPaid)+" restante"}</span></div>);})}
+        </div>}
+
+        {/* Leads */}
+        {(leadsNuevos.length>0||leadsSeguimientoHoy.length>0)&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid #3b82f6"}}>
+          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#3b82f6"}}>{"📱 Leads que necesitan atención"}</h4>
+          {leadsSeguimientoHoy.map(function(l){return(<div key={l.id} onClick={onGoToLeads} style={{fontSize:12,color:"#5a7a6a",padding:"4px 0",cursor:"pointer"}}>{"📋 "+l.nombre+(l.accionPendiente?" — "+l.accionPendiente:"")}</div>);})}
+          {leadsNuevos.map(function(l){return(<div key={l.id} onClick={onGoToLeads} style={{fontSize:12,color:"#3b82f6",padding:"4px 0",cursor:"pointer"}}>{"🆕 "+l.nombre+" — sin responder"}</div>);})}
+        </div>}
+
+        {/* Eventos vencidos */}
+        {eventosVencidos.length>0&&<div style={{...S.card,borderLeft:"4px solid #e76f51"}}>
+          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#e76f51"}}>{"⏰ "+eventosVencidos.length+" evento"+(eventosVencidos.length>1?"s":"")+" vencido"+(eventosVencidos.length>1?"s":"")}</h4>
+          {eventosVencidos.slice(0,5).map(function(e){return(<div key={e.id} style={{fontSize:12,color:"#5a7a6a",padding:"4px 0"}}>{fmtDate(e.fecha)+" — "+e.titulo+(e.pacienteNombre?" ("+e.pacienteNombre+")":"")}</div>);})}
+        </div>}
+
+        {/* Todo tranquilo */}
+        {fertilProgramadas.length===0&&pagosPendientes.length===0&&leadsNuevos.length===0&&leadsSeguimientoHoy.length===0&&eventosVencidos.length===0&&<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:36,marginBottom:8}}>{"✨"}</div><p style={{color:"#52b788",fontWeight:600,fontSize:14}}>{"Todo al día"}</p><p style={{color:"#7a9a8a",fontSize:12}}>{"No hay alertas ni pendientes"}</p></div>}
+      </div>
+    </div>
+  </div>);
+}
+
 function PatientList({patients,onSelect,onNew}) {
   const [search,setSearch]=useState("");const filtered=patients.filter(p=>p.nombre.toLowerCase().includes(search.toLowerCase()));
   return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>👥 Pacientes</h2><button onClick={onNew} style={S.btnPrimary}>+ Nuevo paciente</button></div><input placeholder="🔍 Buscar por nombre..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<div style={{textAlign:"center",padding:"60px 20px"}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{color:"#7a9a8a",fontSize:15}}>No hay pacientes aún</p><button onClick={onNew} style={{...S.btnPrimary,marginTop:12}}>Agregar primera paciente</button></div>:filtered.map(p=>(<div key={p.id} onClick={()=>onSelect(p.id)} style={{...S.card,marginBottom:12,display:"flex",alignItems:"center",gap:14,cursor:"pointer",transition:"box-shadow .2s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 20px rgba(45,106,79,.15)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)"}><div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:18,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:15}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo,p.planes?.length&&`${p.planes.length} plan${p.planes.length!==1?"es":""}`].filter(Boolean).join(" · ")}</div></div><span style={{color:"#52b788",fontSize:20}}>›</span></div>))}</div>);
@@ -1197,7 +1343,7 @@ function PlanGenerator({prefill,onSavePlan,onBack}) {
 
 // ─── APP PRINCIPAL ─────────────────────────────────────────────────────────────
 export default function App() {
-  const [state,dispatch]=useReducer(reducer,{patients:[],consultas:[],eventos:[],fertilCases:[],appointments:[],fertilFollowups:[],fertilLabs:[],fertilTasks:[]});const [screen,setScreen]=useState("patients");const [selectedId,setSelectedId]=useState(null);const [navTab,setNavTab]=useState("patients");const [loaded,setLoaded]=useState(false);const [saveStatus,setSaveStatus]=useState("idle");
+  const [state,dispatch]=useReducer(reducer,{patients:[],consultas:[],eventos:[],fertilCases:[],appointments:[],fertilFollowups:[],fertilLabs:[],fertilTasks:[]});const [screen,setScreen]=useState("hoy");const [selectedId,setSelectedId]=useState(null);const [navTab,setNavTab]=useState("hoy");const [loaded,setLoaded]=useState(false);const [saveStatus,setSaveStatus]=useState("idle");
   useEffect(()=>{
     async function loadAll(){
       try{
@@ -1265,7 +1411,8 @@ export default function App() {
   const todayPendientes=(state.eventos||[]).filter(e=>e.fecha===todayISO()&&!e.completado).length;
   const fertilActivas=(state.fertilCases||[]).filter(c=>c.status==="activa").length;
   if(!loaded)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f5faf7",fontFamily:"sans-serif"}}><div style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{color:"#2d6a4f",fontWeight:600,fontSize:16}}>JL Nutrición</p><p style={{color:"#7a9a8a",fontSize:13}}>Conectando con la base de datos...</p></div></div>);
-  return (<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f5ee 0%,#f5f9f7 50%,#e0f0e8 100%)",fontFamily:"'DM Sans',system-ui,sans-serif"}}><style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');*{box-sizing:border-box}input:focus,select:focus,textarea:focus{border-color:#2d6a4f!important;box-shadow:0 0 0 3px rgba(45,106,79,.1)!important;outline:none}`}</style><div style={{background:"#fff",borderBottom:"1.5px solid #e8f0ec",padding:"0 20px",position:"sticky",top:0,zIndex:100}}><div style={{maxWidth:980,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍏</div><span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>JL Nutrición</span><span style={{fontSize:11,color:saveStatus==="saving"?"#f4a261":saveStatus==="saved"?"#52b788":saveStatus==="error"?"#e63946":"transparent",fontWeight:600,transition:"color .3s"}}>{saveStatus==="saving"?"● guardando...":saveStatus==="saved"?"✓ guardado":saveStatus==="error"?"⚠ error":"·"}</span></div><div style={{display:"flex",alignItems:"center",gap:4}}>{[["patients","👥 Pacientes"],["fertil","💜 Fértil"],["agenda","📅 Agenda"],["stats","📊 Estadísticas"],["plan","✨ Nuevo plan"]].map(([id,label])=>(<button key={id} onClick={()=>{setNavTab(id);go(id);}} style={{padding:"7px 14px",border:"none",borderRadius:9,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:navTab===id?(id==="fertil"?"#7b2d8b":"#2d6a4f"):"transparent",color:navTab===id?"#fff":(id==="fertil"?"#7b2d8b":"#5a7a6a"),position:"relative"}}>{label}{id==="agenda"&&todayPendientes>0&&<span style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:"#e76f51",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{todayPendientes}</span>}{id==="fertil"&&fertilActivas>0&&<span style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:"#7b2d8b",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{fertilActivas}</span>}</button>))}</div></div></div><div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>
+  return (<div style={{minHeight:"100vh",background:"linear-gradient(135deg,#e8f5ee 0%,#f5f9f7 50%,#e0f0e8 100%)",fontFamily:"'DM Sans',system-ui,sans-serif"}}><style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');*{box-sizing:border-box}input:focus,select:focus,textarea:focus{border-color:#2d6a4f!important;box-shadow:0 0 0 3px rgba(45,106,79,.1)!important;outline:none}`}</style><div style={{background:"#fff",borderBottom:"1.5px solid #e8f0ec",padding:"0 20px",position:"sticky",top:0,zIndex:100}}><div style={{maxWidth:980,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🍏</div><span style={{fontWeight:700,fontSize:16,color:"#1a3d2b"}}>JL Nutrición</span><span style={{fontSize:11,color:saveStatus==="saving"?"#f4a261":saveStatus==="saved"?"#52b788":saveStatus==="error"?"#e63946":"transparent",fontWeight:600,transition:"color .3s"}}>{saveStatus==="saving"?"● guardando...":saveStatus==="saved"?"✓ guardado":saveStatus==="error"?"⚠ error":"·"}</span></div><div style={{display:"flex",alignItems:"center",gap:4}}>{[["hoy","🏠 Hoy"],["patients","👥 Pacientes"],["fertil","💜 Fértil"],["agenda","📅 Agenda"],["stats","📊 Estadísticas"],["plan","✨ Nuevo plan"]].map(([id,label])=>(<button key={id} onClick={()=>{setNavTab(id);go(id);}} style={{padding:"7px 14px",border:"none",borderRadius:9,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:navTab===id?(id==="fertil"?"#7b2d8b":"#2d6a4f"):"transparent",color:navTab===id?"#fff":(id==="fertil"?"#7b2d8b":"#5a7a6a"),position:"relative"}}>{label}{id==="agenda"&&todayPendientes>0&&<span style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:"#e76f51",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{todayPendientes}</span>}{id==="fertil"&&fertilActivas>0&&<span style={{position:"absolute",top:-2,right:-2,width:16,height:16,borderRadius:"50%",background:"#7b2d8b",color:"#fff",fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{fertilActivas}</span>}</button>))}</div></div></div><div style={{maxWidth:980,margin:"0 auto",padding:"24px 16px"}}>
+    {screen==="hoy"&&<TodayDashboard state={state} patients={state.patients} onGoToPatient={function(id){setNavTab("patients");go("detail",id);}} onGoToFertilCase={function(caseId){setNavTab("fertil");go("fertil");}} onGoToAgenda={function(){setNavTab("agenda");go("agenda");}} onGoToLeads={function(){setNavTab("fertil");go("fertil");}}/>}
     {screen==="patients"&&<PatientList patients={state.patients} onSelect={id=>go("detail",id)} onNew={()=>go("new-patient")}/>}
     {screen==="fertil"&&<FertilModule state={state} dispatch={dispatch} patients={state.patients} onGoToPatient={id=>{setNavTab("patients");go("detail",id);}}/>}
     {screen==="agenda"&&<CalendarView eventos={state.eventos} patients={state.patients} appointments={state.appointments} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onSelectPatient={id=>go("detail",id)}/>}
