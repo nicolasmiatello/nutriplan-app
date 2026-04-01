@@ -729,6 +729,53 @@ function FertilDashboard({fertilCases,patients,appointments,onSelectCase,onNewCa
       <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>{"📅 Próximos turnos Fértil"}</h4>{proximosTurnos.length===0?<p style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Sin turnos programados</p>:proximosTurnos.map(renderTurno)}</div>
       <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:"#e76f51"}}>⚠️ Alertas</h4>{alertas.length===0?<p style={{fontSize:12,color:"#aaa",textAlign:"center",padding:"20px 0"}}>Sin alertas</p>:alertas.map((a,i)=>(<div key={i} onClick={()=>onSelectCase(a.caseId)} style={{padding:"8px 10px",background:"#fff5f0",borderRadius:8,marginBottom:6,fontSize:12,color:"#c0392b",cursor:"pointer",fontWeight:600}}>{a.msg}</div>))}</div>
     </div>
+
+    {/* Cuadro de seguimiento de consultas */}
+    {activas.length>0&&<div style={{...S.card,marginBottom:20}}>
+      <h4 style={{margin:"0 0 14px",fontSize:13,fontWeight:700,color:"#7b2d8b"}}>{"📋 Seguimiento de consultas — Pacientes activas"}</h4>
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+          <thead>
+            <tr style={{borderBottom:"2px solid #e8d5f0"}}>
+              <th style={{padding:"8px 12px",textAlign:"left",color:"#7b2d8b",fontWeight:700,fontSize:11,textTransform:"uppercase",minWidth:140}}>Paciente</th>
+              {FERTIL_CONSULT_TYPES.map(function(ct){return <th key={ct.num} style={{padding:"8px 6px",textAlign:"center",color:"#5a7a6a",fontWeight:600,fontSize:10,textTransform:"uppercase",minWidth:70}}>{ct.num===1?"Inicial":ct.num===5?"Cierre":"Seg "+( ct.num-1)}</th>;})}
+            </tr>
+          </thead>
+          <tbody>
+            {activas.map(function(c){
+              var p=patients.find(function(x){return x.id===c.patientId;});
+              var pName=p&&p.nombre?p.nombre:"Paciente";
+              var caseAppts=(appointments||[]).filter(function(a){return a.fertilCaseId===c.id;}).sort(function(a,b){return(a.consultationNumber||0)-(b.consultationNumber||0);});
+              return(<tr key={c.id} style={{borderBottom:"1px solid #f0f4f1",cursor:"pointer"}} onClick={function(){onSelectCase(c.id);}}>
+                <td style={{padding:"10px 12px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#7b2d8b,#a855f7)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:12,flexShrink:0}}>{pName.charAt(0)}</div>
+                    <div><div style={{fontWeight:600,color:"#1a3d2b",fontSize:13}}>{pName}</div><div style={{fontSize:10,color:"#7a9a8a"}}>{"Sem "+c.currentWeek+"/8"}</div></div>
+                  </div>
+                </td>
+                {FERTIL_CONSULT_TYPES.map(function(ct){
+                  var appt=caseAppts.find(function(a){return a.consultationNumber===ct.num;});
+                  var status=appt?appt.status:"programada";
+                  var createdRecently=appt?Math.abs(new Date(appt.startAt).getTime()-new Date(c.createdAt).getTime())<60000:true;
+                  var scheduled=appt&&!createdRecently&&new Date(appt.startAt).getFullYear()>2020;
+                  var bgColor=status==="realizada"?"#52b788":scheduled?"#f3e5f5":"#f8f8f8";
+                  var textColor=status==="realizada"?"#fff":scheduled?"#7b2d8b":"#ccc";
+                  var label=status==="realizada"?"✓":scheduled?fmtDate(appt.startAt.split("T")[0]):"—";
+                  return(<td key={ct.num} style={{padding:"6px",textAlign:"center"}}>
+                    <div style={{width:36,height:36,borderRadius:8,background:bgColor,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:status==="realizada"?16:9,fontWeight:700,color:textColor,border:status==="realizada"?"none":scheduled?"2px solid #7b2d8b":"2px solid #e0e0e0"}}>{label}</div>
+                  </td>);
+                })}
+              </tr>);
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div style={{display:"flex",gap:16,marginTop:12,fontSize:11,color:"#7a9a8a"}}>
+        <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:12,borderRadius:3,background:"#52b788",display:"inline-block"}}></span> Realizada</span>
+        <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:12,borderRadius:3,background:"#f3e5f5",border:"2px solid #7b2d8b",display:"inline-block"}}></span> Programada</span>
+        <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:12,height:12,borderRadius:3,background:"#f8f8f8",border:"2px solid #e0e0e0",display:"inline-block"}}></span> Pendiente</span>
+      </div>
+    </div>}
   </div>);
 }
 
@@ -763,7 +810,7 @@ function FertilPatientList({fertilCases,patients,appointments,onSelectCase}){
 
 function FertilNewCase({patients,fertilCases,onSave,onCancel}){
   const availablePatients=patients.filter(p=>!fertilCases.some(c=>c.patientId===p.id&&(c.status==="activa"||c.status==="lead")));
-  const [form,setForm]=useState({patientId:"",mainCondition:"",objective:"",notes:"",totalPrice:"",paymentMethod:"transferencia",installments:"1"});const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.patientId&&form.totalPrice;
+  const [form,setForm]=useState({patientId:"",mainCondition:"",objective:"",notes:"",totalPrice:"",paymentMethod:"transferencia",installments:"1",amountPaid:""});const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.patientId&&form.totalPrice;
   return(<div style={{maxWidth:560}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}><button onClick={onCancel} style={S.btnGhost}>← Volver</button><h2 style={{margin:0,fontSize:18,fontWeight:700,color:"#7b2d8b"}}>💜 Nueva paciente Fértil</h2></div>
     <div style={S.card}>
       <div style={{marginBottom:14}}><label style={S.label}>Paciente *</label><select value={form.patientId} onChange={e=>set("patientId",e.target.value)} style={S.input}><option value="">Seleccioná una paciente...</option>{availablePatients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>
@@ -771,10 +818,27 @@ function FertilNewCase({patients,fertilCases,onSave,onCancel}){
       <Field label="Objetivo del programa" value={form.objective} onChange={v=>set("objective",v)} placeholder="Ej: Mejorar fertilidad, regular ciclo..." rows={2}/>
       <Field label="Notas" value={form.notes} onChange={v=>set("notes",v)} placeholder="Observaciones iniciales..." rows={2}/>
       <div style={{borderTop:"2px solid #f3e5f5",paddingTop:16,marginTop:8,marginBottom:14}}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:"#7b2d8b"}}>💰 Datos de pago</h4>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Precio del programa ($) *" type="number" value={form.totalPrice} onChange={v=>set("totalPrice",v)} placeholder="200000"/><div style={{marginBottom:14}}><label style={S.label}>Método de pago</label><select value={form.paymentMethod} onChange={e=>set("paymentMethod",e.target.value)} style={S.input}><option value="transferencia">Transferencia</option><option value="efectivo">Efectivo</option><option value="mp">Mercado Pago</option></select></div></div>
-        <Field label="Cuotas" type="number" value={form.installments} onChange={v=>set("installments",v)} placeholder="1"/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <Field label="Precio del programa ($) *" type="number" value={form.totalPrice} onChange={v=>set("totalPrice",v)} placeholder="200000"/>
+          <Field label="Monto ya pagado ($)" type="number" value={form.amountPaid} onChange={v=>set("amountPaid",v)} placeholder="0"/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div style={{marginBottom:14}}><label style={S.label}>Método de pago</label><select value={form.paymentMethod} onChange={e=>set("paymentMethod",e.target.value)} style={S.input}><option value="transferencia">Transferencia</option><option value="efectivo">Efectivo</option><option value="mp">Mercado Pago</option></select></div>
+          <Field label="Cuotas" type="number" value={form.installments} onChange={v=>set("installments",v)} placeholder="1"/>
+        </div>
+        {form.totalPrice&&form.amountPaid&&<div style={{background:"#f5f0f7",borderRadius:8,padding:"10px 14px",fontSize:13,color:"#7b2d8b"}}>
+          {"Restante: "+fmtMoney((parseFloat(form.totalPrice)||0)-(parseFloat(form.amountPaid)||0))+" · Estado: "+(parseFloat(form.amountPaid)>=parseFloat(form.totalPrice)?"Pago completo":parseFloat(form.amountPaid)>0?"Parcial":"Pendiente")}
+        </div>}
       </div>
-      <div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button disabled={!valid} onClick={()=>{const caseId=uid();const newCase={id:caseId,patientId:form.patientId,status:"activa",startDate:todayISO(),currentWeek:1,mainCondition:form.mainCondition,objective:form.objective,notes:form.notes,totalPrice:parseFloat(form.totalPrice)||0,paymentStatus:"pendiente",paymentMethod:form.paymentMethod,installments:parseInt(form.installments)||1,amountPaid:0,createdAt:new Date().toISOString()};const appts=FERTIL_CONSULT_TYPES.map(ct=>({id:uid(),patientId:form.patientId,fertilCaseId:caseId,programType:"fertil",consultationNumber:ct.num,consultationType:ct.type,title:`Fértil - ${ct.label}`,startAt:new Date().toISOString(),endAt:null,status:"programada",notes:""}));onSave(newCase,appts);}} style={{...S.btnFertil,flex:2,opacity:valid?1:.5}}>Crear caso y generar consultas</button></div>
+      <div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button disabled={!valid} onClick={function(){
+        var caseId=uid();
+        var price=parseFloat(form.totalPrice)||0;
+        var paid=parseFloat(form.amountPaid)||0;
+        var payStatus=paid>=price&&price>0?"pago":paid>0?"parcial":"pendiente";
+        var newCase={id:caseId,patientId:form.patientId,status:"activa",startDate:todayISO(),currentWeek:1,mainCondition:form.mainCondition,objective:form.objective,notes:form.notes,totalPrice:price,paymentStatus:payStatus,paymentMethod:form.paymentMethod,installments:parseInt(form.installments)||1,amountPaid:paid,createdAt:new Date().toISOString()};
+        var appts=FERTIL_CONSULT_TYPES.map(function(ct){return{id:uid(),patientId:form.patientId,fertilCaseId:caseId,programType:"fertil",consultationNumber:ct.num,consultationType:ct.type,title:"Fértil - "+ct.label,startAt:new Date().toISOString(),endAt:null,status:"programada",notes:""};});
+        onSave(newCase,appts);
+      }} style={{...S.btnFertil,flex:2,opacity:valid?1:0.5}}>Crear caso y generar consultas</button></div>
     </div>
   </div>);
 }
