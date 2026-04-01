@@ -1,4 +1,4 @@
-import React, { useState, useReducer, useEffect, useMemo } from "react";
+import React, { useState, useReducer, useEffect, useMemo } from "react"; // v2
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 const ALERGIAS_OPTS = ["Gluten","Lactosa","Harina integral","Huevo","Mariscos","Frutos secos","Soja","Ninguna"];
