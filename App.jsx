@@ -875,7 +875,7 @@ function FertilPatientList({fertilCases,patients,appointments,onSelectCase}){
 
 function FertilNewCase({patients,fertilCases,onSave,onCancel}){
   const availablePatients=patients.filter(p=>!fertilCases.some(c=>c.patientId===p.id&&(c.status==="activa"||c.status==="lead")));
-  const [form,setForm]=useState({patientId:"",mainCondition:"",objective:"",notes:"",totalPrice:"",paymentMethod:"transferencia",installments:"1",amountPaid:""});const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.patientId&&form.totalPrice;
+  const [form,setForm]=useState({patientId:"",mainCondition:"",objective:"",notes:"",totalPrice:"250000",paymentMethod:"transferencia",installments:"1",amountPaid:""});const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.patientId&&form.totalPrice;
   return(<div style={{maxWidth:560}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}><button onClick={onCancel} style={S.btnGhost}>← Volver</button><h2 style={{margin:0,fontSize:18,fontWeight:700,color:C.fertil}}>💜 Nueva paciente Fértil</h2></div>
     <div style={S.card}>
       <div style={{marginBottom:14}}><label style={S.label}>Paciente *</label><select value={form.patientId} onChange={e=>set("patientId",e.target.value)} style={S.input}><option value="">Seleccioná una paciente...</option>{availablePatients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>
@@ -1046,7 +1046,8 @@ function getLeadEstadoLabel(estado){var e=LEAD_ESTADOS.find(function(x){return x
 
 function LeadForm({lead,onSave,onCancel}){
   var isEdit=!!lead;
-  var [form,setForm]=useState(lead?{nombre:lead.nombre,instagram:lead.instagram,telefono:lead.telefono,origen:lead.origen,estado:lead.estado,interes:lead.interes,proximoSeguimiento:lead.proximoSeguimiento,accionPendiente:lead.accionPendiente,notas:lead.notas}:{nombre:"",instagram:"",telefono:"",origen:"instagram",estado:"nuevo",interes:"indefinido",proximoSeguimiento:"",accionPendiente:"",notas:""});
+  var defaultSeg=new Date(new Date().getTime()+2*86400000).toISOString().split("T")[0];
+  var [form,setForm]=useState(lead?{nombre:lead.nombre,instagram:lead.instagram,telefono:lead.telefono,origen:lead.origen,estado:lead.estado,interes:lead.interes,proximoSeguimiento:lead.proximoSeguimiento,accionPendiente:lead.accionPendiente,notas:lead.notas}:{nombre:"",instagram:"",telefono:"",origen:"instagram",estado:"nuevo",interes:"indefinido",proximoSeguimiento:defaultSeg,accionPendiente:"Responder mensaje",notas:""});
   var set=function(k,v){setForm(function(f){var n={...f};n[k]=v;return n;});};
   var valid=form.nombre.trim();
   return(<div style={S.card}>
@@ -1466,6 +1467,12 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
         <div style={{fontSize:11,color:"#7a9a8a"}}><Badge label={FERTIL_PAYMENT_LABELS[fertilCase.paymentStatus]} color={FERTIL_PAYMENT_COLORS[fertilCase.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[fertilCase.paymentStatus]}/></div>
       </div>}
     </div>
+
+    {/* Sugerencia: Enviar a Fértil */}
+    {!fertilCase&&patient.objetivo==="Fertilidad"&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid "+C.fertil,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px"}}>
+      <div><div style={{fontSize:13,fontWeight:700,color:C.fertil}}>{"💜 Esta paciente tiene objetivo Fertilidad"}</div><div style={{fontSize:12,color:C.muted,marginTop:2}}>{"Podés inscribirla en el programa Fértil de 8 semanas"}</div></div>
+      <button onClick={onGoToFertil} style={S.btnFertil}>{"Enviar a Fértil"}</button>
+    </div>}
 
     {/* Tabs */}
     <div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#2d6a4f":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>
