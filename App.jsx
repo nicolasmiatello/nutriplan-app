@@ -62,6 +62,7 @@ function reducer(state,action) {
     case "UPDATE_PLAN": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,planes:p.planes.map(pl=>pl.id===action.plan.id?action.plan:pl)}:p)};
     case "UPDATE_CLINICA": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,clinica:action.clinica}:p)};
     case "ADD_CONSULTA": return {...state,consultas:[action.c,...(state.consultas||[])]};
+    case "DELETE_CONSULTA": return {...state,consultas:(state.consultas||[]).filter(c=>c.id!==action.id)};
     case "LOAD_EVENTOS": return {...state,eventos:action.eventos||[]};
     case "ADD_EVENTO": return {...state,eventos:[action.e,...(state.eventos||[])]};
     case "UPDATE_EVENTO": return {...state,eventos:(state.eventos||[]).map(e=>e.id===action.e.id?action.e:e)};
@@ -136,6 +137,7 @@ async function sbInsertConsulta(c) {
   });
   await fetch(`${SUPABASE_URL}/rest/v1/consultas`,{method:"POST",headers:sbHeaders,body});
 }
+async function sbDeleteConsulta(id){await fetch(SUPABASE_URL+"/rest/v1/consultas?id=eq."+id,{method:"DELETE",headers:sbHeaders});}
 
 async function sbLoadEventos() {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/eventos?select=*&order=fecha.asc`,{headers:sbHeaders});
@@ -542,10 +544,42 @@ function ConsultationForm({patients,onSave,onCancel,prefillPatientId}) {
   return (<div style={S.card}><h3 style={{margin:"0 0 16px",color:"#1a3d2b",fontSize:16}}>➕ Registrar consulta</h3>{!prefillPatientId&&<div style={{marginBottom:14}}><label style={S.label}>Paciente</label><select value={form.pacienteId} onChange={e=>set("pacienteId",e.target.value)} style={S.input}><option value="">Seleccioná un paciente...</option>{patients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha" type="date" value={form.fecha} onChange={v=>set("fecha",v)}/><Field label="Monto cobrado ($)" type="number" value={form.monto} onChange={v=>set("monto",v)} placeholder="5000"/></div><div style={{marginBottom:14}}><label style={S.label}>Tipo de consulta</label><select value={form.tipo} onChange={e=>set("tipo",e.target.value)} style={S.input}>{["Primera consulta","Seguimiento","Control","Consulta especial"].map(t=><option key={t}>{t}</option>)}</select></div><Field label="Observación (opcional)" value={form.obs} onChange={v=>set("obs",v)} placeholder="Notas sobre la consulta..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={handleSave} disabled={!valid} style={{...S.btnPrimary,flex:2,opacity:valid?1:.5}}>{"💰 Registrar consulta"}</button></div></div>);
 }
 
-function PatientsStats({patients,consultas,fertilCases,appointments,onAddConsulta,onSelect}) {
+function PatientsStats({patients,consultas,fertilCases,appointments,onAddConsulta,onDeleteConsulta,onSelect}) {
   const [tab,setTab]=useState("pacientes");const [showConsultaForm,setShowConsultaForm]=useState(false);const [search,setSearch]=useState("");
   const filtered=patients.filter(p=>p.nombre.toLowerCase().includes(search.toLowerCase()));
-  return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>Pacientes y Estadísticas</h2><button onClick={()=>setShowConsultaForm(true)} style={S.btnPrimary}>{"💰 Registrar consulta"}</button></div>{showConsultaForm&&<div style={{marginBottom:20}}><ConsultationForm patients={patients} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/></div>}<div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4}}>{[["pacientes","👥 Pacientes"],["stats","📊 Estadísticas"],["consultas","📋 Consultas"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:tab===id?"#fff":"transparent",color:tab===id?"#2d6a4f":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>{tab==="pacientes"&&<div><input placeholder="🔍 Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<p style={{color:"#aaa",textAlign:"center",padding:"40px 0",fontSize:14}}>No hay pacientes registrados</p>:filtered.map(p=>(<div key={p.id} style={{...S.card,marginBottom:12,display:"flex",alignItems:"center",gap:14}}><div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:15}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo].filter(Boolean).join(" · ")}{p.fechaCreacion&&` · Desde ${p.fechaCreacion}`}</div></div><div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={()=>onSelect(p.id)} style={S.btnOutline}>Ver ficha</button></div></div>))}</div>}{tab==="stats"&&<StatsDashboard patients={patients} consultas={consultas} fertilCases={fertilCases} appointments={appointments}/>}{tab==="consultas"&&<div>{(!consultas||consultas.length===0)?<p style={{color:"#aaa",textAlign:"center",padding:"40px 0",fontSize:14}}>No hay consultas registradas aún</p>:[...consultas].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(c=>(<div key={c.id} style={{...S.card,marginBottom:10,display:"flex",alignItems:"center",gap:14}}><div style={{flex:1}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{c.pacienteNombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{c.tipo} · {new Date(c.fecha).toLocaleDateString("es-AR")}</div>{c.obs&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:2,fontStyle:"italic"}}>{c.obs}</div>}</div><div style={{fontWeight:700,fontSize:16,color:"#2d6a4f"}}>{fmtMoney(c.monto)}</div></div>))}</div>}</div>);
+  return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h2 style={{margin:0,fontSize:20,fontWeight:700,color:"#1a3d2b"}}>Pacientes y Estadísticas</h2><button onClick={()=>setShowConsultaForm(true)} style={S.btnPrimary}>{"💰 Registrar consulta"}</button></div>{showConsultaForm&&<div style={{marginBottom:20}}><ConsultationForm patients={patients} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/></div>}<div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4}}>{[["pacientes","👥 Pacientes"],["stats","📊 Estadísticas"],["consultas","📋 Consultas"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:tab===id?"#fff":"transparent",color:tab===id?"#2d6a4f":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>{tab==="pacientes"&&<div><input placeholder="🔍 Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<p style={{color:"#aaa",textAlign:"center",padding:"40px 0",fontSize:14}}>No hay pacientes registrados</p>:filtered.map(p=>(<div key={p.id} style={{...S.card,marginBottom:12,display:"flex",alignItems:"center",gap:14}}><div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:15}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo].filter(Boolean).join(" · ")}{p.fechaCreacion&&` · Desde ${p.fechaCreacion}`}</div></div><div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={()=>onSelect(p.id)} style={S.btnOutline}>Ver ficha</button></div></div>))}</div>}{tab==="stats"&&<StatsDashboard patients={patients} consultas={consultas} fertilCases={fertilCases} appointments={appointments}/>}{tab==="consultas"&&<div>{(!consultas||consultas.length===0)?<p style={{color:"#aaa",textAlign:"center",padding:"40px 0",fontSize:14}}>No hay consultas registradas aún</p>:(function(){
+    var sorted=[...consultas].sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);});
+    var groups={};
+    sorted.forEach(function(c){
+      var d=new Date(c.fecha);
+      var key=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+      var label=MESES_FULL[d.getMonth()]+" "+d.getFullYear();
+      if(!groups[key])groups[key]={label:label,items:[],total:0};
+      groups[key].items.push(c);
+      groups[key].total+=(parseFloat(c.monto)||0);
+    });
+    return Object.keys(groups).sort().reverse().map(function(key){
+      var g=groups[key];
+      return(<div key={key} style={{marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,padding:"8px 14px",background:C.bg,borderRadius:8}}>
+          <span style={{fontWeight:700,fontSize:14,color:C.text}}>{g.label}</span>
+          <div style={{display:"flex",gap:12,fontSize:12}}>
+            <span style={{color:C.muted}}>{g.items.length+" consulta"+(g.items.length>1?"s":"")}</span>
+            <span style={{fontWeight:700,color:C.ok}}>{fmtMoney(g.total)}</span>
+          </div>
+        </div>
+        {g.items.map(function(c){return(<div key={c.id} style={{...S.card,marginBottom:8,display:"flex",alignItems:"center",gap:14}}>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,color:C.text,fontSize:14}}>{c.pacienteNombre}</div>
+            <div style={{fontSize:12,color:C.muted,marginTop:2}}>{c.tipo+" · "+new Date(c.fecha).toLocaleDateString("es-AR")}</div>
+            {c.obs&&<div style={{fontSize:12,color:C.textSub,marginTop:2,fontStyle:"italic"}}>{c.obs}</div>}
+          </div>
+          <div style={{fontWeight:700,fontSize:16,color:C.ok}}>{fmtMoney(c.monto)}</div>
+          <button onClick={function(){if(confirm("¿Eliminar esta consulta de "+c.pacienteNombre+"?"))onDeleteConsulta(c.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,padding:"4px",color:C.danger,flexShrink:0}} title="Eliminar consulta">{"✕"}</button>
+        </div>);})}
+      </div>);
+    });
+  })()}</div>}</div>);
 }
 
 // ─── EVENTO FORM ──────────────────────────────────────────────────────────────
@@ -1427,7 +1461,7 @@ function PlanViewer({plan,paciente,onClose,onUpdate}) {
 }
 
 // ─── PATIENT DETAIL (con pestaña Consultas + Agenda + consultas en Timeline) ──
-function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCases,onAddConsulta,onAddEvento,onUpdateEvento,onDeleteEvento,onGeneratePlan,onBack,onDelete,onGoToFertil}) {
+function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCases,onAddConsulta,onDeleteConsulta,onAddEvento,onUpdateEvento,onDeleteEvento,onGeneratePlan,onBack,onDelete,onGoToFertil}) {
   const [tab,setTab]=useState("resumen");const [clinica,setClinica]=useState(patient.clinica||initialClinica);const [clinicaSaved,setClinicaSaved]=useState(false);const [newMedicion,setNewMedicion]=useState({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});const [newNota,setNewNota]=useState("");const [showMedForm,setShowMedForm]=useState(false);const [viewingPlan,setViewingPlan]=useState(null);const [deleteConfirm,setDeleteConfirm]=useState(false);const [showConsultaForm,setShowConsultaForm]=useState(false);
   const setC=(k,v)=>setClinica(c=>({...c,[k]:v}));
   const saveClinica=()=>{dispatch({type:"UPDATE_CLINICA",pid:patient.id,clinica});setClinicaSaved(true);setTimeout(()=>setClinicaSaved(false),2000);};
@@ -1553,7 +1587,7 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
     </div>
     {showConsultaForm&&<div style={{marginBottom:16}}><ConsultationForm patients={[patient]} prefillPatientId={patient.id} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/></div>}
     {patientConsultas.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>No hay consultas registradas para este paciente</p>:
-    [...patientConsultas].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(c=>(<div key={c.id} style={{...S.card,marginBottom:10,display:"flex",alignItems:"center",gap:14}}><div style={{width:36,height:36,borderRadius:"50%",background:"#e8f5ee",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>💰</div><div style={{flex:1}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:14}}>{c.tipo}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{new Date(c.fecha).toLocaleDateString("es-AR")}</div>{c.obs&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:2,fontStyle:"italic"}}>{c.obs}</div>}</div><div style={{fontWeight:700,fontSize:16,color:"#2d6a4f"}}>{fmtMoney(c.monto)}</div></div>))}
+    [...patientConsultas].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(c=>(<div key={c.id} style={{...S.card,marginBottom:10,display:"flex",alignItems:"center",gap:14}}><div style={{width:36,height:36,borderRadius:"50%",background:C.okLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{"💰"}</div><div style={{flex:1}}><div style={{fontWeight:700,color:C.text,fontSize:14}}>{c.tipo}</div><div style={{fontSize:12,color:C.muted,marginTop:2}}>{new Date(c.fecha).toLocaleDateString("es-AR")}</div>{c.obs&&<div style={{fontSize:12,color:C.textSub,marginTop:2,fontStyle:"italic"}}>{c.obs}</div>}</div><div style={{fontWeight:700,fontSize:16,color:C.ok}}>{fmtMoney(c.monto)}</div><button onClick={function(){if(confirm("¿Eliminar esta consulta?"))onDeleteConsulta(c.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,padding:"4px",color:C.danger,flexShrink:0}} title="Eliminar consulta">{"✕"}</button></div>))}
   </div>}
 
   {tab==="agenda"&&<CalendarView eventos={eventos} patients={[patient]} appointments={appointments} filterPatientId={patient.id} onAddEvento={onAddEvento} onUpdateEvento={onUpdateEvento} onDeleteEvento={onDeleteEvento}/>}
@@ -1619,6 +1653,7 @@ export default function App() {
   useEffect(()=>{if(!loaded)return;setSaveStatus("saving");const t=setTimeout(async()=>{try{await Promise.all(state.patients.map(p=>sbUpsert(p)));setSaveStatus("saved");}catch{setSaveStatus("error");}setTimeout(()=>setSaveStatus("idle"),3000);},800);return()=>clearTimeout(t);},[state.patients,loaded]);
   const patient=state.patients.find(p=>p.id===selectedId);const go=(s,id=null)=>{setScreen(s);if(id)setSelectedId(id);};
   const handleAddConsulta=async(c)=>{dispatch({type:"ADD_CONSULTA",c});try{await sbInsertConsulta(c);}catch(e){console.error("Error guardando consulta:",e);}};
+  const handleDeleteConsulta=async(id)=>{dispatch({type:"DELETE_CONSULTA",id});try{await sbDeleteConsulta(id);}catch(e){console.error("Error eliminando consulta:",e);}};
   const handleDeletePatient=async(id)=>{
     // Limpiar datos Fértil asociados
     var casesForPatient=(state.fertilCases||[]).filter(function(c){return c.patientId===id;});
@@ -1656,9 +1691,9 @@ export default function App() {
     {screen==="patients"&&<PatientList patients={state.patients} onSelect={id=>go("detail",id)} onNew={()=>go("new-patient")}/>}
     {screen==="fertil"&&<FertilModule state={state} dispatch={dispatch} patients={state.patients} onGoToPatient={id=>{setNavTab("patients");go("detail",id);}}/>}
     {screen==="agenda"&&<CalendarView eventos={state.eventos} patients={state.patients} appointments={state.appointments} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onSelectPatient={id=>go("detail",id)}/>}
-    {screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} fertilCases={state.fertilCases} appointments={state.appointments} onAddConsulta={handleAddConsulta} onSelect={id=>go("detail",id)}/>}
+    {screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} fertilCases={state.fertilCases} appointments={state.appointments} onAddConsulta={handleAddConsulta} onDeleteConsulta={handleDeleteConsulta} onSelect={id=>go("detail",id)}/>}
     {screen==="new-patient"&&<NewPatient onSave={p=>{dispatch({type:"ADD_PATIENT",p});go("detail",p.id);}} onCancel={()=>go("patients")}/>}
-    {screen==="detail"&&patient&&<PatientDetail patient={patient} dispatch={dispatch} consultas={state.consultas} eventos={state.eventos} appointments={state.appointments} fertilCases={state.fertilCases} onAddConsulta={handleAddConsulta} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onGeneratePlan={()=>go("plan-patient")} onBack={()=>go("patients")} onDelete={handleDeletePatient} onGoToFertil={()=>{setNavTab("fertil");go("fertil");}}/>}
+    {screen==="detail"&&patient&&<PatientDetail patient={patient} dispatch={dispatch} consultas={state.consultas} eventos={state.eventos} appointments={state.appointments} fertilCases={state.fertilCases} onAddConsulta={handleAddConsulta} onDeleteConsulta={handleDeleteConsulta} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onGeneratePlan={()=>go("plan-patient")} onBack={()=>go("patients")} onDelete={handleDeletePatient} onGoToFertil={()=>{setNavTab("fertil");go("fertil");}}/>}
     {screen==="plan-patient"&&patient&&<PlanGenerator prefill={{nombre:patient.nombre,edad:patient.edad,peso:patient.peso,altura:patient.altura,sexo:patient.sexo,objetivo:patient.objetivo||"",nivelActividad:"",alergias:[],patologias:[],preferencias:"",aversiones:"",cantidadComidas:"4",tipoPlan:"Estándar"}} onSavePlan={plan=>{dispatch({type:"ADD_PLAN",pid:patient.id,plan});const c={id:uid(),pacienteId:patient.id,pacienteNombre:patient.nombre,fecha:todayISO(),monto:plan.monto||0,tipo:"Plan generado",obs:`Plan: ${plan.objetivo}`};handleAddConsulta(c);go("detail",patient.id);}} onBack={()=>go("detail",patient.id)}/>}
     {screen==="plan"&&<PlanGenerator onBack={()=>{setNavTab("patients");go("patients");}}/>}
   </div></div>);
