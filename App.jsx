@@ -630,24 +630,22 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
 
   const renderEventCard=(e,compact=false)=>{
     const color=getEventColor(e.tipo);
-    return (<div key={e.id} style={{background:e.completado?"#f0f4f1":color+"12",borderLeft:`3px solid ${e.completado?"#ccc":color}`,borderRadius:8,padding:compact?"6px 8px":"10px 14px",marginBottom:compact?4:8,opacity:e.completado?.6:1,transition:"all .15s"}}>
+    return (<div key={e.id} style={{background:e.completado?"#f0f4f1":color+"12",borderLeft:"3px solid "+(e.completado?"#ccc":color),borderRadius:8,padding:compact?"6px 8px":"12px 16px",marginBottom:compact?4:8,opacity:e.completado?0.6:1,transition:"all .15s"}}>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
         <div style={{flex:1,minWidth:0}}>
+          {!compact&&<div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,marginBottom:4}}>{fmtDate(e.fecha)}{e.hora?" · "+e.hora:""}</div>}
+          {e.pacienteNombre&&!compact&&<div style={{fontSize:16,fontWeight:700,color:e.completado?"#999":"#1a3d2b",marginBottom:3,textDecoration:e.completado?"line-through":"none"}}>{e.pacienteNombre}</div>}
           <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <button onClick={()=>handleToggleCompletado(e)} title={e.completado?"Marcar pendiente":"Marcar completado"} style={{width:18,height:18,borderRadius:4,border:`2px solid ${e.completado?"#aaa":color}`,background:e.completado?color:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",padding:0,flexShrink:0}}>{e.completado?"✓":""}</button>
-            <span style={{fontWeight:700,fontSize:compact?12:14,color:e.completado?"#999":"#1a3d2b",textDecoration:e.completado?"line-through":"none"}}>{e.titulo}</span>
+            {!e._isAppointment&&<button onClick={()=>handleToggleCompletado(e)} title={e.completado?"Marcar pendiente":"Marcar completado"} style={{width:18,height:18,borderRadius:4,border:"2px solid "+(e.completado?"#aaa":color),background:e.completado?color:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",padding:0,flexShrink:0}}>{e.completado?"✓":""}</button>}
+            {e._isAppointment&&<span style={{fontSize:12}}>{"💜"}</span>}
+            <span style={{fontWeight:600,fontSize:compact?12:13,color:e.completado?"#aaa":"#5a7a6a",textDecoration:e.completado?"line-through":"none"}}>{e.titulo}</span>
           </div>
-          {!compact&&<div style={{fontSize:12,color:"#7a9a8a",marginTop:3}}>
-            {e.hora&&<span>{e.hora} · </span>}
-            {e.pacienteNombre&&<span style={{cursor:onSelectPatient?"pointer":"default",textDecoration:onSelectPatient?"underline":"none"}} onClick={()=>onSelectPatient&&e.pacienteId&&onSelectPatient(e.pacienteId)}>{e.pacienteNombre}</span>}
-            {!e.pacienteNombre&&<span style={{fontStyle:"italic"}}>Sin paciente</span>}
-            {e.notificar&&<span> · {e.notificarVia==="whatsapp"?"📱":"📧"}</span>}
-          </div>}
+          {!compact&&!e.pacienteNombre&&<div style={{fontSize:12,color:"#7a9a8a",marginTop:3,fontStyle:"italic"}}>Sin paciente asignado</div>}
           {!compact&&e.descripcion&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:3,fontStyle:"italic"}}>{e.descripcion}</div>}
         </div>
-        {!compact&&<div style={{display:"flex",gap:4,flexShrink:0}}>
-          <button onClick={()=>{setEditingEvento(e);setShowForm(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>✏️</button>
-          <button onClick={()=>handleDeleteEvento(e.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>🗑</button>
+        {!compact&&!e._isAppointment&&<div style={{display:"flex",gap:4,flexShrink:0}}>
+          <button onClick={()=>{setEditingEvento(e);setShowForm(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>{"✏️"}</button>
+          <button onClick={()=>handleDeleteEvento(e.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>{"🗑"}</button>
         </div>}
       </div>
     </div>);
@@ -1183,7 +1181,25 @@ export default function App() {
       }catch(e){console.error("Error loading base:",e);dispatch({type:"LOAD",patients:[],consultas:[],eventos:[]});}
       try{
         const [cases,appointments,followups,labs,tasks,leads]=await Promise.all([sbLoadFertilCases(),sbLoadAppointments(),sbLoadFertilFollowups(),sbLoadFertilLabs(),sbLoadFertilTasks(),sbLoadLeads()]);
-        dispatch({type:"LOAD_FERTIL",cases,appointments,followups,labs,tasks,leads});
+        // Auto-marcar como realizada las consultas con fecha pasada
+        var now=new Date();
+        var updated=[];
+        var finalAppts=appointments.map(function(a){
+          if(a.status==="programada"&&a.startAt){
+            var apptDate=new Date(a.startAt);
+            var createdAt=cases.find(function(c){return c.id===a.fertilCaseId;});
+            var createdRecently=createdAt?Math.abs(apptDate.getTime()-new Date(createdAt.createdAt).getTime())<60000:false;
+            if(!createdRecently&&apptDate<now&&apptDate.getFullYear()>2020){
+              var completed={...a,status:"realizada"};
+              updated.push(completed);
+              return completed;
+            }
+          }
+          return a;
+        });
+        dispatch({type:"LOAD_FERTIL",cases,appointments:finalAppts,followups,labs,tasks,leads});
+        // Persistir los que se auto-completaron
+        for(var u of updated){try{await sbUpdateAppointment(u);console.log("Auto-completada:",u.title);}catch(e){console.error("Error auto-completando:",e);}}
       }catch(e){console.error("Error loading fertil:",e);dispatch({type:"LOAD_FERTIL",cases:[],appointments:[],followups:[],labs:[],tasks:[],leads:[]});}
       setLoaded(true);
     }
