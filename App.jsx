@@ -1,4 +1,4 @@
-import React, { useState, useReducer, useEffect, useMemo } from "react"; // v2
+import React, { useState, useReducer, useEffect, useMemo } from "react";
 
 // ─── CONSTANTES ───────────────────────────────────────────────────────────────
 const ALERGIAS_OPTS = ["Gluten","Lactosa","Harina integral","Huevo","Mariscos","Frutos secos","Soja","Ninguna"];
@@ -74,6 +74,7 @@ function reducer(state,action) {
     case "UPDATE_APPOINTMENT": return {...state,appointments:(state.appointments||[]).map(a=>a.id===action.a.id?action.a:a)};
     case "DELETE_APPOINTMENT": return {...state,appointments:(state.appointments||[]).filter(a=>a.id!==action.id)};
     case "ADD_FERTIL_FOLLOWUP": return {...state,fertilFollowups:[action.f,...(state.fertilFollowups||[])]};
+    case "UPDATE_FERTIL_FOLLOWUP": return {...state,fertilFollowups:(state.fertilFollowups||[]).map(f=>f.id===action.f.id?action.f:f)};
     case "ADD_FERTIL_LAB": return {...state,fertilLabs:[action.l,...(state.fertilLabs||[])]};
     case "ADD_FERTIL_TASK": return {...state,fertilTasks:[action.t,...(state.fertilTasks||[])]};
     case "UPDATE_FERTIL_TASK": return {...state,fertilTasks:(state.fertilTasks||[]).map(t=>t.id===action.t.id?action.t:t)};
@@ -182,6 +183,7 @@ async function sbUpdateAppointment(a){const body=JSON.stringify({patient_id:a.pa
 async function sbDeleteAppointment(id){await fetch(`${SUPABASE_URL}/rest/v1/appointments?id=eq.${id}`,{method:"DELETE",headers:sbHeaders});}
 async function sbLoadFertilFollowups(){try{const r=await fetch(`${SUPABASE_URL}/rest/v1/fertil_followups?select=*&order=created_at.desc`,{headers:sbHeaders});if(!r.ok)return[];return(await r.json()).map(row=>({id:row.id,fertilCaseId:row.fertil_case_id,weekNumber:row.week_number,date:row.date,weight:row.weight,symptoms:row.symptoms||"",mood:row.mood||"",sleepQuality:row.sleep_quality||"",digestion:row.digestion||"",adherence:row.adherence||"",notes:row.notes||""}));}catch(e){return[];}}
 async function sbInsertFertilFollowup(f){const body=JSON.stringify({id:f.id,fertil_case_id:f.fertilCaseId,week_number:f.weekNumber,date:f.date,weight:f.weight||null,symptoms:f.symptoms||"",mood:f.mood||"",sleep_quality:f.sleepQuality||"",digestion:f.digestion||"",adherence:f.adherence||"",notes:f.notes||""});await fetch(`${SUPABASE_URL}/rest/v1/fertil_followups`,{method:"POST",headers:sbHeaders,body});}
+async function sbUpdateFertilFollowup(f){var body=JSON.stringify({week_number:f.weekNumber,date:f.date,weight:f.weight||null,symptoms:f.symptoms||"",mood:f.mood||"",sleep_quality:f.sleepQuality||"",digestion:f.digestion||"",adherence:f.adherence||"",notes:f.notes||""});await fetch(SUPABASE_URL+"/rest/v1/fertil_followups?id=eq."+f.id,{method:"PATCH",headers:{...sbHeaders,"Prefer":"return=minimal"},body:body});}
 async function sbLoadFertilLabs(){try{const r=await fetch(`${SUPABASE_URL}/rest/v1/fertil_labs?select=*&order=created_at.desc`,{headers:sbHeaders});if(!r.ok)return[];return(await r.json()).map(row=>({id:row.id,fertilCaseId:row.fertil_case_id,date:row.date,labType:row.lab_type||"",results:row.results||"",notes:row.notes||""}));}catch(e){return[];}}
 async function sbInsertFertilLab(l){const body=JSON.stringify({id:l.id,fertil_case_id:l.fertilCaseId,date:l.date,lab_type:l.labType||"",results:l.results||"",notes:l.notes||""});await fetch(`${SUPABASE_URL}/rest/v1/fertil_labs`,{method:"POST",headers:sbHeaders,body});}
 async function sbLoadFertilTasks(){try{const r=await fetch(`${SUPABASE_URL}/rest/v1/fertil_tasks?select=*&order=created_at.desc`,{headers:sbHeaders});if(!r.ok)return[];return(await r.json()).map(row=>({id:row.id,fertilCaseId:row.fertil_case_id,title:row.title,done:row.done||false,dueDate:row.due_date}));}catch(e){return[];}}
@@ -908,13 +910,13 @@ function FertilNewCase({patients,fertilCases,onSave,onCancel}){
   </div>);
 }
 
-function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,patients,allAppointments,dispatch,onUpdateCase,onUpdateAppointment,onAddFollowup,onAddLab,onAddTask,onUpdateTask,onDeleteTask,onDeleteCase,onBack,onGoToPatient}){
+function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,patients,allAppointments,dispatch,onUpdateCase,onUpdateAppointment,onAddFollowup,onUpdateFollowup,onAddLab,onAddTask,onUpdateTask,onDeleteTask,onDeleteCase,onBack,onGoToPatient}){
   const [tab,setTab]=useState("resumen");const fc=fertilCase;
   const caseAppts=(appointments||[]).filter(a=>a.fertilCaseId===fc.id).sort((a,b)=>(a.consultationNumber||0)-(b.consultationNumber||0));
   const caseFollowups=(followups||[]).filter(f=>f.fertilCaseId===fc.id);const caseLabs=(labs||[]).filter(l=>l.fertilCaseId===fc.id);const caseTasks=(tasks||[]).filter(t=>t.fertilCaseId===fc.id);
   const [payForm,setPayForm]=useState({amount:"",method:fc.paymentMethod||"transferencia"});const [showPayForm,setShowPayForm]=useState(false);
   const [scheduleAppt,setScheduleAppt]=useState(null);const [schedForm,setSchedForm]=useState({date:"",time:""});
-  const [showFollowupForm,setShowFollowupForm]=useState(false);const [ffForm,setFfForm]=useState({weekNumber:fc.currentWeek,date:todayISO(),weight:"",symptoms:"",mood:"",sleepQuality:"",digestion:"",adherence:"",notes:""});
+  const [showFollowupForm,setShowFollowupForm]=useState(false);const [editingFollowupId,setEditingFollowupId]=useState(null);const [ffForm,setFfForm]=useState({weekNumber:fc.currentWeek,date:todayISO(),weight:"",symptoms:"",mood:"",sleepQuality:"",digestion:"",adherence:"",notes:""});
   const [showLabForm,setShowLabForm]=useState(false);const [labForm,setLabForm]=useState({date:todayISO(),labType:"",results:"",notes:""});
   const [newTaskTitle,setNewTaskTitle]=useState("");
   const [deleteConfirm,setDeleteConfirm]=useState(false);
@@ -1009,9 +1011,25 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
     </div>}
 
     {tab==="seguimientos"&&<div>
-      <button onClick={()=>setShowFollowupForm(!showFollowupForm)} style={{...S.btnFertil,marginBottom:16}}>{"📝 Agregar seguimiento"}</button>
-      {showFollowupForm&&<div style={{...S.card,marginBottom:16}}><h4 style={{margin:"0 0 12px",color:"#7b2d8b"}}>📝 Registrar seguimiento</h4><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}><div style={{marginBottom:14}}><label style={S.label}>Semana</label><select value={ffForm.weekNumber} onChange={e=>setFfForm(f=>({...f,weekNumber:parseInt(e.target.value)}))} style={S.input}>{[1,2,3,4,5,6,7,8].map(w=><option key={w} value={w}>Semana {w}</option>)}</select></div><Field label="Fecha" type="date" value={ffForm.date} onChange={v=>setFfForm(f=>({...f,date:v}))}/><Field label="Peso (kg)" type="number" value={ffForm.weight} onChange={v=>setFfForm(f=>({...f,weight:v}))} placeholder="65"/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Síntomas" value={ffForm.symptoms} onChange={v=>setFfForm(f=>({...f,symptoms:v}))} placeholder="Hinchazón, cansancio..." rows={2}/><Field label="Estado de ánimo" value={ffForm.mood} onChange={v=>setFfForm(f=>({...f,mood:v}))} placeholder="Bien, ansiosa..."/><Field label="Sueño" value={ffForm.sleepQuality} onChange={v=>setFfForm(f=>({...f,sleepQuality:v}))} placeholder="Bueno, regular..."/><Field label="Digestión" value={ffForm.digestion} onChange={v=>setFfForm(f=>({...f,digestion:v}))} placeholder="Normal, constipación..."/></div><Field label="Adherencia al plan" value={ffForm.adherence} onChange={v=>setFfForm(f=>({...f,adherence:v}))} placeholder="Buena, parcial..."/><Field label="Notas" value={ffForm.notes} onChange={v=>setFfForm(f=>({...f,notes:v}))} placeholder="Observaciones..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={()=>setShowFollowupForm(false)} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={()=>{onAddFollowup({id:uid(),fertilCaseId:fc.id,...ffForm,weight:parseFloat(ffForm.weight)||null});setShowFollowupForm(false);setFfForm({weekNumber:fc.currentWeek,date:todayISO(),weight:"",symptoms:"",mood:"",sleepQuality:"",digestion:"",adherence:"",notes:""});}} style={{...S.btnFertil,flex:2}}>{"Guardar seguimiento"}</button></div></div>}
-      {caseFollowups.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>Sin seguimientos registrados</p>:caseFollowups.sort((a,b)=>b.weekNumber-a.weekNumber||new Date(b.date)-new Date(a.date)).map(f=>(<div key={f.id} style={{...S.card,marginBottom:10,borderLeft:"3px solid #7b2d8b"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontWeight:700,color:C.fertil,fontSize:13}}>Semana {f.weekNumber}</span><span style={{fontSize:12,color:"#7a9a8a"}}>{fmtDate(f.date)}</span></div><div style={{fontSize:12,color:"#1a3d2b",lineHeight:1.8}}>{f.weight&&<div>Peso: {f.weight} kg</div>}{f.symptoms&&<div>Síntomas: {f.symptoms}</div>}{f.mood&&<div>Ánimo: {f.mood}</div>}{f.sleepQuality&&<div>Sueño: {f.sleepQuality}</div>}{f.digestion&&<div>Digestión: {f.digestion}</div>}{f.adherence&&<div>Adherencia: {f.adherence}</div>}{f.notes&&<div style={{fontStyle:"italic",color:"#5a7a6a",marginTop:4}}>{f.notes}</div>}</div></div>))}
+      <button onClick={function(){setEditingFollowupId(null);setFfForm({weekNumber:fc.currentWeek,date:todayISO(),weight:"",symptoms:"",mood:"",sleepQuality:"",digestion:"",adherence:"",notes:""});setShowFollowupForm(!showFollowupForm);}} style={{...S.btnFertil,marginBottom:16}}>{"📝 Agregar seguimiento"}</button>
+      {showFollowupForm&&<div style={{...S.card,marginBottom:16}}><h4 style={{margin:"0 0 12px",color:C.fertil}}>{editingFollowupId?"✏️ Editar seguimiento":"📝 Registrar seguimiento"}</h4><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}><div style={{marginBottom:14}}><label style={S.label}>Semana</label><select value={ffForm.weekNumber} onChange={e=>setFfForm(f=>({...f,weekNumber:parseInt(e.target.value)}))} style={S.input}>{[1,2,3,4,5,6,7,8].map(w=><option key={w} value={w}>Semana {w}</option>)}</select></div><Field label="Fecha" type="date" value={ffForm.date} onChange={v=>setFfForm(f=>({...f,date:v}))}/><Field label="Peso (kg)" type="number" value={ffForm.weight} onChange={v=>setFfForm(f=>({...f,weight:v}))} placeholder="65"/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Síntomas" value={ffForm.symptoms} onChange={v=>setFfForm(f=>({...f,symptoms:v}))} placeholder="Hinchazón, cansancio..." rows={2}/><Field label="Estado de ánimo" value={ffForm.mood} onChange={v=>setFfForm(f=>({...f,mood:v}))} placeholder="Bien, ansiosa..."/><Field label="Sueño" value={ffForm.sleepQuality} onChange={v=>setFfForm(f=>({...f,sleepQuality:v}))} placeholder="Bueno, regular..."/><Field label="Digestión" value={ffForm.digestion} onChange={v=>setFfForm(f=>({...f,digestion:v}))} placeholder="Normal, constipación..."/></div><Field label="Adherencia al plan" value={ffForm.adherence} onChange={v=>setFfForm(f=>({...f,adherence:v}))} placeholder="Buena, parcial..."/><Field label="Notas" value={ffForm.notes} onChange={v=>setFfForm(f=>({...f,notes:v}))} placeholder="Observaciones..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={function(){setShowFollowupForm(false);setEditingFollowupId(null);}} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={function(){
+        if(editingFollowupId){
+          onUpdateFollowup({id:editingFollowupId,fertilCaseId:fc.id,...ffForm,weight:parseFloat(ffForm.weight)||null});
+        }else{
+          onAddFollowup({id:uid(),fertilCaseId:fc.id,...ffForm,weight:parseFloat(ffForm.weight)||null});
+        }
+        setShowFollowupForm(false);setEditingFollowupId(null);setFfForm({weekNumber:fc.currentWeek,date:todayISO(),weight:"",symptoms:"",mood:"",sleepQuality:"",digestion:"",adherence:"",notes:""});
+      }} style={{...S.btnFertil,flex:2}}>{editingFollowupId?"💾 Guardar cambios":"Guardar seguimiento"}</button></div></div>}
+      {caseFollowups.length===0?<p style={{color:"#aaa",fontSize:13,textAlign:"center",padding:"40px 0"}}>Sin seguimientos registrados</p>:caseFollowups.sort((a,b)=>b.weekNumber-a.weekNumber||new Date(b.date)-new Date(a.date)).map(function(f){return(<div key={f.id} style={{...S.card,marginBottom:10,borderLeft:"3px solid "+C.fertil}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <span style={{fontWeight:700,color:C.fertil,fontSize:13}}>{"Semana "+f.weekNumber}</span>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:12,color:C.muted}}>{fmtDate(f.date)}</span>
+            <button onClick={function(){setEditingFollowupId(f.id);setFfForm({weekNumber:f.weekNumber,date:f.date||todayISO(),weight:f.weight?String(f.weight):"",symptoms:f.symptoms||"",mood:f.mood||"",sleepQuality:f.sleepQuality||"",digestion:f.digestion||"",adherence:f.adherence||"",notes:f.notes||""});setShowFollowupForm(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>{"✏️"}</button>
+          </div>
+        </div>
+        <div style={{fontSize:12,color:C.text,lineHeight:1.8}}>{f.weight&&<div>{"Peso: "+f.weight+" kg"}</div>}{f.symptoms&&<div>{"Síntomas: "+f.symptoms}</div>}{f.mood&&<div>{"Ánimo: "+f.mood}</div>}{f.sleepQuality&&<div>{"Sueño: "+f.sleepQuality}</div>}{f.digestion&&<div>{"Digestión: "+f.digestion}</div>}{f.adherence&&<div>{"Adherencia: "+f.adherence}</div>}{f.notes&&<div style={{fontStyle:"italic",color:C.textSub,marginTop:4}}>{f.notes}</div>}</div>
+      </div>);})}
     </div>}
 
     {tab==="analisis"&&<div>
@@ -1207,6 +1225,7 @@ function FertilModule({state,dispatch,patients,onGoToPatient}){
     onUpdateCase={async c=>{dispatch({type:"UPDATE_FERTIL_CASE",c});await sbUpsertFertilCase(c);}}
     onUpdateAppointment={async a=>{dispatch({type:"UPDATE_APPOINTMENT",a});await sbUpdateAppointment(a);}}
     onAddFollowup={async f=>{dispatch({type:"ADD_FERTIL_FOLLOWUP",f});await sbInsertFertilFollowup(f);}}
+    onUpdateFollowup={async f=>{dispatch({type:"UPDATE_FERTIL_FOLLOWUP",f});await sbUpdateFertilFollowup(f);}}
     onAddLab={async l=>{dispatch({type:"ADD_FERTIL_LAB",l});await sbInsertFertilLab(l);}}
     onAddTask={async t=>{dispatch({type:"ADD_FERTIL_TASK",t});await sbInsertFertilTask(t);}}
     onUpdateTask={async t=>{dispatch({type:"UPDATE_FERTIL_TASK",t});await sbUpdateFertilTask(t);}}
