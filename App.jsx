@@ -1345,10 +1345,10 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
 
   var statCard=function(icon,value,label,sub,color,onClick){
     return(<div onClick={onClick} style={{...S.card,flex:1,minWidth:140,cursor:onClick?"pointer":"default",transition:"box-shadow .2s",borderTop:"3px solid "+color}} onMouseEnter={function(e){if(onClick)e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)";}} onMouseLeave={function(e){e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.04)";}}>
-      <div style={{fontSize:24,marginBottom:6}}>{icon}</div>
-      <div style={{fontSize:28,fontWeight:700,color:color}}>{value}</div>
-      <div style={{fontSize:12,fontWeight:600,color:"#1a3d2b",marginTop:2}}>{label}</div>
-      {sub&&<div style={{fontSize:11,color:"#7a9a8a",marginTop:2}}>{sub}</div>}
+      <div style={{fontSize:22,marginBottom:8}}>{icon}</div>
+      <div style={{fontSize:32,fontWeight:800,color:color,letterSpacing:"-1px",lineHeight:1}}>{value}</div>
+      <div style={{fontSize:11,fontWeight:600,color:C.textSub,marginTop:6,textTransform:"uppercase",letterSpacing:".5px"}}>{label}</div>
+      {sub&&<div style={{fontSize:11,color:C.muted,marginTop:3}}>{sub}</div>}
     </div>);
   };
 
@@ -1380,8 +1380,8 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
 
   return(<div>
     <div style={{marginBottom:24}}>
-      <h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>{saludo+", Julieta"}</h2>
-      <p style={{margin:"4px 0 0",fontSize:14,color:"#7a9a8a"}}>{new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p>
+      <h2 style={{margin:0,fontSize:26,fontWeight:800,color:C.text,letterSpacing:"-0.5px"}}>{saludo+", Julieta"}</h2>
+      <p style={{margin:"6px 0 0",fontSize:14,color:C.muted}}>{new Date().toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</p>
     </div>
 
     {/* Resumen rápido */}
@@ -1396,7 +1396,7 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
       {/* Columna izquierda: Hoy */}
       <div>
         <div style={{...S.card,marginBottom:16}}>
-          <h3 style={{margin:"0 0 14px",fontSize:15,fontWeight:700,color:"#1a3d2b"}}>{"📅 Hoy"+(totalHoy>0?" · "+totalHoy+" turno"+(totalHoy>1?"s":""):"")}</h3>
+          <h3 style={{margin:"0 0 14px",fontSize:16,fontWeight:700,color:C.text}}>{"📅 Hoy"+(totalHoy>0?" · "+totalHoy+" turno"+(totalHoy>1?"s":""):"")}</h3>
           {totalHoy===0?<p style={{fontSize:13,color:"#aaa",textAlign:"center",padding:"20px 0"}}>{"No hay turnos para hoy"}</p>:<div>
             {apptsHoy.sort(function(a,b){return a.startAt.localeCompare(b.startAt);}).map(renderApptItem)}
             {eventosHoy.sort(function(a,b){return(a.hora||"").localeCompare(b.hora||"");}).map(renderEventoItem)}
@@ -1405,7 +1405,7 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
 
         {/* Mañana */}
         {(eventosMañana.length>0||apptsMañana.length>0)&&<div style={{...S.card}}>
-          <h3 style={{margin:"0 0 14px",fontSize:15,fontWeight:700,color:C.ok}}>{"📋 Mañana · "+(eventosMañana.length+apptsMañana.length)+" turno"+(eventosMañana.length+apptsMañana.length>1?"s":"")}</h3>
+          <h3 style={{margin:"0 0 14px",fontSize:16,fontWeight:700,color:C.ok}}>{"📋 Mañana · "+(eventosMañana.length+apptsMañana.length)+" turno"+(eventosMañana.length+apptsMañana.length>1?"s":"")}</h3>
           {apptsMañana.sort(function(a,b){return a.startAt.localeCompare(b.startAt);}).map(renderApptItem)}
           {eventosMañana.sort(function(a,b){return(a.hora||"").localeCompare(b.hora||"");}).map(renderEventoItem)}
         </div>}
@@ -1415,26 +1415,26 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
       <div>
         {/* Seguimientos Fértil vencidos */}
         {fertilProgramadas.length>0&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid "+C.danger}}>
-          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:C.danger}}>{"⚠️ "+fertilProgramadas.length+" consulta"+(fertilProgramadas.length>1?"s":"")+" Fértil vencida"+(fertilProgramadas.length>1?"s":"")}</h4>
+          <h4 style={{margin:"0 0 10px",fontSize:14,fontWeight:700,color:C.danger}}>{"⚠️ "+fertilProgramadas.length+" consulta"+(fertilProgramadas.length>1?"s":"")+" Fértil vencida"+(fertilProgramadas.length>1?"s":"")}</h4>
           {fertilProgramadas.slice(0,4).map(function(a){var p=patients.find(function(x){return x.id===a.patientId;});return(<div key={a.id} onClick={function(){if(a.fertilCaseId)onGoToFertilCase(a.fertilCaseId);}} style={{fontSize:12,color:"#5a7a6a",padding:"4px 0",cursor:"pointer"}}>{(p?p.nombre:"Paciente")+" — "+a.title+" ("+fmtDate(a.startAt.split("T")[0])+")"}</div>);})}
         </div>}
 
         {/* Pagos pendientes */}
         {pagosPendientes.length>0&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid "+C.warn}}>
-          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#f4a261"}}>{"💰 "+pagosPendientes.length+" pago"+(pagosPendientes.length>1?"s":"")+" pendiente"+(pagosPendientes.length>1?"s":"")}</h4>
+          <h4 style={{margin:"0 0 10px",fontSize:14,fontWeight:700,color:"#f4a261"}}>{"💰 "+pagosPendientes.length+" pago"+(pagosPendientes.length>1?"s":"")+" pendiente"+(pagosPendientes.length>1?"s":"")}</h4>
           {pagosPendientes.map(function(c){var p=patients.find(function(x){return x.id===c.patientId;});return(<div key={c.id} onClick={function(){onGoToFertilCase(c.id);}} style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#5a7a6a",padding:"4px 0",cursor:"pointer"}}><span>{p?p.nombre:"Paciente"}</span><span style={{fontWeight:700,color:c.paymentStatus==="pendiente"?"#e76f51":"#f4a261"}}>{fmtMoney(c.totalPrice-c.amountPaid)+" restante"}</span></div>);})}
         </div>}
 
         {/* Leads */}
         {(leadsNuevos.length>0||leadsSeguimientoHoy.length>0)&&<div style={{...S.card,marginBottom:16,borderLeft:"4px solid "+C.lead}}>
-          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:"#3b82f6"}}>{"📱 Leads que necesitan atención"}</h4>
+          <h4 style={{margin:"0 0 10px",fontSize:14,fontWeight:700,color:C.lead}}>{"📱 Leads que necesitan atención"}</h4>
           {leadsSeguimientoHoy.map(function(l){return(<div key={l.id} onClick={onGoToLeads} style={{fontSize:12,color:"#5a7a6a",padding:"4px 0",cursor:"pointer"}}>{"📋 "+l.nombre+(l.accionPendiente?" — "+l.accionPendiente:"")}</div>);})}
           {leadsNuevos.map(function(l){return(<div key={l.id} onClick={onGoToLeads} style={{fontSize:12,color:C.lead,padding:"4px 0",cursor:"pointer"}}>{"🆕 "+l.nombre+" — sin responder"}</div>);})}
         </div>}
 
         {/* Eventos vencidos */}
         {eventosVencidos.length>0&&<div style={{...S.card,borderLeft:"4px solid #e76f51"}}>
-          <h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:C.danger}}>{"⏰ "+eventosVencidos.length+" evento"+(eventosVencidos.length>1?"s":"")+" vencido"+(eventosVencidos.length>1?"s":"")}</h4>
+          <h4 style={{margin:"0 0 10px",fontSize:14,fontWeight:700,color:C.danger}}>{"⏰ "+eventosVencidos.length+" evento"+(eventosVencidos.length>1?"s":"")+" vencido"+(eventosVencidos.length>1?"s":"")}</h4>
           {eventosVencidos.map(function(e){return(<div key={e.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid "+C.borderLight}}>
             <div style={{fontSize:12,color:C.textSub}}>{fmtDate(e.fecha)+" — "+e.titulo+(e.pacienteNombre?" ("+e.pacienteNombre+")":"")}</div>
             <button onClick={function(){if(confirm("¿Eliminar este evento vencido?"))onDeleteEvento(e.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,padding:"2px 6px",color:C.danger,flexShrink:0}} title="Eliminar evento">{"✕"}</button>
