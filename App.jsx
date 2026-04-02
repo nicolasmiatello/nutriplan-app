@@ -487,7 +487,7 @@ function exportPDF({ paciente, plan, notasNutricionista="" }) {
 const S = {
   label:{display:"block",fontSize:11,fontWeight:700,color:C.textSub,marginBottom:4,textTransform:"uppercase",letterSpacing:.8},
   input:{width:"100%",padding:"9px 12px",borderRadius:9,border:"1.5px solid "+C.border,fontSize:14,fontFamily:"inherit",background:"#fafcfb",outline:"none",boxSizing:"border-box"},
-  card:{background:C.bgCard,borderRadius:16,boxShadow:"0 2px 16px rgba(45,106,79,.08)",padding:"20px"},
+  card:{background:C.bgCard,borderRadius:14,border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",padding:"20px"},
   btnPrimary:{padding:"10px 18px",background:C.okDark,color:"#fff",border:"none",borderRadius:10,fontSize:14,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
   btnOutline:{padding:"10px 18px",background:"#fff",color:C.okDark,border:"1.5px solid "+C.okDark,borderRadius:10,fontSize:14,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
   btnGhost:{padding:"8px 14px",background:C.bg,color:C.textSub,border:"none",borderRadius:9,fontSize:13,fontFamily:"inherit",cursor:"pointer",fontWeight:600},
@@ -894,7 +894,7 @@ function FertilPatientList({fertilCases,patients,appointments,onSelectCase}){
     const nextAppt=caseAppts.filter(a=>a.status==="programada"&&a.startAt>new Date().toISOString()).sort((a,b)=>a.startAt.localeCompare(b.startAt))[0];
     const pName=p&&p.nombre?p.nombre:"Paciente";
     const pInitial=p&&p.nombre?p.nombre.charAt(0):"?";
-    return(<div key={c.id} onClick={()=>onSelectCase(c.id)} style={{...S.card,marginBottom:10,cursor:"pointer",borderLeft:"4px solid "+(FERTIL_STATUS_COLORS[c.status]||"#aaa"),transition:"box-shadow .2s"}} onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 20px rgba(123,45,139,.12)";}} onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)";}}>
+    return(<div key={c.id} onClick={()=>onSelectCase(c.id)} style={{...S.card,marginBottom:10,cursor:"pointer",borderLeft:"4px solid "+(FERTIL_STATUS_COLORS[c.status]||"#aaa"),transition:"box-shadow .2s"}} onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)";}} onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.04)";}}>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,"+C.fertil+","+C.fertilAlt+")",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{pInitial}</div>
         <div style={{flex:1,minWidth:0}}>
@@ -1229,7 +1229,7 @@ function LeadsList({leads,onAddLead,onUpdateLead,onDeleteLead}){
       var estadoColor=getLeadEstadoColor(l.estado);
       var isOverdue=l.proximoSeguimiento&&l.proximoSeguimiento<todayStr&&l.estado!=="descartado"&&l.estado!=="fertil"&&l.estado!=="consulta";
       var isToday=l.proximoSeguimiento===todayStr;
-      return(<div key={l.id} onClick={function(){setEditingLead(l);}} style={{...S.card,marginBottom:8,cursor:"pointer",borderLeft:"4px solid "+estadoColor,transition:"box-shadow .2s"}} onMouseEnter={function(e){e.currentTarget.style.boxShadow="0 4px 20px rgba(123,45,139,.12)";}} onMouseLeave={function(e){e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)";}}>
+      return(<div key={l.id} onClick={function(){setEditingLead(l);}} style={{...S.card,marginBottom:8,cursor:"pointer",borderLeft:"4px solid "+estadoColor,transition:"box-shadow .2s"}} onMouseEnter={function(e){e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)";}} onMouseLeave={function(e){e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.04)";}}>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{width:38,height:38,borderRadius:"50%",background:estadoColor+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0,color:estadoColor,fontWeight:700}}>{l.nombre.charAt(0).toUpperCase()}</div>
           <div style={{flex:1,minWidth:0}}>
@@ -1344,7 +1344,7 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
   var saludo=hora<12?"Buenos días":hora<18?"Buenas tardes":"Buenas noches";
 
   var statCard=function(icon,value,label,sub,color,onClick){
-    return(<div onClick={onClick} style={{...S.card,flex:1,minWidth:140,cursor:onClick?"pointer":"default",transition:"box-shadow .2s",borderTop:"3px solid "+color}} onMouseEnter={function(e){if(onClick)e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,.1)";}} onMouseLeave={function(e){e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)";}}>
+    return(<div onClick={onClick} style={{...S.card,flex:1,minWidth:140,cursor:onClick?"pointer":"default",transition:"box-shadow .2s",borderTop:"3px solid "+color}} onMouseEnter={function(e){if(onClick)e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)";}} onMouseLeave={function(e){e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.04)";}}>
       <div style={{fontSize:24,marginBottom:6}}>{icon}</div>
       <div style={{fontSize:28,fontWeight:700,color:color}}>{value}</div>
       <div style={{fontSize:12,fontWeight:600,color:"#1a3d2b",marginTop:2}}>{label}</div>
@@ -1450,7 +1450,7 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
 
 function PatientList({patients,onSelect,onNew}) {
   const [search,setSearch]=useState("");const filtered=patients.filter(p=>p.nombre.toLowerCase().includes(search.toLowerCase()));
-  return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>👥 Pacientes</h2><button onClick={onNew} style={S.btnPrimary}>{"👤 Nueva paciente"}</button></div><input placeholder="🔍 Buscar por nombre..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<div style={{textAlign:"center",padding:"60px 20px"}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{color:"#7a9a8a",fontSize:15}}>No hay pacientes aún</p><button onClick={onNew} style={{...S.btnPrimary,marginTop:12}}>{"👤 Agregar primera paciente"}</button></div>:filtered.map(p=>(<div key={p.id} onClick={()=>onSelect(p.id)} style={{...S.card,marginBottom:12,display:"flex",alignItems:"center",gap:14,cursor:"pointer",transition:"box-shadow .2s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 20px rgba(45,106,79,.15)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 2px 16px rgba(45,106,79,.08)"}><div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:18,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:17}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo,p.planes?.length&&`${p.planes.length} plan${p.planes.length!==1?"es":""}`].filter(Boolean).join(" · ")}</div></div><span style={{color:"#52b788",fontSize:20}}>›</span></div>))}</div>);
+  return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}><h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>👥 Pacientes</h2><button onClick={onNew} style={S.btnPrimary}>{"👤 Nueva paciente"}</button></div><input placeholder="🔍 Buscar por nombre..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<div style={{textAlign:"center",padding:"60px 20px"}}><div style={{fontSize:40,marginBottom:12}}>🌿</div><p style={{color:"#7a9a8a",fontSize:15}}>No hay pacientes aún</p><button onClick={onNew} style={{...S.btnPrimary,marginTop:12}}>{"👤 Agregar primera paciente"}</button></div>:filtered.map(p=>(<div key={p.id} onClick={()=>onSelect(p.id)} style={{...S.card,marginBottom:12,display:"flex",alignItems:"center",gap:14,cursor:"pointer",transition:"box-shadow .2s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.04)"}><div style={{width:46,height:46,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:18,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:17}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo,p.planes?.length&&`${p.planes.length} plan${p.planes.length!==1?"es":""}`].filter(Boolean).join(" · ")}</div></div><span style={{color:"#52b788",fontSize:20}}>›</span></div>))}</div>);
 }
 
 function NewPatient({onSave,onCancel}) {
@@ -1545,11 +1545,11 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
         <Field label="Diagnóstico nutricional" value={clinica.diagnostico} onChange={v=>setC("diagnostico",v)} rows={2}/>
         <Field label="Antecedentes" value={clinica.antecedentes} onChange={v=>setC("antecedentes",v)} rows={2}/>
         <Field label="Medicación" value={clinica.medicacion} onChange={v=>setC("medicacion",v)} rows={2}/>
-        <Field label="Rutinas" value={clinica.patologias} onChange={v=>setC("patologias",v)} rows={2}/>
+        <Field label="Patologías" value={clinica.patologias} onChange={v=>setC("patologias",v)} rows={2}/>
         <Field label="Alergias / Intolerancias" value={clinica.alergias} onChange={v=>setC("alergias",v)} rows={2}/>
         <Field label="Síntomas digestivos" value={clinica.digestivo} onChange={v=>setC("digestivo",v)} rows={2}/>
         <Field label="Calidad del sueño" value={clinica.sueno} onChange={v=>setC("sueno",v)} rows={2}/>
-        <Field label="Observaciones" value={clinica.estres} onChange={v=>setC("estres",v)} rows={2}/>
+        <Field label="Nivel de estrés" value={clinica.estres} onChange={v=>setC("estres",v)} rows={2}/>
         <Field label="Actividad física" value={clinica.actividad} onChange={v=>setC("actividad",v)} rows={2}/>
       </div>
       <button onClick={saveClinica} style={{...S.btnPrimary,width:"100%"}}>{clinicaSaved?"✓ Historia guardada":"💾 Guardar historia clínica"}</button>
