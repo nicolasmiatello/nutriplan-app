@@ -1541,16 +1541,16 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
     <div style={{...S.card,marginBottom:16}}>
       <SectionHead>Historia Clínica</SectionHead>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        <Field label="Motivo de consulta" value={clinica.motivo} onChange={v=>setC("motivo",v)} rows={2}/>
-        <Field label="Diagnóstico nutricional" value={clinica.diagnostico} onChange={v=>setC("diagnostico",v)} rows={2}/>
-        <Field label="Antecedentes" value={clinica.antecedentes} onChange={v=>setC("antecedentes",v)} rows={2}/>
-        <Field label="Medicación" value={clinica.medicacion} onChange={v=>setC("medicacion",v)} rows={2}/>
-        <Field label="Patologías" value={clinica.patologias} onChange={v=>setC("patologias",v)} rows={2}/>
-        <Field label="Alergias / Intolerancias" value={clinica.alergias} onChange={v=>setC("alergias",v)} rows={2}/>
-        <Field label="Síntomas digestivos" value={clinica.digestivo} onChange={v=>setC("digestivo",v)} rows={2}/>
-        <Field label="Calidad del sueño" value={clinica.sueno} onChange={v=>setC("sueno",v)} rows={2}/>
-        <Field label="Nivel de estrés" value={clinica.estres} onChange={v=>setC("estres",v)} rows={2}/>
-        <Field label="Actividad física" value={clinica.actividad} onChange={v=>setC("actividad",v)} rows={2}/>
+        <Field label="Motivo de consulta" value={clinica.motivo} onChange={v=>setC("motivo",v)} rows={4}/>
+        <Field label="Diagnóstico nutricional" value={clinica.diagnostico} onChange={v=>setC("diagnostico",v)} rows={4}/>
+        <Field label="Antecedentes" value={clinica.antecedentes} onChange={v=>setC("antecedentes",v)} rows={4}/>
+        <Field label="Medicación" value={clinica.medicacion} onChange={v=>setC("medicacion",v)} rows={4}/>
+        <Field label="Rutinas" value={clinica.patologias} onChange={v=>setC("patologias",v)} rows={4}/>
+        <Field label="Alergias / Intolerancias" value={clinica.alergias} onChange={v=>setC("alergias",v)} rows={4}/>
+        <Field label="Síntomas digestivos" value={clinica.digestivo} onChange={v=>setC("digestivo",v)} rows={4}/>
+        <Field label="Calidad del sueño" value={clinica.sueno} onChange={v=>setC("sueno",v)} rows={4}/>
+        <Field label="Observaciones" value={clinica.estres} onChange={v=>setC("estres",v)} rows={4}/>
+        <Field label="Actividad física" value={clinica.actividad} onChange={v=>setC("actividad",v)} rows={4}/>
       </div>
       <button onClick={saveClinica} style={{...S.btnPrimary,width:"100%"}}>{clinicaSaved?"✓ Historia guardada":"💾 Guardar historia clínica"}</button>
     </div>
