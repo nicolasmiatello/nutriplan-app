@@ -552,7 +552,7 @@ function ConsultationForm({patients,onSave,onCancel,prefillPatientId}) {
 function PatientsStats({patients,consultas,fertilCases,appointments,onAddConsulta,onDeleteConsulta,onSelect}) {
   const [tab,setTab]=useState("pacientes");const [showConsultaForm,setShowConsultaForm]=useState(false);const [search,setSearch]=useState("");
   const filtered=patients.filter(p=>p.nombre.toLowerCase().includes(search.toLowerCase()));
-  return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22}}><h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>Pacientes y Estadísticas</h2><button onClick={()=>setShowConsultaForm(true)} style={S.btnPrimary}>{"💰 Registrar consulta"}</button></div>{showConsultaForm&&<div style={{marginBottom:20}}><ConsultationForm patients={patients} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/></div>}<div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4}}>{[["pacientes","👥 Pacientes"],["stats","📊 Estadísticas"],["consultas","📋 Consultas"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:tab===id?"#fff":"transparent",color:tab===id?"#2d6a4f":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>{tab==="pacientes"&&<div><input placeholder="🔍 Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<EmptyState icon="👥" title="No hay pacientes registrados" sub="Agregá tu primera paciente para empezar"/>:filtered.map(p=>(<div key={p.id} style={{...S.card,marginBottom:14,display:"flex",alignItems:"center",gap:14}}><div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:17}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo].filter(Boolean).join(" · ")}{p.fechaCreacion&&` · Desde ${p.fechaCreacion}`}</div></div><div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={()=>onSelect(p.id)} style={S.btnOutline}>Ver ficha</button></div></div>))}</div>}{tab==="stats"&&<StatsDashboard patients={patients} consultas={consultas} fertilCases={fertilCases} appointments={appointments}/>}{tab==="consultas"&&<div>{(!consultas||consultas.length===0)?<EmptyState icon="📋" title="No hay consultas registradas" sub="Las consultas aparecerán acá cuando las registres"/>:(function(){
+  return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22}}><h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>Pacientes y Estadísticas</h2><button onClick={()=>setShowConsultaForm(true)} style={S.btnPrimary}>{"💰 Registrar consulta"}</button></div>{showConsultaForm&&<div style={{marginBottom:20}}><ConsultationForm patients={patients} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/></div>}<div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4}}>{[["pacientes","👥 Pacientes"],["stats","📊 Estadísticas"],["consultas","📋 Consultas"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:tab===id?700:500,cursor:"pointer",background:tab===id?C.okLight:"transparent",color:tab===id?C.okDark:C.textSub,boxShadow:"none"}}>{label}</button>))}</div>{tab==="pacientes"&&<div><input placeholder="🔍 Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<EmptyState icon="👥" title="No hay pacientes registrados" sub="Agregá tu primera paciente para empezar"/>:filtered.map(p=>(<div key={p.id} style={{...S.card,marginBottom:14,display:"flex",alignItems:"center",gap:14}}><div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:17}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo].filter(Boolean).join(" · ")}{p.fechaCreacion&&` · Desde ${p.fechaCreacion}`}</div></div><div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={()=>onSelect(p.id)} style={S.btnOutline}>Ver ficha</button></div></div>))}</div>}{tab==="stats"&&<StatsDashboard patients={patients} consultas={consultas} fertilCases={fertilCases} appointments={appointments}/>}{tab==="consultas"&&<div>{(!consultas||consultas.length===0)?<EmptyState icon="📋" title="No hay consultas registradas" sub="Las consultas aparecerán acá cuando las registres"/>:(function(){
     var sorted=[...consultas].sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);});
     var groups={};
     sorted.forEach(function(c){
@@ -734,7 +734,7 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
     {/* Toggle vista */}
     <div style={{display:"flex",gap:4,marginBottom:16,background:"#f0f4f1",borderRadius:10,padding:4,maxWidth:240}}>
       {[["month","📅 Mes"],["list","📋 Lista"]].map(([id,label])=>(
-        <button key={id} onClick={()=>setViewMode(id)} style={{flex:1,padding:"6px 10px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",background:viewMode===id?"#fff":"transparent",color:viewMode===id?"#2d6a4f":"#5a7a6a",boxShadow:viewMode===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>
+        <button key={id} onClick={()=>setViewMode(id)} style={{flex:1,padding:"6px 10px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:viewMode===id?700:500,cursor:"pointer",background:viewMode===id?C.okLight:"transparent",color:viewMode===id?C.okDark:C.textSub,boxShadow:"none"}}>{label}</button>
       ))}
     </div>
 
@@ -1025,7 +1025,7 @@ function FertilCaseDetail({fertilCase,patient,appointments,followups,labs,tasks,
     </div>
 
     {/* Tabs */}
-    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(function(item){var id=item[0];var label=item[1];return(<button key={id} onClick={function(){setTab(id);}} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?"#7b2d8b":"#5a7a6a",boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>);})}</div>
+    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4,overflowX:"auto"}}>{tabs.map(function(item){var id=item[0];var label=item[1];return(<button key={id} onClick={function(){setTab(id);}} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:tab===id?700:500,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?C.fertilLight:"transparent",color:tab===id?C.fertil:C.textSub,boxShadow:"none"}}>{label}</button>);})}</div>
 
     {tab==="resumen"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}><div style={S.card}><h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:C.fertil}}>Datos del caso</h4><div style={{fontSize:13,color:"#1a3d2b",lineHeight:2}}><div><strong>Condición:</strong> {fc.mainCondition||"—"}</div><div><strong>Objetivo:</strong> {fc.objective||"—"}</div><div><strong>Semana:</strong> {fc.currentWeek}/8</div><div><strong>Consultas:</strong> {caseAppts.filter(a=>a.status==="realizada").length}/5</div>{fc.notes&&<div><strong>Notas:</strong> {fc.notes}</div>}</div></div><div style={S.card}><h4 style={{margin:"0 0 10px",fontSize:13,fontWeight:700,color:C.fertil}}>💰 Resumen de pago</h4><div style={{fontSize:13,color:"#1a3d2b",lineHeight:2}}><div><strong>Total:</strong> {fmtMoney(fc.totalPrice)}</div><div><strong>Pagado:</strong> <span style={{color:"#52b788",fontWeight:700}}>{fmtMoney(fc.amountPaid)}</span></div><div><strong>Restante:</strong> <span style={{color:fc.totalPrice-fc.amountPaid>0?"#e76f51":"#52b788",fontWeight:700}}>{fmtMoney(fc.totalPrice-fc.amountPaid)}</span></div><div><strong>Estado:</strong> <Badge label={FERTIL_PAYMENT_LABELS[fc.paymentStatus]} color={FERTIL_PAYMENT_COLORS[fc.paymentStatus]+"22"} text={FERTIL_PAYMENT_COLORS[fc.paymentStatus]}/></div></div></div></div>}
 
@@ -1293,7 +1293,7 @@ function FertilModule({state,dispatch,patients,onGoToPatient}){
     onBack={()=>setSubScreen("dashboard")} onGoToPatient={onGoToPatient}/>;
 
   return(<div>
-    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4}}>{[["dashboard","📊 Dashboard"],["pacientes","👩 Pacientes"],["leads","📱 Leads"]].map(([id,label])=>(<button key={id} onClick={()=>setSubTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:600,cursor:"pointer",background:subTab===id?"#fff":"transparent",color:subTab===id?"#7b2d8b":"#5a7a6a",boxShadow:subTab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}{id==="leads"&&leads.filter(function(l){return l.estado==="nuevo"||l.proximoSeguimiento===todayISO();}).length>0&&<span style={{marginLeft:4,background:"#e76f51",color:"#fff",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{leads.filter(function(l){return l.estado==="nuevo"||l.proximoSeguimiento===todayISO();}).length}</span>}</button>))}</div>
+    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f5f0f7",borderRadius:10,padding:4}}>{[["dashboard","📊 Dashboard"],["pacientes","👩 Pacientes"],["leads","📱 Leads"]].map(([id,label])=>(<button key={id} onClick={()=>setSubTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:subTab===id?700:500,cursor:"pointer",background:subTab===id?C.fertilLight:"transparent",color:subTab===id?C.fertil:C.textSub,boxShadow:"none"}}>{label}{id==="leads"&&leads.filter(function(l){return l.estado==="nuevo"||l.proximoSeguimiento===todayISO();}).length>0&&<span style={{marginLeft:4,background:"#e76f51",color:"#fff",borderRadius:"50%",width:16,height:16,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700}}>{leads.filter(function(l){return l.estado==="nuevo"||l.proximoSeguimiento===todayISO();}).length}</span>}</button>))}</div>
     {subTab==="dashboard"&&<FertilDashboard fertilCases={fertilCases} patients={patients} appointments={appointments} onSelectCase={id=>{setSelectedCaseId(id);setSubScreen("case-detail");}} onNewCase={()=>setSubScreen("new-case")}/>}
     {subTab==="pacientes"&&<><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}><h3 style={{margin:0,fontSize:16,fontWeight:700,color:C.fertil}}>Pacientes Fértil</h3><button onClick={()=>setSubScreen("new-case")} style={S.btnFertil}>{"💜 Nueva paciente"}</button></div><FertilPatientList fertilCases={fertilCases} patients={patients} appointments={appointments} onSelectCase={id=>{setSelectedCaseId(id);setSubScreen("case-detail");}}/></>}
     {subTab==="leads"&&<LeadsList leads={leads} onAddLead={async function(l){dispatch({type:"ADD_LEAD",l:l});await sbInsertLead(l);} } onUpdateLead={async function(l){dispatch({type:"UPDATE_LEAD",l:l});await sbUpdateLead(l);}} onDeleteLead={async function(id){dispatch({type:"DELETE_LEAD",id:id});await sbDeleteLead(id);}}/>}
@@ -1339,6 +1339,17 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
 
   // Eventos vencidos
   var eventosVencidos=eventos.filter(function(e){return!e.completado&&e.fecha<todayStr;});
+
+  // Próximos días (día 2 al 7 desde hoy, excluyendo hoy y mañana)
+  var proximosDias=[];
+  for(var d=2;d<=7;d++){
+    var dateStr=new Date(now.getTime()+d*86400000).toISOString().split("T")[0];
+    var dayEventos=eventos.filter(function(e){return e.fecha===dateStr&&!e.completado;});
+    var dayAppts=appointments.filter(function(a){return a.startAt&&a.startAt.startsWith(dateStr)&&a.status!=="cancelada";});
+    if(dayEventos.length>0||dayAppts.length>0){
+      proximosDias.push({fecha:dateStr,label:new Date(now.getTime()+d*86400000).toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"short"}),eventos:dayEventos,appts:dayAppts});
+    }
+  }
 
   // Saludo
   var hora=now.getHours();
@@ -1394,22 +1405,37 @@ function TodayDashboard({state,patients,onGoToPatient,onGoToFertilCase,onGoToAge
     </div>
 
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:20}}>
-      {/* Columna izquierda: Hoy */}
+      {/* Columna izquierda: Hoy + próximos */}
       <div>
         <div style={{...S.card,marginBottom:18}}>
           <h3 style={{margin:"0 0 14px",fontSize:16,fontWeight:700,color:C.text}}>{"📅 Hoy"+(totalHoy>0?" · "+totalHoy+" turno"+(totalHoy>1?"s":""):"")}</h3>
-          {totalHoy===0?<EmptyState icon="☀️" title="Día libre" sub="No hay turnos para hoy" compact={true}/>:<div>
+          {totalHoy===0?<div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:C.okLight,borderRadius:10}}><span style={{fontSize:20}}>{"☀️"}</span><div><div style={{fontSize:13,fontWeight:600,color:C.okDark}}>{"Día libre"}</div><div style={{fontSize:11,color:C.muted}}>{"No hay turnos para hoy"}</div></div></div>:<div>
             {apptsHoy.sort(function(a,b){return a.startAt.localeCompare(b.startAt);}).map(renderApptItem)}
             {eventosHoy.sort(function(a,b){return(a.hora||"").localeCompare(b.hora||"");}).map(renderEventoItem)}
           </div>}
         </div>
 
         {/* Mañana */}
-        {(eventosMañana.length>0||apptsMañana.length>0)&&<div style={{...S.card}}>
+        {(eventosMañana.length>0||apptsMañana.length>0)&&<div style={{...S.card,marginBottom:18}}>
           <h3 style={{margin:"0 0 14px",fontSize:16,fontWeight:700,color:C.ok}}>{"📋 Mañana · "+(eventosMañana.length+apptsMañana.length)+" turno"+(eventosMañana.length+apptsMañana.length>1?"s":"")}</h3>
           {apptsMañana.sort(function(a,b){return a.startAt.localeCompare(b.startAt);}).map(renderApptItem)}
           {eventosMañana.sort(function(a,b){return(a.hora||"").localeCompare(b.hora||"");}).map(renderEventoItem)}
         </div>}
+
+        {/* Próximos días */}
+        {proximosDias.length>0&&<div style={{...S.card}}>
+          <h3 style={{margin:"0 0 14px",fontSize:16,fontWeight:700,color:C.textSub}}>{"🗓 Próximos días"}</h3>
+          {proximosDias.map(function(dia){
+            return(<div key={dia.fecha} style={{marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.textSub,textTransform:"capitalize",marginBottom:6,paddingBottom:4,borderBottom:"1px solid "+C.borderLight}}>{dia.label}</div>
+              {dia.appts.sort(function(a,b){return a.startAt.localeCompare(b.startAt);}).map(renderApptItem)}
+              {dia.eventos.sort(function(a,b){return(a.hora||"").localeCompare(b.hora||"");}).map(renderEventoItem)}
+            </div>);
+          })}
+        </div>}
+
+        {/* Si no hay nada en toda la semana */}
+        {totalHoy===0&&eventosMañana.length===0&&apptsMañana.length===0&&proximosDias.length===0&&<div style={{...S.card,textAlign:"center",padding:"30px 20px"}}><div style={{fontSize:28,marginBottom:6}}>{"🌿"}</div><p style={{color:C.muted,fontSize:12,margin:0}}>{"No hay turnos esta semana"}</p></div>}
       </div>
 
       {/* Columna derecha: Alertas y pendientes */}
@@ -1535,7 +1561,7 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
     </div>}
 
     {/* Tabs — simplificados */}
-    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4,overflowX:"auto"}}>{[["resumen","📋 Resumen"],["evol","📝 Evolución"],["planes","🥗 Planes"],["consultas","💰 Consultas"],["agenda","📅 Agenda"],["timeline","⏱ Timeline"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?"#fff":"transparent",color:tab===id?C.okDark:C.textSub,boxShadow:tab===id?"0 1px 4px rgba(0,0,0,.1)":"none"}}>{label}</button>))}</div>
+    <div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4,overflowX:"auto"}}>{[["resumen","📋 Resumen"],["evol","📝 Evolución"],["planes","🥗 Planes"],["consultas","💰 Consultas"],["agenda","📅 Agenda"],["timeline","⏱ Timeline"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:tab===id?700:500,cursor:"pointer",whiteSpace:"nowrap",background:tab===id?C.okLight:"transparent",color:tab===id?C.okDark:C.textSub,boxShadow:"none"}}>{label}</button>))}</div>
 
   {tab==="resumen"&&<div>
     {/* Historia Clínica */}
