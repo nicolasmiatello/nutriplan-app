@@ -129,14 +129,14 @@ async function sbLoadConsultas() {
   const rows = await r.json();
   return rows.map(row=>({
     id:row.id,pacienteId:row.paciente_id,pacienteNombre:row.paciente_nombre,
-    fecha:row.fecha,monto:parseFloat(row.monto)||0,tipo:row.tipo,obs:row.obs||"",lugar:row.lugar||"Consultorio propio"
+    fecha:row.fecha,monto:parseFloat(row.monto)||0,tipo:row.tipo,obs:row.obs||"",lugar:row.lugar||"Online"
   }));
 }
 
 async function sbInsertConsulta(c) {
   const body = JSON.stringify({
     id:c.id,paciente_id:c.pacienteId,paciente_nombre:c.pacienteNombre,
-    fecha:c.fecha,monto:c.monto||0,tipo:c.tipo||"",obs:c.obs||"",lugar:c.lugar||"Consultorio propio"
+    fecha:c.fecha,monto:c.monto||0,tipo:c.tipo||"",obs:c.obs||"",lugar:c.lugar||"Online"
   });
   await fetch(`${SUPABASE_URL}/rest/v1/consultas`,{method:"POST",headers:sbHeaders,body});
 }
@@ -537,10 +537,8 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
 
   // Desglose por lugar
   var consultasOlivos=consultasMes.filter(function(c){return c.lugar==="Olivos Medical";});
-  var consultasPropio=consultasMes.filter(function(c){return!c.lugar||c.lugar==="Consultorio propio";});
-  var consultasOnline=consultasMes.filter(function(c){return c.lugar==="Online";});
+  var consultasOnline=consultasMes.filter(function(c){return!c.lugar||c.lugar==="Online"||c.lugar==="Consultorio propio";});
   var montoOlivos=consultasOlivos.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
-  var montoPropio=consultasPropio.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
   var montoOnline=consultasOnline.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
 
   // Fértil stats
@@ -663,21 +661,15 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
         <h4 style={{margin:"0 0 14px",fontSize:14,fontWeight:700,color:C.text}}>{"Desglose por lugar — este mes"}</h4>
         <div style={{display:"flex",gap:20,justifyContent:"center",padding:"10px 0"}}>
           <div style={{textAlign:"center",flex:1}}>
-            <div style={{fontSize:24,fontWeight:800,color:C.okDark}}>{consultasPropio.length}</div>
-            <div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",marginTop:4}}>{"Consultorio"}</div>
-            <div style={{fontSize:13,fontWeight:700,color:C.ok,marginTop:2}}>{fmtMoney(montoPropio)}</div>
-          </div>
-          <div style={{width:1,background:C.borderLight}}></div>
-          <div style={{textAlign:"center",flex:1}}>
-            <div style={{fontSize:24,fontWeight:800,color:C.lead}}>{consultasOlivos.length}</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.lead}}>{consultasOlivos.length}</div>
             <div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",marginTop:4}}>{"Olivos Medical"}</div>
-            <div style={{fontSize:13,fontWeight:700,color:C.ok,marginTop:2}}>{fmtMoney(montoOlivos)}</div>
+            <div style={{fontSize:14,fontWeight:700,color:C.ok,marginTop:4}}>{fmtMoney(montoOlivos)}</div>
           </div>
           <div style={{width:1,background:C.borderLight}}></div>
           <div style={{textAlign:"center",flex:1}}>
-            <div style={{fontSize:24,fontWeight:800,color:C.fertil}}>{consultasOnline.length}</div>
+            <div style={{fontSize:28,fontWeight:800,color:C.fertil}}>{consultasOnline.length}</div>
             <div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",marginTop:4}}>{"Online"}</div>
-            <div style={{fontSize:13,fontWeight:700,color:C.ok,marginTop:2}}>{fmtMoney(montoOnline)}</div>
+            <div style={{fontSize:14,fontWeight:700,color:C.ok,marginTop:4}}>{fmtMoney(montoOnline)}</div>
           </div>
         </div>
       </div>}
@@ -697,10 +689,10 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
 
 // ─── CONSULTA FORM (reutilizable, con paciente opcional precargado) ───────────
 function ConsultationForm({patients,onSave,onCancel,prefillPatientId}) {
-  const [form,setForm]=useState({pacienteId:prefillPatientId||"",fecha:todayISO(),monto:"",tipo:"Primera consulta",lugar:"Consultorio propio",obs:""});
+  const [form,setForm]=useState({pacienteId:prefillPatientId||"",fecha:todayISO(),monto:"",tipo:"Primera consulta",lugar:"Online",obs:""});
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.pacienteId&&form.fecha&&form.monto;
   const handleSave=()=>{const p=patients.find(x=>x.id===form.pacienteId);onSave({id:uid(),pacienteId:form.pacienteId,pacienteNombre:p?.nombre||"",fecha:form.fecha,monto:parseFloat(form.monto)||0,tipo:form.tipo,lugar:form.lugar,obs:form.obs});};
-  return (<div style={S.card}><h3 style={{margin:"0 0 16px",color:"#1a3d2b",fontSize:17,fontWeight:700}}>➕ Registrar consulta</h3>{!prefillPatientId&&<div style={{marginBottom:14}}><label style={S.label}>Paciente</label><select value={form.pacienteId} onChange={e=>set("pacienteId",e.target.value)} style={S.input}><option value="">Seleccioná un paciente...</option>{patients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha" type="date" value={form.fecha} onChange={v=>set("fecha",v)}/><Field label="Monto cobrado ($)" type="number" value={form.monto} onChange={v=>set("monto",v)} placeholder="5000"/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><div style={{marginBottom:14}}><label style={S.label}>Tipo de consulta</label><select value={form.tipo} onChange={e=>set("tipo",e.target.value)} style={S.input}>{["Primera consulta","Seguimiento","Control","Consulta especial"].map(t=><option key={t}>{t}</option>)}</select></div><div style={{marginBottom:14}}><label style={S.label}>Lugar</label><select value={form.lugar} onChange={e=>set("lugar",e.target.value)} style={S.input}>{["Consultorio propio","Olivos Medical","Online"].map(t=><option key={t}>{t}</option>)}</select></div></div><Field label="Observación (opcional)" value={form.obs} onChange={v=>set("obs",v)} placeholder="Notas sobre la consulta..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={handleSave} disabled={!valid} style={{...S.btnPrimary,flex:2,opacity:valid?1:.5}}>{"💰 Registrar consulta"}</button></div></div>);
+  return (<div style={S.card}><h3 style={{margin:"0 0 16px",color:"#1a3d2b",fontSize:17,fontWeight:700}}>➕ Registrar consulta</h3>{!prefillPatientId&&<div style={{marginBottom:14}}><label style={S.label}>Paciente</label><select value={form.pacienteId} onChange={e=>set("pacienteId",e.target.value)} style={S.input}><option value="">Seleccioná un paciente...</option>{patients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha" type="date" value={form.fecha} onChange={v=>set("fecha",v)}/><Field label="Monto cobrado ($)" type="number" value={form.monto} onChange={v=>set("monto",v)} placeholder="5000"/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><div style={{marginBottom:14}}><label style={S.label}>Tipo de consulta</label><select value={form.tipo} onChange={e=>set("tipo",e.target.value)} style={S.input}>{["Primera consulta","Seguimiento","Control","Consulta especial"].map(t=><option key={t}>{t}</option>)}</select></div><div style={{marginBottom:14}}><label style={S.label}>Lugar</label><select value={form.lugar} onChange={e=>set("lugar",e.target.value)} style={S.input}>{["Olivos Medical","Online"].map(t=><option key={t}>{t}</option>)}</select></div></div><Field label="Observación (opcional)" value={form.obs} onChange={v=>set("obs",v)} placeholder="Notas sobre la consulta..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={handleSave} disabled={!valid} style={{...S.btnPrimary,flex:2,opacity:valid?1:.5}}>{"💰 Registrar consulta"}</button></div></div>);
 }
 
 function PatientsStats({patients,consultas,fertilCases,appointments,gastos,onAddConsulta,onDeleteConsulta,onAddGasto,onDeleteGasto,onSelect}) {
