@@ -147,8 +147,10 @@ async function sbLoadGastos(){
   try{var r=await fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&order=created_at.desc",{headers:sbHeaders});if(!r.ok)return[];return await r.json();}catch(e){console.error("sbLoadGastos:",e);return[];}
 }
 async function sbInsertGasto(g){
-  var body=JSON.stringify({id:g.id,tipo:g.tipo,categoria:g.categoria||"general",monto:g.monto||0,mes:g.mes,descripcion:g.descripcion||""});
-  await fetch(SUPABASE_URL+"/rest/v1/gastos",{method:"POST",headers:sbHeaders,body:body});
+  var body=JSON.stringify({tipo:g.tipo,categoria:g.categoria||"general",monto:g.monto||0,mes:g.mes,descripcion:g.descripcion||""});
+  var r=await fetch(SUPABASE_URL+"/rest/v1/gastos",{method:"POST",headers:{...sbHeaders,"Prefer":"return=representation"},body:body});
+  if(!r.ok){console.error("Error insertando gasto:",await r.text());}
+  return r.ok?await r.json():null;
 }
 async function sbDeleteGasto(id){await fetch(SUPABASE_URL+"/rest/v1/gastos?id=eq."+id,{method:"DELETE",headers:sbHeaders});}
 
@@ -1839,7 +1841,7 @@ export default function App() {
   const patient=state.patients.find(p=>p.id===selectedId);const go=(s,id=null)=>{setScreen(s);if(id)setSelectedId(id);};
   const handleAddConsulta=async(c)=>{dispatch({type:"ADD_CONSULTA",c});try{await sbInsertConsulta(c);}catch(e){console.error("Error guardando consulta:",e);}};
   const handleDeleteConsulta=async(id)=>{dispatch({type:"DELETE_CONSULTA",id});try{await sbDeleteConsulta(id);}catch(e){console.error("Error eliminando consulta:",e);}};
-  const handleAddGasto=async function(g){dispatch({type:"ADD_GASTO",g:g});try{await sbInsertGasto(g);}catch(e){console.error("Error guardando gasto:",e);}};
+  const handleAddGasto=async function(g){dispatch({type:"ADD_GASTO",g:g});try{var result=await sbInsertGasto(g);if(result&&result[0]&&result[0].id){g.id=result[0].id;}}catch(e){console.error("Error guardando gasto:",e);}};
   const handleDeleteGasto=async function(id){dispatch({type:"DELETE_GASTO",id:id});try{await sbDeleteGasto(id);}catch(e){console.error("Error eliminando gasto:",e);}};  const handleDeletePatient=async(id)=>{
     // Limpiar datos Fértil asociados
     var casesForPatient=(state.fertilCases||[]).filter(function(c){return c.patientId===id;});
