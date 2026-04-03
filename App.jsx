@@ -85,6 +85,9 @@ function reducer(state,action) {
     case "ADD_LEAD": return {...state,fertilLeads:[action.l,...(state.fertilLeads||[])]};
     case "UPDATE_LEAD": return {...state,fertilLeads:(state.fertilLeads||[]).map(l=>l.id===action.l.id?action.l:l)};
     case "DELETE_LEAD": return {...state,fertilLeads:(state.fertilLeads||[]).filter(l=>l.id!==action.id)};
+    case "LOAD_GASTOS": return {...state,gastos:action.gastos||[]};
+    case "ADD_GASTO": return {...state,gastos:[action.g,...(state.gastos||[])]};
+    case "DELETE_GASTO": return {...state,gastos:(state.gastos||[]).filter(g=>g.id!==action.id)};
     case "LOAD": return {...state,patients:action.patients,consultas:action.consultas||[],eventos:action.eventos||[]};
     default: return state;
   }
@@ -126,18 +129,28 @@ async function sbLoadConsultas() {
   const rows = await r.json();
   return rows.map(row=>({
     id:row.id,pacienteId:row.paciente_id,pacienteNombre:row.paciente_nombre,
-    fecha:row.fecha,monto:parseFloat(row.monto)||0,tipo:row.tipo,obs:row.obs||""
+    fecha:row.fecha,monto:parseFloat(row.monto)||0,tipo:row.tipo,obs:row.obs||"",lugar:row.lugar||"Consultorio propio"
   }));
 }
 
 async function sbInsertConsulta(c) {
   const body = JSON.stringify({
     id:c.id,paciente_id:c.pacienteId,paciente_nombre:c.pacienteNombre,
-    fecha:c.fecha,monto:c.monto||0,tipo:c.tipo||"",obs:c.obs||""
+    fecha:c.fecha,monto:c.monto||0,tipo:c.tipo||"",obs:c.obs||"",lugar:c.lugar||"Consultorio propio"
   });
   await fetch(`${SUPABASE_URL}/rest/v1/consultas`,{method:"POST",headers:sbHeaders,body});
 }
 async function sbDeleteConsulta(id){await fetch(SUPABASE_URL+"/rest/v1/consultas?id=eq."+id,{method:"DELETE",headers:sbHeaders});}
+
+// ─── GASTOS ──────────────────────────────────────────────────────────────────
+async function sbLoadGastos(){
+  try{var r=await fetch(SUPABASE_URL+"/rest/v1/gastos?select=*&order=created_at.desc",{headers:sbHeaders});if(!r.ok)return[];return await r.json();}catch(e){console.error("sbLoadGastos:",e);return[];}
+}
+async function sbInsertGasto(g){
+  var body=JSON.stringify({id:g.id,tipo:g.tipo,categoria:g.categoria||"general",monto:g.monto||0,mes:g.mes,descripcion:g.descripcion||""});
+  await fetch(SUPABASE_URL+"/rest/v1/gastos",{method:"POST",headers:sbHeaders,body:body});
+}
+async function sbDeleteGasto(id){await fetch(SUPABASE_URL+"/rest/v1/gastos?id=eq."+id,{method:"DELETE",headers:sbHeaders});}
 
 async function sbLoadEventos() {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/eventos?select=*&order=fecha.asc`,{headers:sbHeaders});
@@ -506,15 +519,27 @@ function BarChart({data,color="#2d6a4f",formatValue=(v)=>v,height=120}) {
   return (<div style={{display:"flex",alignItems:"flex-end",gap:6,height:height+40,paddingTop:8}}>{data.map((d,i)=>(<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><span style={{fontSize:9,color:"#7a9a8a",fontWeight:600}}>{d.value>0?formatValue(d.value):""}</span><div style={{width:"100%",background:color,borderRadius:"4px 4px 0 0",height:`${(d.value/max)*height}px`,minHeight:d.value>0?4:0,transition:"height .3s"}}/><span style={{fontSize:9,color:"#7a9a8a",textAlign:"center",lineHeight:1.2}}>{d.label}</span></div>))}</div>);
 }
 
-function StatsDashboard({patients,consultas,fertilCases,appointments}) {
+function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAddGasto,onDeleteGasto}) {
   var now=new Date();var thisMonth=now.getMonth();var thisYear=now.getFullYear();
+  var mesActual=(thisYear)+"-"+(String(thisMonth+1).padStart(2,"0"));
   var allConsultas=consultas||[];
   var fc=fertilCases||[];
+  var allGastos=gastos||[];
+  var [showGastoForm,setShowGastoForm]=useState(false);
+  var [gastoForm,setGastoForm]=useState({tipo:"alquiler",categoria:"general",monto:"",mes:mesActual,descripcion:""});
 
   // Consultas privadas (este mes)
   var consultasMes=allConsultas.filter(function(c){var d=new Date(c.fecha);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
   var totalMesConsultas=consultasMes.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
   var totalHistoricoConsultas=allConsultas.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
+
+  // Desglose por lugar
+  var consultasOlivos=consultasMes.filter(function(c){return c.lugar==="Olivos Medical";});
+  var consultasPropio=consultasMes.filter(function(c){return!c.lugar||c.lugar==="Consultorio propio";});
+  var consultasOnline=consultasMes.filter(function(c){return c.lugar==="Online";});
+  var montoOlivos=consultasOlivos.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
+  var montoPropio=consultasPropio.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
+  var montoOnline=consultasOnline.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
 
   // Fértil stats
   var fertilActivas=fc.filter(function(c){return c.status==="activa";}).length;
@@ -526,10 +551,18 @@ function StatsDashboard({patients,consultas,fertilCases,appointments}) {
   var fertilPendientes=fc.filter(function(c){return c.paymentStatus==="pendiente";}).length;
   var fertilPctPago=fc.length?Math.round((fertilPagos/fc.length)*100):0;
 
+  // Gastos del mes
+  var gastosMes=allGastos.filter(function(g){return g.mes===mesActual;});
+  var gastosFertilMes=gastosMes.filter(function(g){return g.categoria==="fertil";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
+  var gastosPrivadasMes=gastosMes.filter(function(g){return g.categoria==="privadas";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
+  var gastosGeneralMes=gastosMes.filter(function(g){return g.categoria==="general";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
+  var totalGastosMes=gastosMes.reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
+
   // Totales generales
   var totalMes=totalMesConsultas+fertilMesIngresos;
   var totalHistorico=totalHistoricoConsultas+fertilTotalIngresos;
   var consultasTotalesMes=consultasMes.length;
+  var gananciaNetaMes=totalMes-totalGastosMes;
 
   // Gráficos últimos 6 meses
   var last6=Array.from({length:6},function(_,i){var d=new Date(thisYear,thisMonth-5+i,1);var m=d.getMonth();var y=d.getFullYear();var cs=allConsultas.filter(function(c){var dd=new Date(c.fecha);return dd.getMonth()===m&&dd.getFullYear()===y;});var fertilMes=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);return{label:MESES[m],value:cs.length,monto:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0),montoFertil:fertilMes,montoTotal:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0)+fertilMes};});
@@ -541,19 +574,55 @@ function StatsDashboard({patients,consultas,fertilCases,appointments}) {
     return(<div style={{...S.card,flex:1,minWidth:130}}><div style={{fontSize:20,marginBottom:6}}>{icon}</div><div style={{fontSize:28,fontWeight:800,color:color,letterSpacing:"-0.5px"}}>{value}</div><div style={{fontSize:11,fontWeight:600,color:C.textSub,marginTop:4,textTransform:"uppercase",letterSpacing:".5px"}}>{label}</div>{sub&&<div style={{fontSize:11,color:C.muted,marginTop:2}}>{sub}</div>}</div>);
   };
 
+  var handleSaveGasto=function(){
+    if(!gastoForm.monto||!gastoForm.mes)return;
+    var g={id:uid(),tipo:gastoForm.tipo,categoria:gastoForm.categoria,monto:parseFloat(gastoForm.monto)||0,mes:gastoForm.mes,descripcion:gastoForm.descripcion};
+    onAddGasto(g);
+    setGastoForm({tipo:"alquiler",categoria:"general",monto:"",mes:mesActual,descripcion:""});
+    setShowGastoForm(false);
+  };
+
   return (<div>
     {/* ── BLOQUE 1: GENERAL ── */}
-    <h2 style={{margin:"0 0 20px",fontSize:22,fontWeight:800,color:C.text,letterSpacing:"-0.3px"}}>{"📊 Estadísticas generales"}</h2>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+      <h2 style={{margin:0,fontSize:22,fontWeight:800,color:C.text,letterSpacing:"-0.3px"}}>{"📊 Estadísticas generales"}</h2>
+      <button onClick={function(){setShowGastoForm(!showGastoForm);}} style={S.btnOutline}>{"💸 "+(showGastoForm?"Cerrar":"Cargar gasto")}</button>
+    </div>
+
+    {showGastoForm&&<div style={{...S.card,marginBottom:20,borderLeft:"4px solid "+C.warn}}>
+      <h4 style={{margin:"0 0 14px",fontSize:14,fontWeight:700,color:C.text}}>{"Registrar gasto"}</h4>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+        <div style={{marginBottom:14}}><label style={S.label}>{"Tipo"}</label><select value={gastoForm.tipo} onChange={function(e){setGastoForm(function(f){return Object.assign({},f,{tipo:e.target.value});});}} style={S.input}><option value="alquiler">{"Alquiler"}</option><option value="publicidad">{"Publicidad"}</option><option value="insumos">{"Insumos"}</option><option value="otro">{"Otro"}</option></select></div>
+        <div style={{marginBottom:14}}><label style={S.label}>{"Categoría"}</label><select value={gastoForm.categoria} onChange={function(e){setGastoForm(function(f){return Object.assign({},f,{categoria:e.target.value});});}} style={S.input}><option value="general">{"General"}</option><option value="fertil">{"Fértil"}</option><option value="privadas">{"Consultas privadas"}</option></select></div>
+        <Field label="Monto ($)" type="number" value={gastoForm.monto} onChange={function(v){setGastoForm(function(f){return Object.assign({},f,{monto:v});});}} placeholder="15000"/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        <div style={{marginBottom:14}}><label style={S.label}>{"Mes"}</label><input type="month" value={gastoForm.mes} onChange={function(e){setGastoForm(function(f){return Object.assign({},f,{mes:e.target.value});});}} style={S.input}/></div>
+        <Field label="Descripción (opcional)" value={gastoForm.descripcion} onChange={function(v){setGastoForm(function(f){return Object.assign({},f,{descripcion:v});});}} placeholder="Ej: Alquiler Olivos Medical"/>
+      </div>
+      <button onClick={handleSaveGasto} disabled={!gastoForm.monto} style={{...S.btnPrimary,opacity:gastoForm.monto?1:.5}}>{"💾 Guardar gasto"}</button>
+    </div>}
+
     <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:20}}>
       {statCard("👩","Pacientes totales",patients.length,"en el sistema")}
       {statCard("📅","Consultas del mes",consultasTotalesMes,"registradas")}
-      {statCard("💰","Facturación del mes",fmtMoney(totalMes),"consultas + fértil",C.okDark)}
-      {statCard("📈","Ingreso total",fmtMoney(totalHistorico),"histórico acumulado")}
+      {statCard("💰","Ingreso del mes",fmtMoney(totalMes),"consultas + fértil",C.okDark)}
+      {statCard("💸","Gastos del mes",fmtMoney(totalGastosMes),"total gastos",totalGastosMes>0?C.danger:C.muted)}
+      {statCard("📈","Ganancia neta",fmtMoney(gananciaNetaMes),"ingresos - gastos",gananciaNetaMes>=0?C.ok:C.danger)}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:28}}>
       <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"Consultas por mes"}</h4>{last6.some(function(d){return d.value>0;})?<BarChart data={last6} color={C.ok}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
       <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"Facturación total por mes"}</h4>{last6.some(function(d){return d.montoTotal>0;})?<BarChart data={last6.map(function(d){return{label:d.label,value:d.montoTotal};})} color={C.okDark} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
     </div>
+
+    {/* Gastos del mes detalle */}
+    {gastosMes.length>0&&<div style={{...S.card,marginBottom:28}}>
+      <h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"💸 Gastos del mes"}</h4>
+      {gastosMes.map(function(g){return(<div key={g.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.borderLight}}>
+        <div><span style={{fontWeight:600,fontSize:13,color:C.text}}>{g.tipo.charAt(0).toUpperCase()+g.tipo.slice(1)}</span><span style={{fontSize:11,color:C.muted,marginLeft:8}}>{g.categoria==="fertil"?"Fértil":g.categoria==="privadas"?"Consultas":"General"}</span>{g.descripcion&&<span style={{fontSize:11,color:C.muted,marginLeft:6,fontStyle:"italic"}}>{" · "+g.descripcion}</span>}</div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontSize:14,color:C.danger}}>{fmtMoney(g.monto)}</span><button onClick={function(){if(confirm("¿Eliminar este gasto?"))onDeleteGasto(g.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.danger,padding:"2px 4px"}}>{"✕"}</button></div>
+      </div>);})}
+    </div>}
 
     {/* ── BLOQUE 2: FÉRTIL ── */}
     <div style={{borderTop:"2px solid "+C.fertilLight,paddingTop:20,marginBottom:28}}>
@@ -566,6 +635,10 @@ function StatsDashboard({patients,consultas,fertilCases,appointments}) {
         {statCard("💰","Ingresos Fértil",fmtMoney(fertilTotalIngresos),"total acumulado",C.fertil)}
         {statCard("🎫","Ticket promedio",fmtMoney(fertilTicketPromedio),"por paciente")}
       </div>
+      {gastosFertilMes>0&&<div style={{...S.card,marginBottom:16,padding:"14px 18px",borderLeft:"3px solid "+C.fertil}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,fontWeight:600,color:C.fertil}}>{"Gastos Fértil del mes"}</span><span style={{fontSize:14,fontWeight:700,color:C.danger}}>{fmtMoney(gastosFertilMes)}</span></div>
+        <div style={{fontSize:12,color:C.muted,marginTop:2}}>{"Ganancia neta Fértil: "}<span style={{fontWeight:700,color:fertilMesIngresos-gastosFertilMes>=0?C.ok:C.danger}}>{fmtMoney(fertilMesIngresos-gastosFertilMes)}</span></div>
+      </div>}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
         <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.fertil}}>{"Ingresos Fértil por mes"}</h4>{last6Fertil.some(function(d){return d.value>0;})?<BarChart data={last6Fertil} color={C.fertil} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
         <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.fertil}}>{"Estado de pagos"}</h4><div style={{display:"flex",gap:20,justifyContent:"center",padding:"20px 0"}}><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.ok,letterSpacing:"-0.5px"}}>{fertilPagos}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>{"Pagos"}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.warn,letterSpacing:"-0.5px"}}>{fc.filter(function(c){return c.paymentStatus==="parcial";}).length}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>{"Parciales"}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.danger,letterSpacing:"-0.5px"}}>{fertilPendientes}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>{"Pendientes"}</div></div></div><div style={{fontSize:12,textAlign:"center",color:C.textSub}}>{fertilPctPago}{"% con pago completo"}</div></div>
@@ -582,6 +655,36 @@ function StatsDashboard({patients,consultas,fertilCases,appointments}) {
         {statCard("💰","Facturación del mes",fmtMoney(totalMesConsultas),"consultas privadas",C.okDark)}
         {statCard("📈","Total histórico",fmtMoney(totalHistoricoConsultas),"acumulado consultas")}
       </div>
+
+      {/* Desglose por lugar */}
+      {consultasMes.length>0&&<div style={{...S.card,marginBottom:20}}>
+        <h4 style={{margin:"0 0 14px",fontSize:14,fontWeight:700,color:C.text}}>{"Desglose por lugar — este mes"}</h4>
+        <div style={{display:"flex",gap:20,justifyContent:"center",padding:"10px 0"}}>
+          <div style={{textAlign:"center",flex:1}}>
+            <div style={{fontSize:24,fontWeight:800,color:C.okDark}}>{consultasPropio.length}</div>
+            <div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",marginTop:4}}>{"Consultorio"}</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.ok,marginTop:2}}>{fmtMoney(montoPropio)}</div>
+          </div>
+          <div style={{width:1,background:C.borderLight}}></div>
+          <div style={{textAlign:"center",flex:1}}>
+            <div style={{fontSize:24,fontWeight:800,color:C.lead}}>{consultasOlivos.length}</div>
+            <div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",marginTop:4}}>{"Olivos Medical"}</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.ok,marginTop:2}}>{fmtMoney(montoOlivos)}</div>
+          </div>
+          <div style={{width:1,background:C.borderLight}}></div>
+          <div style={{textAlign:"center",flex:1}}>
+            <div style={{fontSize:24,fontWeight:800,color:C.fertil}}>{consultasOnline.length}</div>
+            <div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",marginTop:4}}>{"Online"}</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.ok,marginTop:2}}>{fmtMoney(montoOnline)}</div>
+          </div>
+        </div>
+      </div>}
+
+      {gastosPrivadasMes>0&&<div style={{...S.card,marginBottom:16,padding:"14px 18px",borderLeft:"3px solid "+C.okDark}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,fontWeight:600,color:C.okDark}}>{"Gastos consultas del mes"}</span><span style={{fontSize:14,fontWeight:700,color:C.danger}}>{fmtMoney(gastosPrivadasMes)}</span></div>
+        <div style={{fontSize:12,color:C.muted,marginTop:2}}>{"Ganancia neta consultas: "}<span style={{fontWeight:700,color:totalMesConsultas-gastosPrivadasMes>=0?C.ok:C.danger}}>{fmtMoney(totalMesConsultas-gastosPrivadasMes)}</span></div>
+      </div>}
+
       <div style={S.card}>
         <h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.okDark}}>{"Ingresos consultas por mes"}</h4>
         {last6Privadas.some(function(d){return d.value>0;})?<BarChart data={last6Privadas} color={C.ok} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}
@@ -592,16 +695,16 @@ function StatsDashboard({patients,consultas,fertilCases,appointments}) {
 
 // ─── CONSULTA FORM (reutilizable, con paciente opcional precargado) ───────────
 function ConsultationForm({patients,onSave,onCancel,prefillPatientId}) {
-  const [form,setForm]=useState({pacienteId:prefillPatientId||"",fecha:todayISO(),monto:"",tipo:"Primera consulta",obs:""});
+  const [form,setForm]=useState({pacienteId:prefillPatientId||"",fecha:todayISO(),monto:"",tipo:"Primera consulta",lugar:"Consultorio propio",obs:""});
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.pacienteId&&form.fecha&&form.monto;
-  const handleSave=()=>{const p=patients.find(x=>x.id===form.pacienteId);onSave({id:uid(),pacienteId:form.pacienteId,pacienteNombre:p?.nombre||"",fecha:form.fecha,monto:parseFloat(form.monto)||0,tipo:form.tipo,obs:form.obs});};
-  return (<div style={S.card}><h3 style={{margin:"0 0 16px",color:"#1a3d2b",fontSize:17,fontWeight:700}}>➕ Registrar consulta</h3>{!prefillPatientId&&<div style={{marginBottom:14}}><label style={S.label}>Paciente</label><select value={form.pacienteId} onChange={e=>set("pacienteId",e.target.value)} style={S.input}><option value="">Seleccioná un paciente...</option>{patients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha" type="date" value={form.fecha} onChange={v=>set("fecha",v)}/><Field label="Monto cobrado ($)" type="number" value={form.monto} onChange={v=>set("monto",v)} placeholder="5000"/></div><div style={{marginBottom:14}}><label style={S.label}>Tipo de consulta</label><select value={form.tipo} onChange={e=>set("tipo",e.target.value)} style={S.input}>{["Primera consulta","Seguimiento","Control","Consulta especial"].map(t=><option key={t}>{t}</option>)}</select></div><Field label="Observación (opcional)" value={form.obs} onChange={v=>set("obs",v)} placeholder="Notas sobre la consulta..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={handleSave} disabled={!valid} style={{...S.btnPrimary,flex:2,opacity:valid?1:.5}}>{"💰 Registrar consulta"}</button></div></div>);
+  const handleSave=()=>{const p=patients.find(x=>x.id===form.pacienteId);onSave({id:uid(),pacienteId:form.pacienteId,pacienteNombre:p?.nombre||"",fecha:form.fecha,monto:parseFloat(form.monto)||0,tipo:form.tipo,lugar:form.lugar,obs:form.obs});};
+  return (<div style={S.card}><h3 style={{margin:"0 0 16px",color:"#1a3d2b",fontSize:17,fontWeight:700}}>➕ Registrar consulta</h3>{!prefillPatientId&&<div style={{marginBottom:14}}><label style={S.label}>Paciente</label><select value={form.pacienteId} onChange={e=>set("pacienteId",e.target.value)} style={S.input}><option value="">Seleccioná un paciente...</option>{patients.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Fecha" type="date" value={form.fecha} onChange={v=>set("fecha",v)}/><Field label="Monto cobrado ($)" type="number" value={form.monto} onChange={v=>set("monto",v)} placeholder="5000"/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><div style={{marginBottom:14}}><label style={S.label}>Tipo de consulta</label><select value={form.tipo} onChange={e=>set("tipo",e.target.value)} style={S.input}>{["Primera consulta","Seguimiento","Control","Consulta especial"].map(t=><option key={t}>{t}</option>)}</select></div><div style={{marginBottom:14}}><label style={S.label}>Lugar</label><select value={form.lugar} onChange={e=>set("lugar",e.target.value)} style={S.input}>{["Consultorio propio","Olivos Medical","Online"].map(t=><option key={t}>{t}</option>)}</select></div></div><Field label="Observación (opcional)" value={form.obs} onChange={v=>set("obs",v)} placeholder="Notas sobre la consulta..." rows={2}/><div style={{display:"flex",gap:10}}><button onClick={onCancel} style={{...S.btnGhost,flex:1}}>Cancelar</button><button onClick={handleSave} disabled={!valid} style={{...S.btnPrimary,flex:2,opacity:valid?1:.5}}>{"💰 Registrar consulta"}</button></div></div>);
 }
 
-function PatientsStats({patients,consultas,fertilCases,appointments,onAddConsulta,onDeleteConsulta,onSelect}) {
+function PatientsStats({patients,consultas,fertilCases,appointments,gastos,onAddConsulta,onDeleteConsulta,onAddGasto,onDeleteGasto,onSelect}) {
   const [tab,setTab]=useState("pacientes");const [showConsultaForm,setShowConsultaForm]=useState(false);const [search,setSearch]=useState("");
   const filtered=patients.filter(p=>p.nombre.toLowerCase().includes(search.toLowerCase()));
-  return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22}}><h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>Pacientes y Estadísticas</h2><button onClick={()=>setShowConsultaForm(true)} style={S.btnPrimary}>{"💰 Registrar consulta"}</button></div>{showConsultaForm&&<div style={{marginBottom:20}}><ConsultationForm patients={patients} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/></div>}<div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4}}>{[["pacientes","👥 Pacientes"],["stats","📊 Estadísticas"],["consultas","📋 Consultas"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:tab===id?700:500,cursor:"pointer",background:tab===id?C.okLight:"transparent",color:tab===id?C.okDark:C.textSub,boxShadow:"none"}}>{label}</button>))}</div>{tab==="pacientes"&&<div><input placeholder="🔍 Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<EmptyState icon="👥" title="No hay pacientes registrados" sub="Agregá tu primera paciente para empezar"/>:filtered.map(p=>(<div key={p.id} style={{...S.card,marginBottom:14,display:"flex",alignItems:"center",gap:14}}><div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:17}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo].filter(Boolean).join(" · ")}{p.fechaCreacion&&` · Desde ${p.fechaCreacion}`}</div></div><div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={()=>onSelect(p.id)} style={S.btnOutline}>Ver ficha</button></div></div>))}</div>}{tab==="stats"&&<StatsDashboard patients={patients} consultas={consultas} fertilCases={fertilCases} appointments={appointments}/>}{tab==="consultas"&&<div>{(!consultas||consultas.length===0)?<EmptyState icon="📋" title="No hay consultas registradas" sub="Las consultas aparecerán acá cuando las registres"/>:(function(){
+  return (<div><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:22}}><h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>Pacientes y Estadísticas</h2><button onClick={()=>setShowConsultaForm(true)} style={S.btnPrimary}>{"💰 Registrar consulta"}</button></div>{showConsultaForm&&<div style={{marginBottom:20}}><ConsultationForm patients={patients} onSave={c=>{onAddConsulta(c);setShowConsultaForm(false);}} onCancel={()=>setShowConsultaForm(false)}/></div>}<div style={{display:"flex",gap:4,marginBottom:20,background:"#f0f4f1",borderRadius:10,padding:4}}>{[["pacientes","👥 Pacientes"],["stats","📊 Estadísticas"],["consultas","📋 Consultas"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:13,fontWeight:tab===id?700:500,cursor:"pointer",background:tab===id?C.okLight:"transparent",color:tab===id?C.okDark:C.textSub,boxShadow:"none"}}>{label}</button>))}</div>{tab==="pacientes"&&<div><input placeholder="🔍 Buscar paciente..." value={search} onChange={e=>setSearch(e.target.value)} style={{...S.input,marginBottom:16}}/>{filtered.length===0?<EmptyState icon="👥" title="No hay pacientes registrados" sub="Agregá tu primera paciente para empezar"/>:filtered.map(p=>(<div key={p.id} style={{...S.card,marginBottom:14,display:"flex",alignItems:"center",gap:14}}><div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#2d6a4f,#52b788)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>{p.nombre.charAt(0).toUpperCase()}</div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700,color:"#1a3d2b",fontSize:17}}>{p.nombre}</div><div style={{fontSize:12,color:"#7a9a8a",marginTop:2}}>{[p.edad&&`${p.edad} años`,p.objetivo].filter(Boolean).join(" · ")}{p.fechaCreacion&&` · Desde ${p.fechaCreacion}`}</div></div><div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={()=>onSelect(p.id)} style={S.btnOutline}>Ver ficha</button></div></div>))}</div>}{tab==="stats"&&<StatsDashboard patients={patients} consultas={consultas} fertilCases={fertilCases} appointments={appointments} gastos={gastos} onAddGasto={onAddGasto} onDeleteGasto={onDeleteGasto}/>}{tab==="consultas"&&<div>{(!consultas||consultas.length===0)?<EmptyState icon="📋" title="No hay consultas registradas" sub="Las consultas aparecerán acá cuando las registres"/>:(function(){
     var sorted=[...consultas].sort(function(a,b){return new Date(b.fecha)-new Date(a.fecha);});
     var groups={};
     sorted.forEach(function(c){
@@ -1697,7 +1800,7 @@ function PlanGenerator({prefill,onSavePlan,onBack}) {
 
 // ─── APP PRINCIPAL ─────────────────────────────────────────────────────────────
 export default function App() {
-  const [state,dispatch]=useReducer(reducer,{patients:[],consultas:[],eventos:[],fertilCases:[],appointments:[],fertilFollowups:[],fertilLabs:[],fertilTasks:[]});const [screen,setScreen]=useState("hoy");const [selectedId,setSelectedId]=useState(null);const [navTab,setNavTab]=useState("hoy");const [loaded,setLoaded]=useState(false);const [saveStatus,setSaveStatus]=useState("idle");
+  const [state,dispatch]=useReducer(reducer,{patients:[],consultas:[],eventos:[],fertilCases:[],appointments:[],fertilFollowups:[],fertilLabs:[],fertilTasks:[],gastos:[]});const [screen,setScreen]=useState("hoy");const [selectedId,setSelectedId]=useState(null);const [navTab,setNavTab]=useState("hoy");const [loaded,setLoaded]=useState(false);const [saveStatus,setSaveStatus]=useState("idle");
   useEffect(()=>{
     async function loadAll(){
       try{
@@ -1726,6 +1829,8 @@ export default function App() {
         // Persistir los que se auto-completaron
         for(var u of updated){try{await sbUpdateAppointment(u);console.log("Auto-completada:",u.title);}catch(e){console.error("Error auto-completando:",e);}}
       }catch(e){console.error("Error loading fertil:",e);dispatch({type:"LOAD_FERTIL",cases:[],appointments:[],followups:[],labs:[],tasks:[],leads:[]});}
+      // Load gastos
+      try{var gastos=await sbLoadGastos();dispatch({type:"LOAD_GASTOS",gastos:gastos});}catch(e){console.error("Error loading gastos:",e);}
       setLoaded(true);
     }
     loadAll();
@@ -1734,7 +1839,8 @@ export default function App() {
   const patient=state.patients.find(p=>p.id===selectedId);const go=(s,id=null)=>{setScreen(s);if(id)setSelectedId(id);};
   const handleAddConsulta=async(c)=>{dispatch({type:"ADD_CONSULTA",c});try{await sbInsertConsulta(c);}catch(e){console.error("Error guardando consulta:",e);}};
   const handleDeleteConsulta=async(id)=>{dispatch({type:"DELETE_CONSULTA",id});try{await sbDeleteConsulta(id);}catch(e){console.error("Error eliminando consulta:",e);}};
-  const handleDeletePatient=async(id)=>{
+  const handleAddGasto=async function(g){dispatch({type:"ADD_GASTO",g:g});try{await sbInsertGasto(g);}catch(e){console.error("Error guardando gasto:",e);}};
+  const handleDeleteGasto=async function(id){dispatch({type:"DELETE_GASTO",id:id});try{await sbDeleteGasto(id);}catch(e){console.error("Error eliminando gasto:",e);}};  const handleDeletePatient=async(id)=>{
     // Limpiar datos Fértil asociados
     var casesForPatient=(state.fertilCases||[]).filter(function(c){return c.patientId===id;});
     var caseIds=casesForPatient.map(function(c){return c.id;});
@@ -1771,7 +1877,7 @@ export default function App() {
     {screen==="patients"&&<PatientList patients={state.patients} onSelect={id=>go("detail",id)} onNew={()=>go("new-patient")}/>}
     {screen==="fertil"&&<FertilModule state={state} dispatch={dispatch} patients={state.patients} onGoToPatient={id=>{setNavTab("patients");go("detail",id);}}/>}
     {screen==="agenda"&&<CalendarView eventos={state.eventos} patients={state.patients} appointments={state.appointments} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onSelectPatient={id=>go("detail",id)}/>}
-    {screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} fertilCases={state.fertilCases} appointments={state.appointments} onAddConsulta={handleAddConsulta} onDeleteConsulta={handleDeleteConsulta} onSelect={id=>go("detail",id)}/>}
+    {screen==="stats"&&<PatientsStats patients={state.patients} consultas={state.consultas} fertilCases={state.fertilCases} appointments={state.appointments} gastos={state.gastos} onAddConsulta={handleAddConsulta} onDeleteConsulta={handleDeleteConsulta} onAddGasto={handleAddGasto} onDeleteGasto={handleDeleteGasto} onSelect={id=>go("detail",id)}/>}
     {screen==="new-patient"&&<NewPatient onSave={p=>{dispatch({type:"ADD_PATIENT",p});go("detail",p.id);}} onCancel={()=>go("patients")}/>}
     {screen==="detail"&&patient&&<PatientDetail patient={patient} dispatch={dispatch} consultas={state.consultas} eventos={state.eventos} appointments={state.appointments} fertilCases={state.fertilCases} onAddConsulta={handleAddConsulta} onDeleteConsulta={handleDeleteConsulta} onAddEvento={handleAddEvento} onUpdateEvento={handleUpdateEvento} onDeleteEvento={handleDeleteEvento} onGeneratePlan={()=>go("plan-patient")} onBack={()=>go("patients")} onDelete={handleDeletePatient} onGoToFertil={()=>{setNavTab("fertil");go("fertil");}}/>}
     {screen==="plan-patient"&&patient&&<PlanGenerator prefill={{nombre:patient.nombre,edad:patient.edad,peso:patient.peso,altura:patient.altura,sexo:patient.sexo,objetivo:patient.objetivo||"",nivelActividad:"",alergias:[],patologias:[],preferencias:"",aversiones:"",cantidadComidas:"4",tipoPlan:"Estándar"}} onSavePlan={plan=>{dispatch({type:"ADD_PLAN",pid:patient.id,plan});const c={id:uid(),pacienteId:patient.id,pacienteNombre:patient.nombre,fecha:todayISO(),monto:plan.monto||0,tipo:"Plan generado",obs:`Plan: ${plan.objetivo}`};handleAddConsulta(c);go("detail",patient.id);}} onBack={()=>go("detail",patient.id)}/>}
