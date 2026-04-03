@@ -555,24 +555,8 @@ function StatsDashboard({patients,consultas,fertilCases,appointments}) {
       <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"Facturación total por mes"}</h4>{last6.some(function(d){return d.montoTotal>0;})?<BarChart data={last6.map(function(d){return{label:d.label,value:d.montoTotal};})} color={C.okDark} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
     </div>
 
-    {/* ── BLOQUE 2: CONSULTAS PRIVADAS ── */}
-    <div style={{borderTop:"2px solid "+C.border,paddingTop:20,marginBottom:28}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
-        <span style={{fontSize:18}}>{"🩺"}</span><h3 style={{margin:0,fontSize:17,fontWeight:700,color:C.okDark}}>{"Consultas privadas"}</h3>
-      </div>
-      <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:20}}>
-        {statCard("📅","Consultas del mes",consultasMes.length,"privadas")}
-        {statCard("💰","Facturación del mes",fmtMoney(totalMesConsultas),"consultas privadas",C.okDark)}
-        {statCard("📈","Total histórico",fmtMoney(totalHistoricoConsultas),"acumulado consultas")}
-      </div>
-      <div style={S.card}>
-        <h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.okDark}}>{"Ingresos consultas por mes"}</h4>
-        {last6Privadas.some(function(d){return d.value>0;})?<BarChart data={last6Privadas} color={C.ok} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}
-      </div>
-    </div>
-
-    {/* ── BLOQUE 3: FÉRTIL ── */}
-    <div style={{borderTop:"2px solid "+C.fertilLight,paddingTop:20}}>
+    {/* ── BLOQUE 2: FÉRTIL ── */}
+    <div style={{borderTop:"2px solid "+C.fertilLight,paddingTop:20,marginBottom:28}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
         <span style={{fontSize:18}}>{"💜"}</span><h3 style={{margin:0,fontSize:17,fontWeight:700,color:C.fertil}}>{"Programa Fértil"}</h3>
       </div>
@@ -585,6 +569,22 @@ function StatsDashboard({patients,consultas,fertilCases,appointments}) {
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
         <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.fertil}}>{"Ingresos Fértil por mes"}</h4>{last6Fertil.some(function(d){return d.value>0;})?<BarChart data={last6Fertil} color={C.fertil} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
         <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.fertil}}>{"Estado de pagos"}</h4><div style={{display:"flex",gap:20,justifyContent:"center",padding:"20px 0"}}><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.ok,letterSpacing:"-0.5px"}}>{fertilPagos}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>{"Pagos"}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.warn,letterSpacing:"-0.5px"}}>{fc.filter(function(c){return c.paymentStatus==="parcial";}).length}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>{"Parciales"}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.danger,letterSpacing:"-0.5px"}}>{fertilPendientes}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>{"Pendientes"}</div></div></div><div style={{fontSize:12,textAlign:"center",color:C.textSub}}>{fertilPctPago}{"% con pago completo"}</div></div>
+      </div>
+    </div>
+
+    {/* ── BLOQUE 3: CONSULTAS PRIVADAS ── */}
+    <div style={{borderTop:"2px solid "+C.border,paddingTop:20}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+        <span style={{fontSize:18}}>{"🩺"}</span><h3 style={{margin:0,fontSize:17,fontWeight:700,color:C.okDark}}>{"Consultas privadas"}</h3>
+      </div>
+      <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:20}}>
+        {statCard("📅","Consultas del mes",consultasMes.length,"privadas")}
+        {statCard("💰","Facturación del mes",fmtMoney(totalMesConsultas),"consultas privadas",C.okDark)}
+        {statCard("📈","Total histórico",fmtMoney(totalHistoricoConsultas),"acumulado consultas")}
+      </div>
+      <div style={S.card}>
+        <h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.okDark}}>{"Ingresos consultas por mes"}</h4>
+        {last6Privadas.some(function(d){return d.value>0;})?<BarChart data={last6Privadas} color={C.ok} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}
       </div>
     </div>
   </div>);
