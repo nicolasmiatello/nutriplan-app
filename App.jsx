@@ -507,36 +507,85 @@ function BarChart({data,color="#2d6a4f",formatValue=(v)=>v,height=120}) {
 }
 
 function StatsDashboard({patients,consultas,fertilCases,appointments}) {
-  const now=new Date();const thisMonth=now.getMonth();const thisYear=now.getFullYear();
-  const consultasMes=(consultas||[]).filter(c=>{const d=new Date(c.fecha);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
-  const totalMesConsultas=consultasMes.reduce((s,c)=>s+(parseFloat(c.monto)||0),0);
+  var now=new Date();var thisMonth=now.getMonth();var thisYear=now.getFullYear();
+  var allConsultas=consultas||[];
+  var fc=fertilCases||[];
+
+  // Consultas privadas (este mes)
+  var consultasMes=allConsultas.filter(function(c){var d=new Date(c.fecha);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  var totalMesConsultas=consultasMes.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
+  var totalHistoricoConsultas=allConsultas.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
+
   // Fértil stats
-  const fc=fertilCases||[];const fertilActivas=fc.filter(c=>c.status==="activa").length;const fertilFinalizadas=fc.filter(c=>c.status==="finalizada").length;
-  const fertilTotalIngresos=fc.reduce((s,c)=>s+(c.amountPaid||0),0);
-  // Fértil: sumar amountPaid de TODOS los casos activos o finalizados que se crearon este mes
-  // Pero como no tenemos fecha de pago individual, usamos startDate o createdAt
-  const fertilMesIngresos=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var d=new Date(sd.length===10?sd+"T12:00:00":sd);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);
-  const totalMes=totalMesConsultas+fertilMesIngresos;
-  const fertilTicketPromedio=fc.length?fertilTotalIngresos/fc.length:0;
-  const fertilPagos=fc.filter(c=>c.paymentStatus==="pago").length;const fertilPendientes=fc.filter(c=>c.paymentStatus==="pendiente").length;
-  const fertilPctPago=fc.length?Math.round((fertilPagos/fc.length)*100):0;
-  const totalHistorico=(consultas||[]).reduce((s,c)=>s+(parseFloat(c.monto)||0),0)+fertilTotalIngresos;
-  // Gráficos últimos 6 meses - combinado consultas + fértil
-  const last6=Array.from({length:6},(_,i)=>{const d=new Date(thisYear,thisMonth-5+i,1);const m=d.getMonth();const y=d.getFullYear();const cs=(consultas||[]).filter(c=>{const dd=new Date(c.fecha);return dd.getMonth()===m&&dd.getFullYear()===y;});const fertilMes=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);return{label:MESES[m],value:cs.length,monto:cs.reduce((s,c)=>s+(parseFloat(c.monto)||0),0),montoTotal:cs.reduce((s,c)=>s+(parseFloat(c.monto)||0),0)+fertilMes};});
-  const last6Fertil=Array.from({length:6},(_,i)=>{const d=new Date(thisYear,thisMonth-5+i,1);const m=d.getMonth();const y=d.getFullYear();const ing=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);return{label:MESES[m],value:ing};});
-  const [showFertil,setShowFertil]=useState(false);
-  const statCard=(icon,label,value,sub,color="#2d6a4f")=>(<div style={{...S.card,flex:1,minWidth:140}}><div style={{fontSize:22,marginBottom:6}}>{icon}</div><div style={{fontSize:28,fontWeight:800,color,letterSpacing:"-0.5px"}}>{value}</div><div style={{fontSize:11,fontWeight:600,color:C.textSub,marginTop:4,textTransform:"uppercase",letterSpacing:".5px"}}>{label}</div>{sub&&<div style={{fontSize:11,color:C.muted,marginTop:2}}>{sub}</div>}</div>);
-  return (<div><h2 style={{margin:"0 0 20px",fontSize:22,fontWeight:700,color:"#1a3d2b"}}>📊 Estadísticas</h2><div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:24}}>{statCard("👩","Pacientes totales",patients.length,"en el sistema")}{statCard("📅","Consultas este mes",consultasMes.length,"registradas")}{statCard("💰","Facturación del mes",fmtMoney(totalMes),"consultas + fértil","#1a6b3a")}{statCard("📈","Ingreso total histórico",fmtMoney(totalHistorico),"todo el sistema")}</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:24}}><div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:"#1a3d2b"}}>Consultas por mes</h4>{last6.some(d=>d.value>0)?<BarChart data={last6} color="#52b788"/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div><div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:"#1a3d2b"}}>Facturación total por mes</h4>{last6.some(d=>d.montoTotal>0)?<BarChart data={last6.map(d=>({...d,value:d.montoTotal}))} color="#2d6a4f" formatValue={v=>`$${Math.round(v/1000)}k`}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div></div>
-    {/* Fértil stats */}
-    <div style={{borderTop:"2px solid #e8d5f0",paddingTop:20,marginTop:8}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,cursor:"pointer"}} onClick={()=>setShowFertil(!showFertil)}>
-        <span style={{fontSize:18}}>💜</span><h3 style={{margin:0,fontSize:16,fontWeight:700,color:C.fertil}}>Métricas Fértil</h3><span style={{fontSize:12,color:"#7a9a8a"}}>{showFertil?"▲":"▼"}</span>
+  var fertilActivas=fc.filter(function(c){return c.status==="activa";}).length;
+  var fertilFinalizadas=fc.filter(function(c){return c.status==="finalizada";}).length;
+  var fertilTotalIngresos=fc.reduce(function(s,c){return s+(c.amountPaid||0);},0);
+  var fertilMesIngresos=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var d=new Date(sd.length===10?sd+"T12:00:00":sd);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);
+  var fertilTicketPromedio=fc.length?fertilTotalIngresos/fc.length:0;
+  var fertilPagos=fc.filter(function(c){return c.paymentStatus==="pago";}).length;
+  var fertilPendientes=fc.filter(function(c){return c.paymentStatus==="pendiente";}).length;
+  var fertilPctPago=fc.length?Math.round((fertilPagos/fc.length)*100):0;
+
+  // Totales generales
+  var totalMes=totalMesConsultas+fertilMesIngresos;
+  var totalHistorico=totalHistoricoConsultas+fertilTotalIngresos;
+  var consultasTotalesMes=consultasMes.length;
+
+  // Gráficos últimos 6 meses
+  var last6=Array.from({length:6},function(_,i){var d=new Date(thisYear,thisMonth-5+i,1);var m=d.getMonth();var y=d.getFullYear();var cs=allConsultas.filter(function(c){var dd=new Date(c.fecha);return dd.getMonth()===m&&dd.getFullYear()===y;});var fertilMes=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);return{label:MESES[m],value:cs.length,monto:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0),montoFertil:fertilMes,montoTotal:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0)+fertilMes};});
+  var last6Fertil=Array.from({length:6},function(_,i){var d=new Date(thisYear,thisMonth-5+i,1);var m=d.getMonth();var y=d.getFullYear();var ing=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);return{label:MESES[m],value:ing};});
+  var last6Privadas=last6.map(function(d){return{label:d.label,value:d.monto};});
+
+  var statCard=function(icon,label,value,sub,color){
+    color=color||C.okDark;
+    return(<div style={{...S.card,flex:1,minWidth:130}}><div style={{fontSize:20,marginBottom:6}}>{icon}</div><div style={{fontSize:28,fontWeight:800,color:color,letterSpacing:"-0.5px"}}>{value}</div><div style={{fontSize:11,fontWeight:600,color:C.textSub,marginTop:4,textTransform:"uppercase",letterSpacing:".5px"}}>{label}</div>{sub&&<div style={{fontSize:11,color:C.muted,marginTop:2}}>{sub}</div>}</div>);
+  };
+
+  return (<div>
+    {/* ── BLOQUE 1: GENERAL ── */}
+    <h2 style={{margin:"0 0 20px",fontSize:22,fontWeight:800,color:C.text,letterSpacing:"-0.3px"}}>{"📊 Estadísticas generales"}</h2>
+    <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:20}}>
+      {statCard("👩","Pacientes totales",patients.length,"en el sistema")}
+      {statCard("📅","Consultas del mes",consultasTotalesMes,"registradas")}
+      {statCard("💰","Facturación del mes",fmtMoney(totalMes),"consultas + fértil",C.okDark)}
+      {statCard("📈","Ingreso total",fmtMoney(totalHistorico),"histórico acumulado")}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:28}}>
+      <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"Consultas por mes"}</h4>{last6.some(function(d){return d.value>0;})?<BarChart data={last6} color={C.ok}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
+      <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"Facturación total por mes"}</h4>{last6.some(function(d){return d.montoTotal>0;})?<BarChart data={last6.map(function(d){return{label:d.label,value:d.montoTotal};})} color={C.okDark} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
+    </div>
+
+    {/* ── BLOQUE 2: CONSULTAS PRIVADAS ── */}
+    <div style={{borderTop:"2px solid "+C.border,paddingTop:20,marginBottom:28}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+        <span style={{fontSize:18}}>{"🩺"}</span><h3 style={{margin:0,fontSize:17,fontWeight:700,color:C.okDark}}>{"Consultas privadas"}</h3>
       </div>
-      {showFertil&&<><div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:20}}>{statCard("💜","Pacientes activas",fertilActivas,"en programa","#7b2d8b")}{statCard("✅","Finalizadas",fertilFinalizadas,"completaron")}{statCard("💰","Ingresos Fértil",fmtMoney(fertilTotalIngresos),"total acumulado","#7b2d8b")}{statCard("🎫","Ticket promedio",fmtMoney(fertilTicketPromedio),"por paciente")}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:16}}>
-          <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.fertil}}>Ingresos Fértil por mes</h4>{last6Fertil.some(d=>d.value>0)?<BarChart data={last6Fertil} color="#7b2d8b" formatValue={v=>`$${Math.round(v/1000)}k`}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
-          <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.fertil}}>Estado de pagos</h4><div style={{display:"flex",gap:20,justifyContent:"center",padding:"20px 0"}}><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.ok,letterSpacing:"-0.5px"}}>{fertilPagos}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>Pagos</div></div><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.warn,letterSpacing:"-0.5px"}}>{fc.filter(c=>c.paymentStatus==="parcial").length}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>Parciales</div></div><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.danger,letterSpacing:"-0.5px"}}>{fertilPendientes}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>Pendientes</div></div></div><div style={{fontSize:12,textAlign:"center",color:C.textSub}}>{fertilPctPago}% con pago completo</div></div>
-        </div></>}
+      <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:20}}>
+        {statCard("📅","Consultas del mes",consultasMes.length,"privadas")}
+        {statCard("💰","Facturación del mes",fmtMoney(totalMesConsultas),"consultas privadas",C.okDark)}
+        {statCard("📈","Total histórico",fmtMoney(totalHistoricoConsultas),"acumulado consultas")}
+      </div>
+      <div style={S.card}>
+        <h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.okDark}}>{"Ingresos consultas por mes"}</h4>
+        {last6Privadas.some(function(d){return d.value>0;})?<BarChart data={last6Privadas} color={C.ok} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}
+      </div>
+    </div>
+
+    {/* ── BLOQUE 3: FÉRTIL ── */}
+    <div style={{borderTop:"2px solid "+C.fertilLight,paddingTop:20}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+        <span style={{fontSize:18}}>{"💜"}</span><h3 style={{margin:0,fontSize:17,fontWeight:700,color:C.fertil}}>{"Programa Fértil"}</h3>
+      </div>
+      <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:20}}>
+        {statCard("👩","Activas",fertilActivas,"en programa",C.fertil)}
+        {statCard("✅","Finalizadas",fertilFinalizadas,"completaron")}
+        {statCard("💰","Ingresos Fértil",fmtMoney(fertilTotalIngresos),"total acumulado",C.fertil)}
+        {statCard("🎫","Ticket promedio",fmtMoney(fertilTicketPromedio),"por paciente")}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
+        <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.fertil}}>{"Ingresos Fértil por mes"}</h4>{last6Fertil.some(function(d){return d.value>0;})?<BarChart data={last6Fertil} color={C.fertil} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
+        <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.fertil}}>{"Estado de pagos"}</h4><div style={{display:"flex",gap:20,justifyContent:"center",padding:"20px 0"}}><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.ok,letterSpacing:"-0.5px"}}>{fertilPagos}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>{"Pagos"}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.warn,letterSpacing:"-0.5px"}}>{fc.filter(function(c){return c.paymentStatus==="parcial";}).length}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>{"Parciales"}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:32,fontWeight:800,color:C.danger,letterSpacing:"-0.5px"}}>{fertilPendientes}</div><div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",marginTop:4}}>{"Pendientes"}</div></div></div><div style={{fontSize:12,textAlign:"center",color:C.textSub}}>{fertilPctPago}{"% con pago completo"}</div></div>
+      </div>
     </div>
   </div>);
 }
