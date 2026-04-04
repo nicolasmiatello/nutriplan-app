@@ -104,7 +104,7 @@ async function sbLoadAll() {
   const rows = await r.json();
   return rows.map(row=>({
     id:row.id,nombre:row.nombre,edad:row.edad,sexo:row.sexo,altura:row.altura,peso:row.peso,
-    telefono:row.telefono,email:row.email,fechaCreacion:row.fecha_creacion,objetivo:row.objetivo,
+    telefono:row.telefono,email:row.email,dni:row.dni||"",fechaCreacion:row.fecha_creacion,objetivo:row.objetivo,
     clinica:row.clinica||{},mediciones:row.mediciones||[],notas:row.notas||[],planes:row.planes||[]
   }));
 }
@@ -112,7 +112,7 @@ async function sbLoadAll() {
 async function sbUpsert(patient) {
   const body = JSON.stringify({
     id:patient.id,nombre:patient.nombre,edad:patient.edad,sexo:patient.sexo,
-    altura:patient.altura,peso:patient.peso,telefono:patient.telefono||"",email:patient.email||"",
+    altura:patient.altura,peso:patient.peso,telefono:patient.telefono||"",email:patient.email||"",dni:patient.dni||"",
     fecha_creacion:patient.fechaCreacion||"",objetivo:patient.objetivo||"",
     clinica:patient.clinica||{},mediciones:patient.mediciones||[],notas:patient.notas||[],planes:patient.planes||[]
   });
@@ -1627,8 +1627,8 @@ function PatientList({patients,onSelect,onNew}) {
 }
 
 function NewPatient({onSave,onCancel}) {
-  const [form,setForm]=useState({nombre:"",edad:"",peso:"",altura:"",sexo:"Femenino",objetivo:"",telefono:"",email:""});const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.nombre&&form.edad;
-  return (<div style={{maxWidth:560}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}><button onClick={onCancel} style={S.btnGhost}>← Volver</button><h2 style={{margin:0,fontSize:18,fontWeight:700,color:"#1a3d2b"}}>Nueva paciente</h2></div><div style={S.card}><Field label="Nombre completo *" value={form.nombre} onChange={v=>set("nombre",v)} placeholder="Nombre y apellido"/><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}><Field label="Edad" type="number" value={form.edad} onChange={v=>set("edad",v)} placeholder="30"/><Field label="Peso (kg)" type="number" value={form.peso} onChange={v=>set("peso",v)} placeholder="65"/><Field label="Altura (cm)" type="number" value={form.altura} onChange={v=>set("altura",v)} placeholder="165"/></div><div style={{marginBottom:14}}><label style={S.label}>Sexo</label><div style={{display:"flex",gap:8,marginTop:5}}>{["Femenino","Masculino"].map(s=><Tag key={s} label={s} selected={form.sexo===s} onClick={()=>set("sexo",s)}/>)}</div></div><div style={{marginBottom:14}}><label style={S.label}>Objetivo principal</label><div style={{display:"flex",flexWrap:"wrap",gap:7,marginTop:5}}>{OBJETIVOS_OPTS.map(o=><Tag key={o} label={o} selected={form.objetivo===o} onClick={()=>set("objetivo",o)}/>)}</div></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Teléfono" value={form.telefono} onChange={v=>set("telefono",v)} placeholder="11XXXXXXXX"/><Field label="Email" value={form.email} onChange={v=>set("email",v)} placeholder="email@ejemplo.com"/></div><button onClick={()=>onSave({...form,id:uid(),fechaCreacion:today(),clinica:initialClinica,mediciones:[],notas:[],planes:[]})} disabled={!valid} style={{...S.btnPrimary,width:"100%",padding:"12px",fontSize:15,opacity:valid?1:.5}}>{"💾 Guardar paciente"}</button></div></div>);
+  const [form,setForm]=useState({nombre:"",edad:"",peso:"",altura:"",sexo:"Femenino",objetivo:"",telefono:"",email:"",dni:""});const set=(k,v)=>setForm(f=>({...f,[k]:v}));const valid=form.nombre&&form.edad;
+  return (<div style={{maxWidth:560}}><div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}><button onClick={onCancel} style={S.btnGhost}>← Volver</button><h2 style={{margin:0,fontSize:18,fontWeight:700,color:"#1a3d2b"}}>Nueva paciente</h2></div><div style={S.card}><Field label="Nombre completo *" value={form.nombre} onChange={v=>set("nombre",v)} placeholder="Nombre y apellido"/><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}><Field label="Edad" type="number" value={form.edad} onChange={v=>set("edad",v)} placeholder="30"/><Field label="Peso (kg)" type="number" value={form.peso} onChange={v=>set("peso",v)} placeholder="65"/><Field label="Altura (cm)" type="number" value={form.altura} onChange={v=>set("altura",v)} placeholder="165"/></div><div style={{marginBottom:14}}><label style={S.label}>Sexo</label><div style={{display:"flex",gap:8,marginTop:5}}>{["Femenino","Masculino"].map(s=><Tag key={s} label={s} selected={form.sexo===s} onClick={()=>set("sexo",s)}/>)}</div></div><div style={{marginBottom:14}}><label style={S.label}>Objetivo principal</label><div style={{display:"flex",flexWrap:"wrap",gap:7,marginTop:5}}>{OBJETIVOS_OPTS.map(o=><Tag key={o} label={o} selected={form.objetivo===o} onClick={()=>set("objetivo",o)}/>)}</div></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><Field label="Teléfono" value={form.telefono} onChange={v=>set("telefono",v)} placeholder="11XXXXXXXX"/><Field label="Email" value={form.email} onChange={v=>set("email",v)} placeholder="email@ejemplo.com"/></div><Field label="DNI" value={form.dni} onChange={v=>set("dni",v)} placeholder="12345678"/><button onClick={()=>onSave({...form,id:uid(),fechaCreacion:today(),clinica:initialClinica,mediciones:[],notas:[],planes:[]})} disabled={!valid} style={{...S.btnPrimary,width:"100%",padding:"12px",fontSize:15,opacity:valid?1:.5}}>{"💾 Guardar paciente"}</button></div></div>);
 }
 
 function PlanViewer({plan,paciente,onClose,onUpdate}) {
@@ -1665,7 +1665,7 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
           <h2 style={{margin:0,fontSize:24,fontWeight:800,color:C.text,letterSpacing:"-0.5px"}}>{patient.nombre}</h2>
           {fertilCase&&<span onClick={onGoToFertil} style={{background:"#7b2d8b",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:12,cursor:"pointer"}}>{"💜 FÉRTIL"}</span>}
         </div>
-        {patient.objetivo&&<div style={{fontSize:13,color:"#7a9a8a",marginTop:2}}>{patient.objetivo}</div>}
+        {patient.objetivo&&<div style={{fontSize:13,color:"#7a9a8a",marginTop:2}}>{patient.objetivo}{patient.dni?" · DNI: "+patient.dni:""}</div>}
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={onGeneratePlan} style={S.btnPrimary}>{"✨ Generar plan"}</button>
