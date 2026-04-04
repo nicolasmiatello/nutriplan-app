@@ -1665,13 +1665,20 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
           <h2 style={{margin:0,fontSize:24,fontWeight:800,color:C.text,letterSpacing:"-0.5px"}}>{patient.nombre}</h2>
           {fertilCase&&<span onClick={onGoToFertil} style={{background:"#7b2d8b",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:12,cursor:"pointer"}}>{"💜 FÉRTIL"}</span>}
         </div>
-        {patient.objetivo&&<div style={{fontSize:13,color:"#7a9a8a",marginTop:2}}>{patient.objetivo}{patient.dni?" · DNI: "+patient.dni:""}</div>}
+        {patient.objetivo&&<div style={{fontSize:13,color:"#7a9a8a",marginTop:2}}>{patient.objetivo}</div>}
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={onGeneratePlan} style={S.btnPrimary}>{"✨ Generar plan"}</button>
         <button onClick={function(){setDeleteConfirm(true);}} style={S.btnDanger}>{"🗑 Eliminar paciente"}</button>
       </div>
     </div>
+
+    {/* Datos de contacto */}
+    {(patient.telefono||patient.email||patient.dni)&&<div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16,fontSize:13,color:"#5a7a6a"}}>
+      {patient.telefono&&<span>{"📞 "+patient.telefono}</span>}
+      {patient.email&&<span>{"📧 "+patient.email}</span>}
+      {patient.dni&&<span>{"🪪 DNI: "+patient.dni}</span>}
+    </div>}
 
     {/* Summary cards */}
     <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
