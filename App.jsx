@@ -60,6 +60,7 @@ function reducer(state,action) {
     case "ADD_NOTA": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,notas:[action.n,...p.notas]}:p)};
     case "ADD_PLAN": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,planes:[action.plan,...p.planes]}:p)};
     case "UPDATE_PLAN": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,planes:p.planes.map(pl=>pl.id===action.plan.id?action.plan:pl)}:p)};
+    case "UPDATE_PATIENT_DATA": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,...action.data}:p)};
     case "UPDATE_CLINICA": return {...state,patients:state.patients.map(p=>p.id===action.pid?{...p,clinica:action.clinica}:p)};
     case "ADD_CONSULTA": return {...state,consultas:[action.c,...(state.consultas||[])]};
     case "DELETE_CONSULTA": return {...state,consultas:(state.consultas||[]).filter(c=>c.id!==action.id)};
@@ -1640,6 +1641,8 @@ function PlanViewer({plan,paciente,onClose,onUpdate}) {
 // ─── PATIENT DETAIL (con pestaña Consultas + Agenda + consultas en Timeline) ──
 function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCases,onAddConsulta,onDeleteConsulta,onAddEvento,onUpdateEvento,onDeleteEvento,onGeneratePlan,onBack,onDelete,onGoToFertil}) {
   const [tab,setTab]=useState("resumen");const [clinica,setClinica]=useState(patient.clinica||initialClinica);const [clinicaSaved,setClinicaSaved]=useState(false);const [newMedicion,setNewMedicion]=useState({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});const [newNota,setNewNota]=useState("");const [showMedForm,setShowMedForm]=useState(false);const [viewingPlan,setViewingPlan]=useState(null);const [deleteConfirm,setDeleteConfirm]=useState(false);const [showConsultaForm,setShowConsultaForm]=useState(false);
+  const [editingContact,setEditingContact]=useState(false);const [contactForm,setContactForm]=useState({telefono:patient.telefono||"",email:patient.email||"",dni:patient.dni||"",edad:patient.edad||""});const [contactSaved,setContactSaved]=useState(false);
+  var saveContact=function(){dispatch({type:"UPDATE_PATIENT_DATA",pid:patient.id,data:{telefono:contactForm.telefono,email:contactForm.email,dni:contactForm.dni,edad:contactForm.edad}});setEditingContact(false);setContactSaved(true);setTimeout(function(){setContactSaved(false);},2000);};
   const setC=(k,v)=>setClinica(c=>({...c,[k]:v}));
   const saveClinica=()=>{dispatch({type:"UPDATE_CLINICA",pid:patient.id,clinica});setClinicaSaved(true);setTimeout(()=>setClinicaSaved(false),2000);};
   const addMedicion=()=>{const m={id:uid(),...newMedicion,imc:calcIMC(newMedicion.peso,patient.altura)};dispatch({type:"ADD_MEDICION",pid:patient.id,m});setNewMedicion({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});setShowMedForm(false);};
@@ -1673,12 +1676,30 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
       </div>
     </div>
 
-    {/* Datos de contacto */}
-    {(patient.telefono||patient.email||patient.dni)&&<div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16,fontSize:13,color:"#5a7a6a"}}>
-      {patient.telefono&&<span>{"📞 "+patient.telefono}</span>}
-      {patient.email&&<span>{"📧 "+patient.email}</span>}
-      {patient.dni&&<span>{"🪪 DNI: "+patient.dni}</span>}
-    </div>}
+    {/* Datos de contacto editables */}
+    <div style={{marginBottom:16}}>
+      {!editingContact?<div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:14,flexWrap:"wrap",fontSize:13,color:"#5a7a6a"}}>
+          {patient.telefono&&<span>{"📞 "+patient.telefono}</span>}
+          {patient.email&&<span>{"📧 "+patient.email}</span>}
+          {patient.dni&&<span>{"🪪 DNI: "+patient.dni}</span>}
+        </div>
+        <button onClick={function(){setContactForm({telefono:patient.telefono||"",email:patient.email||"",dni:patient.dni||"",edad:patient.edad||""});setEditingContact(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 6px",color:C.muted}} title="Editar datos de contacto">{"✏️"}</button>
+        {contactSaved&&<span style={{fontSize:11,color:C.ok,fontWeight:600}}>{"✓ Guardado"}</span>}
+      </div>:<div style={{...S.card,padding:"14px 18px",borderLeft:"3px solid "+C.okDark}}>
+        <h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:C.okDark}}>{"✏️ Editar datos del paciente"}</h4>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10}}>
+          <Field label="Edad" type="number" value={contactForm.edad} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{edad:v});});}} placeholder="30"/>
+          <Field label="Teléfono" value={contactForm.telefono} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{telefono:v});});}} placeholder="11XXXXXXXX"/>
+          <Field label="Email" value={contactForm.email} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{email:v});});}} placeholder="email@ejemplo.com"/>
+          <Field label="DNI" value={contactForm.dni} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{dni:v});});}} placeholder="12345678"/>
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          <button onClick={function(){setEditingContact(false);}} style={{...S.btnGhost,fontSize:12}}>{"✕ Cancelar"}</button>
+          <button onClick={saveContact} style={{...S.btnPrimary,fontSize:12}}>{"💾 Guardar cambios"}</button>
+        </div>
+      </div>}
+    </div>
 
     {/* Summary cards */}
     <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
