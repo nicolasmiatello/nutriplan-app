@@ -1015,7 +1015,7 @@ function FertilDashboard({fertilCases,patients,appointments,onSelectCase,onNewCa
                   var textColor=status==="realizada"?"#fff":scheduled?"#7b2d8b":"#ccc";
                   var label=status==="realizada"?"✓":scheduled?fmtDate(appt.startAt.split("T")[0]):"—";
                   return(<td key={ct.num} style={{padding:"6px",textAlign:"center"}}>
-                    <div style={{width:36,height:36,borderRadius:8,background:bgColor,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:status==="realizada"?16:9,fontWeight:700,color:textColor,border:status==="realizada"?"none":scheduled?"2px solid #7b2d8b":"2px solid #e0e0e0"}}>{label}</div>
+                    <div style={{width:72,minHeight:46,borderRadius:8,background:bgColor,display:"inline-flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontWeight:700,color:textColor,border:status==="realizada"?"none":scheduled?"2px solid #7b2d8b":"2px solid #e0e0e0",padding:"4px 6px",gap:1}}>{status==="realizada"?<span style={{fontSize:18}}>{"✓"}</span>:scheduled?(function(){var p=appt.startAt.split("T")[0].split("-");return(<><span style={{fontSize:12,lineHeight:1}}>{p[2]+"/"+p[1]}</span><span style={{fontSize:10,lineHeight:1,opacity:.7}}>{p[0]}</span></>);})():<span style={{fontSize:14}}>{"—"}</span>}</div>
                   </td>);
                 })}
               </tr>);
@@ -1641,8 +1641,8 @@ function PlanViewer({plan,paciente,onClose,onUpdate}) {
 // ─── PATIENT DETAIL (con pestaña Consultas + Agenda + consultas en Timeline) ──
 function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCases,onAddConsulta,onDeleteConsulta,onAddEvento,onUpdateEvento,onDeleteEvento,onGeneratePlan,onBack,onDelete,onGoToFertil}) {
   const [tab,setTab]=useState("resumen");const [clinica,setClinica]=useState(patient.clinica||initialClinica);const [clinicaSaved,setClinicaSaved]=useState(false);const [newMedicion,setNewMedicion]=useState({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});const [newNota,setNewNota]=useState("");const [showMedForm,setShowMedForm]=useState(false);const [viewingPlan,setViewingPlan]=useState(null);const [deleteConfirm,setDeleteConfirm]=useState(false);const [showConsultaForm,setShowConsultaForm]=useState(false);
-  const [editingContact,setEditingContact]=useState(false);const [contactForm,setContactForm]=useState({telefono:patient.telefono||"",email:patient.email||"",dni:patient.dni||"",edad:patient.edad||"",peso:patient.peso||"",altura:patient.altura||""});const [contactSaved,setContactSaved]=useState(false);
-  var saveContact=function(){dispatch({type:"UPDATE_PATIENT_DATA",pid:patient.id,data:{telefono:contactForm.telefono,email:contactForm.email,dni:contactForm.dni,edad:contactForm.edad,peso:contactForm.peso,altura:contactForm.altura}});setEditingContact(false);setContactSaved(true);setTimeout(function(){setContactSaved(false);},2000);};
+  const [editingContact,setEditingContact]=useState(false);const [contactForm,setContactForm]=useState({telefono:patient.telefono||"",email:patient.email||"",dni:patient.dni||"",edad:patient.edad||""});const [contactSaved,setContactSaved]=useState(false);
+  var saveContact=function(){dispatch({type:"UPDATE_PATIENT_DATA",pid:patient.id,data:{telefono:contactForm.telefono,email:contactForm.email,dni:contactForm.dni,edad:contactForm.edad}});setEditingContact(false);setContactSaved(true);setTimeout(function(){setContactSaved(false);},2000);};
   const setC=(k,v)=>setClinica(c=>({...c,[k]:v}));
   const saveClinica=()=>{dispatch({type:"UPDATE_CLINICA",pid:patient.id,clinica});setClinicaSaved(true);setTimeout(()=>setClinicaSaved(false),2000);};
   const addMedicion=()=>{const m={id:uid(),...newMedicion,imc:calcIMC(newMedicion.peso,patient.altura)};dispatch({type:"ADD_MEDICION",pid:patient.id,m});setNewMedicion({fecha:todayISO(),peso:"",grasa:"",muscular:"",obs:""});setShowMedForm(false);};
@@ -1684,16 +1684,12 @@ function PatientDetail({patient,dispatch,consultas,eventos,appointments,fertilCa
           {patient.email&&<span>{"📧 "+patient.email}</span>}
           {patient.dni&&<span>{"🪪 DNI: "+patient.dni}</span>}
         </div>
-        <button onClick={function(){setContactForm({telefono:patient.telefono||"",email:patient.email||"",dni:patient.dni||"",edad:patient.edad||"",peso:patient.peso||"",altura:patient.altura||""});setEditingContact(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 6px",color:C.muted}} title="Editar datos de contacto">{"✏️"}</button>
+        <button onClick={function(){setContactForm({telefono:patient.telefono||"",email:patient.email||"",dni:patient.dni||"",edad:patient.edad||""});setEditingContact(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 6px",color:C.muted}} title="Editar datos de contacto">{"✏️"}</button>
         {contactSaved&&<span style={{fontSize:11,color:C.ok,fontWeight:600}}>{"✓ Guardado"}</span>}
       </div>:<div style={{...S.card,padding:"14px 18px",borderLeft:"3px solid "+C.okDark}}>
         <h4 style={{margin:"0 0 12px",fontSize:13,fontWeight:700,color:C.okDark}}>{"✏️ Editar datos del paciente"}</h4>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10}}>
           <Field label="Edad" type="number" value={contactForm.edad} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{edad:v});});}} placeholder="30"/>
-          <Field label="Peso (kg)" type="number" value={contactForm.peso} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{peso:v});});}} placeholder="65"/>
-          <Field label="Altura (cm)" type="number" value={contactForm.altura} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{altura:v});});}} placeholder="165"/>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
           <Field label="Teléfono" value={contactForm.telefono} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{telefono:v});});}} placeholder="11XXXXXXXX"/>
           <Field label="Email" value={contactForm.email} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{email:v});});}} placeholder="email@ejemplo.com"/>
           <Field label="DNI" value={contactForm.dni} onChange={function(v){setContactForm(function(f){return Object.assign({},f,{dni:v});});}} placeholder="12345678"/>
