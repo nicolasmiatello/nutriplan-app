@@ -530,7 +530,6 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
   var allGastos=gastos||[];
   var [showGastoForm,setShowGastoForm]=useState(false);
   var [gastoForm,setGastoForm]=useState({tipo:"alquiler",categoria:"general",monto:"",mes:mesActual,descripcion:""});
-  var [mesGastosSeleccionado,setMesGastosSeleccionado]=useState("todos");
 
   // Consultas privadas (este mes)
   var consultasMes=allConsultas.filter(function(c){var d=new Date(c.fecha);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
@@ -553,13 +552,12 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
   var fertilPendientes=fc.filter(function(c){return c.paymentStatus==="pendiente";}).length;
   var fertilPctPago=fc.length?Math.round((fertilPagos/fc.length)*100):0;
 
-  // Gastos — filtro por mes seleccionado o todos
-  var gastosMes=mesGastosSeleccionado==="todos"?allGastos:allGastos.filter(function(g){return g.mes===mesGastosSeleccionado;});
-  var gastosMesActual=allGastos.filter(function(g){return g.mes===mesActual;});
-  var gastosFertilMes=gastosMesActual.filter(function(g){return g.categoria==="fertil";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
-  var gastosPrivadasMes=gastosMesActual.filter(function(g){return g.categoria==="privadas";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
-  var gastosGeneralMes=gastosMesActual.filter(function(g){return g.categoria==="general";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
-  var totalGastosMes=gastosMesActual.reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
+  // Gastos del mes
+  var gastosMes=allGastos.filter(function(g){return g.mes===mesActual;});
+  var gastosFertilMes=gastosMes.filter(function(g){return g.categoria==="fertil";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
+  var gastosPrivadasMes=gastosMes.filter(function(g){return g.categoria==="privadas";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
+  var gastosGeneralMes=gastosMes.filter(function(g){return g.categoria==="general";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
+  var totalGastosMes=gastosMes.reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
 
   // Totales generales
   var totalMes=totalMesConsultas+fertilMesIngresos;
@@ -568,7 +566,7 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
   var gananciaNetaMes=totalMes-totalGastosMes;
 
   // Gráficos últimos 6 meses
-  var last6=Array.from({length:6},function(_,i){var d=new Date(thisYear,thisMonth-5+i,1);var m=d.getMonth();var y=d.getFullYear();var mesKey=y+"-"+String(m+1).padStart(2,"0");var cs=allConsultas.filter(function(c){var dd=new Date(c.fecha);return dd.getMonth()===m&&dd.getFullYear()===y;});var fertilIngMes=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);var gastosMesK=allGastos.filter(function(g){return g.mes===mesKey;}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);var ingMes=cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0)+fertilIngMes;return{label:MESES[m],value:cs.length,monto:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0),montoFertil:fertilIngMes,montoTotal:ingMes,ganancia:ingMes-gastosMesK};});
+  var last6=Array.from({length:6},function(_,i){var d=new Date(thisYear,thisMonth-5+i,1);var m=d.getMonth();var y=d.getFullYear();var cs=allConsultas.filter(function(c){var dd=new Date(c.fecha);return dd.getMonth()===m&&dd.getFullYear()===y;});var fertilMes=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);return{label:MESES[m],value:cs.length,monto:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0),montoFertil:fertilMes,montoTotal:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0)+fertilMes};});
   var last6Fertil=Array.from({length:6},function(_,i){var d=new Date(thisYear,thisMonth-5+i,1);var m=d.getMonth();var y=d.getFullYear();var ing=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);return{label:MESES[m],value:ing};});
   var last6Privadas=last6.map(function(d){return{label:d.label,value:d.monto};});
 
@@ -615,35 +613,17 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:28}}>
       <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"Consultas por mes"}</h4>{last6.some(function(d){return d.value>0;})?<BarChart data={last6} color={C.ok}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
-      <div style={S.card}><h4 style={{margin:"0 0 4px",fontSize:14,fontWeight:700,color:C.text}}>{"Ganancia neta por mes"}</h4><div style={{fontSize:10,color:C.muted,marginBottom:10}}>{"ingresos − gastos"}</div>{last6.some(function(d){return d.montoTotal>0;})?<BarChart data={last6.map(function(d){return{label:d.label,value:Math.max(d.ganancia,0)};})} color={C.ok} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
+      <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"Facturación total por mes"}</h4>{last6.some(function(d){return d.montoTotal>0;})?<BarChart data={last6.map(function(d){return{label:d.label,value:d.montoTotal};})} color={C.okDark} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
     </div>
 
-    {/* ── Gastos — todos los meses con filtro ── */}
-    <div style={{...S.card,marginBottom:28}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
-        <h4 style={{margin:0,fontSize:14,fontWeight:700,color:C.text}}>{"💸 Gastos"}</h4>
-        <select value={mesGastosSeleccionado} onChange={function(e){setMesGastosSeleccionado(e.target.value);}} style={{...S.input,width:"auto",fontSize:12,padding:"6px 10px"}}>
-          <option value="todos">Todos los meses</option>
-          {Array.from(new Set(allGastos.map(function(g){return g.mes;}))).sort().reverse().map(function(m){var parts=m.split("-");var label=MESES[parseInt(parts[1])-1]+" "+parts[0];return <option key={m} value={m}>{label}</option>;})}
-        </select>
-      </div>
-      {gastosMes.length===0?<div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:13}}>{"Sin gastos registrados"+(mesGastosSeleccionado!=="todos"?" para este mes":"")}</div>:(function(){
-        var grouped={};
-        gastosMes.forEach(function(g){var k=g.mes||"sin-mes";if(!grouped[k])grouped[k]={items:[],total:0};grouped[k].items.push(g);grouped[k].total+=(parseFloat(g.monto)||0);});
-        return Object.keys(grouped).sort().reverse().map(function(mesKey){
-          var gr=grouped[mesKey];var parts=mesKey.split("-");var mesLabel=MESES[parseInt(parts[1])-1]+" "+parts[0];
-          return(<div key={mesKey} style={{marginBottom:16}}>
-            {mesGastosSeleccionado==="todos"&&<div style={{display:"flex",justifyContent:"space-between",padding:"6px 10px",background:C.bg,borderRadius:8,marginBottom:8}}><span style={{fontWeight:700,fontSize:13,color:C.text}}>{mesLabel}</span><span style={{fontWeight:700,fontSize:13,color:C.danger}}>{fmtMoney(gr.total)}</span></div>}
-            {gr.items.map(function(g){return(<div key={g.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.borderLight}}>
-              <div><span style={{fontWeight:600,fontSize:13,color:C.text}}>{g.tipo.charAt(0).toUpperCase()+g.tipo.slice(1)}</span><span style={{fontSize:11,color:C.muted,marginLeft:8}}>{g.categoria==="fertil"?"Fértil":g.categoria==="privadas"?"Consultas":"General"}</span>{g.descripcion&&<span style={{fontSize:11,color:C.muted,marginLeft:6,fontStyle:"italic"}}>{" · "+g.descripcion}</span>}</div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontSize:14,color:C.danger}}>{fmtMoney(g.monto)}</span><button onClick={function(){if(confirm("¿Eliminar este gasto?"))onDeleteGasto(g.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.danger,padding:"2px 4px"}}>{"✕"}</button></div>
-            </div>);})}
-            {mesGastosSeleccionado==="todos"&&<div style={{textAlign:"right",fontSize:11,color:C.muted,paddingTop:4}}>{gr.items.length+" gasto"+(gr.items.length>1?"s":"")}</div>}
-          </div>);
-        });
-      })()}
-      {mesGastosSeleccionado!=="todos"&&gastosMes.length>0&&<div style={{borderTop:"1px solid "+C.border,paddingTop:8,marginTop:4,display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:C.muted}}>Total del mes</span><span style={{fontWeight:700,color:C.danger}}>{fmtMoney(gastosMes.reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0))}</span></div>}
-    </div>
+    {/* Gastos del mes detalle */}
+    {gastosMes.length>0&&<div style={{...S.card,marginBottom:28}}>
+      <h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"💸 Gastos del mes"}</h4>
+      {gastosMes.map(function(g){return(<div key={g.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.borderLight}}>
+        <div><span style={{fontWeight:600,fontSize:13,color:C.text}}>{g.tipo.charAt(0).toUpperCase()+g.tipo.slice(1)}</span><span style={{fontSize:11,color:C.muted,marginLeft:8}}>{g.categoria==="fertil"?"Fértil":g.categoria==="privadas"?"Consultas":"General"}</span>{g.descripcion&&<span style={{fontSize:11,color:C.muted,marginLeft:6,fontStyle:"italic"}}>{" · "+g.descripcion}</span>}</div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontSize:14,color:C.danger}}>{fmtMoney(g.monto)}</span><button onClick={function(){if(confirm("¿Eliminar este gasto?"))onDeleteGasto(g.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.danger,padding:"2px 4px"}}>{"✕"}</button></div>
+      </div>);})}
+    </div>}
 
     {/* ── BLOQUE 2: FÉRTIL ── */}
     <div style={{borderTop:"2px solid "+C.fertilLight,paddingTop:20,marginBottom:28}}>
@@ -1035,7 +1015,7 @@ function FertilDashboard({fertilCases,patients,appointments,onSelectCase,onNewCa
                   var textColor=status==="realizada"?"#fff":scheduled?"#7b2d8b":"#ccc";
                   var label=status==="realizada"?"✓":scheduled?fmtDate(appt.startAt.split("T")[0]):"—";
                   return(<td key={ct.num} style={{padding:"6px",textAlign:"center"}}>
-                    <div style={{width:36,height:36,borderRadius:8,background:bgColor,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:status==="realizada"?16:9,fontWeight:700,color:textColor,border:status==="realizada"?"none":scheduled?"2px solid #7b2d8b":"2px solid #e0e0e0"}}>{label}</div>
+                    <div style={{width:64,height:44,borderRadius:8,background:bgColor,display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:700,color:textColor,border:status==="realizada"?"none":scheduled?"2px solid #7b2d8b":"2px solid #e0e0e0",padding:"2px 4px",textAlign:"center",lineHeight:1.3}}>{status==="realizada"?<span style={{fontSize:18}}>{"✓"}</span>:scheduled?<span style={{fontSize:10,whiteSpace:"pre-line"}}>{(function(){var p=appt.startAt.split("T")[0].split("-");return p[2]+"/"+p[1]+"\n"+p[0];}())}</span>:<span style={{fontSize:12}}>{"—"}</span>}</div>
                   </td>);
                 })}
               </tr>);
