@@ -935,8 +935,8 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
         </div>
         <button onClick={nextMonth} style={{...S.btnGhost,padding:"6px 16px",fontSize:18}}>{"▶"}</button>
       </div>
-      <div style={{...S.card,padding:12,overflowX:"auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,minWidth:560}}>
+      <div style={{...S.card,padding:12}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
           {DIAS_SEMANA.map(function(dm){return(<div key={dm} style={{padding:"6px 4px",textAlign:"center",fontSize:11,fontWeight:700,color:"#5a7a6a",textTransform:"uppercase"}}>{dm}</div>);})}
           {calendarCells.map(function(day,idx){
             if(day===null) return <div key={"empty-"+idx} style={{padding:4,minHeight:100,background:"#fafcfb",borderRadius:6}}/>;
@@ -952,10 +952,6 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
           })}
         </div>
       </div>
-      {monthEventos.length>0&&<div style={{marginTop:20}}>
-        <h3 style={{margin:"0 0 14px",fontSize:15,fontWeight:700,color:C.textSub}}>{"Todos los eventos de "+MESES_FULL[month]}</h3>
-        {groupByDate(monthEventos).map(renderDateGroup)}
-      </div>}
     </div>}
   </div>);
 }
