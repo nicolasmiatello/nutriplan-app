@@ -804,6 +804,8 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
   var [showPast,setShowPast]=useState(false);
   var [weeklyNotes,setWeeklyNotes]=useState({});
   var [savingNote,setSavingNote]=useState({});
+  var [dayPopup,setDayPopup]=useState(null); // {fecha, x, y}
+  var [quickNote,setQuickNote]=useState({open:false,fecha:null,text:""});
 
   var year=currentDate.getFullYear();var month=currentDate.getMonth();
   var firstDay=new Date(year,month,1);var lastDay=new Date(year,month+1,0);
@@ -991,7 +993,7 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
           var dayEvents=eventsByDate[dateStr]||[];
           var isToday=dateStr===todayStr;
           var isPast=dateStr<todayStr;
-          return (<div key={dateStr} onClick={function(){setSelectedDate(dateStr);setEditingEvento(null);setShowForm(true);}} style={{padding:6,minHeight:130,background:isToday?C.okLight:"#fff",borderRadius:6,cursor:"pointer",border:isToday?"2px solid "+C.ok:"1px solid #f0f4f1",transition:"background .15s"}} onMouseEnter={function(ev){ev.currentTarget.style.background=isToday?"#d4edda":"#f5faf7";}} onMouseLeave={function(ev){ev.currentTarget.style.background=isToday?"#e8f5ee":"#fff";}}>
+          return (<div key={dateStr} onClick={function(evClick){evClick.stopPropagation();var rect=evClick.currentTarget.getBoundingClientRect();setDayPopup({fecha:dateStr,x:rect.left,y:rect.bottom+6});}} style={{padding:6,minHeight:130,background:isToday?C.okLight:"#fff",borderRadius:6,cursor:"pointer",border:isToday?"2px solid "+C.ok:"1px solid #f0f4f1",transition:"background .15s"}} onMouseEnter={function(ev){ev.currentTarget.style.background=isToday?"#d4edda":"#f5faf7";}} onMouseLeave={function(ev){ev.currentTarget.style.background=isToday?"#e8f5ee":"#fff";}}>
             <div style={{fontSize:13,fontWeight:isToday?800:600,color:isToday?"#2d6a4f":isPast?"#aaa":"#1a3d2b",marginBottom:3,textAlign:"right",padding:"0 2px"}}>{day}</div>
             {dayEvents.slice(0,5).map(function(ev){return(<div key={ev.id} onClick={function(evn){evn.stopPropagation();if(!ev._isAppointment){setEditingEvento(ev);setShowForm(true);}}} style={{fontSize:11,padding:"2px 5px",borderRadius:4,marginBottom:2,background:ev.completado?"#eee":getEventColor(ev.tipo)+"20",color:ev.completado?"#aaa":getEventColor(ev.tipo),fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textDecoration:ev.completado?"line-through":"none",cursor:"pointer"}}>{ev.hora?ev.hora+" ":""}{ev.pacienteNombre?ev.pacienteNombre+" \xb7 ":""}{ev.titulo}</div>);})}
             {dayEvents.length>5&&<div style={{fontSize:9,color:"#7a9a8a",textAlign:"center",fontWeight:600}}>{"+"+(dayEvents.length-5)+" m\xe1s"}</div>}
@@ -1047,6 +1049,45 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
         </div>);
       })()}
     </div>}
+  {/* Day options popup */}
+  {dayPopup&&<div onClick={function(){setDayPopup(null);}} style={{position:"fixed",inset:0,zIndex:1000}}>
+    <div onClick={function(e){e.stopPropagation();}} style={{position:"fixed",left:Math.min(dayPopup.x,window.innerWidth-220),top:dayPopup.y,background:"#fff",borderRadius:14,boxShadow:"0 8px 32px rgba(0,0,0,.18)",border:"1px solid #e0ebe4",padding:16,zIndex:1001,minWidth:210}}>
+      <div style={{fontSize:13,fontWeight:700,color:"#5a7a6a",marginBottom:12}}>{"📅 "+new Date(dayPopup.fecha+"T12:00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"})}</div>
+      <button onClick={function(){setQuickNote({open:true,fecha:dayPopup.fecha,text:""});setDayPopup(null);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 14px",border:"none",borderRadius:10,background:"#f0f9f4",cursor:"pointer",fontFamily:"inherit",marginBottom:8,textAlign:"left"}}>
+        <span style={{fontSize:20}}>{"📝"}</span>
+        <div><div style={{fontSize:13,fontWeight:700,color:"#2d6a4f"}}>{"Nota rápida"}</div><div style={{fontSize:11,color:"#7a9a8a"}}>{"Escribir una anotación libre"}</div></div>
+      </button>
+      <button onClick={function(){setSelectedDate(dayPopup.fecha);setEditingEvento(null);setShowForm(true);setDayPopup(null);}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 14px",border:"none",borderRadius:10,background:"#f5f0ff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+        <span style={{fontSize:20}}>{"📅"}</span>
+        <div><div style={{fontSize:13,fontWeight:700,color:"#6a2d8a"}}>{"Evento completo"}</div><div style={{fontSize:11,color:"#9a7aaa"}}>{"Con paciente, tipo y hora"}</div></div>
+      </button>
+    </div>
+  </div>}
+
+  {/* Quick note modal */}
+  {quickNote.open&&<div onClick={function(){setQuickNote({open:false,fecha:null,text:""}); }} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.35)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div onClick={function(e){e.stopPropagation();}} style={{background:"#fff",borderRadius:18,padding:24,width:420,maxWidth:"95vw",boxShadow:"0 16px 48px rgba(0,0,0,.18)"}}>
+      <div style={{fontSize:15,fontWeight:700,color:"#1a3d2b",marginBottom:4}}>{"📝 Nota rápida"}</div>
+      <div style={{fontSize:12,color:"#7a9a8a",marginBottom:14}}>{new Date(quickNote.fecha+"T12:00:00").toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+      <textarea
+        autoFocus
+        value={quickNote.text}
+        onChange={function(ev){setQuickNote(function(prev){return Object.assign({},prev,{text:ev.target.value});});}}
+        placeholder={"A quién escribirle, qué recordar..."}
+        style={{width:"100%",minHeight:120,padding:"10px 14px",borderRadius:10,border:"1.5px solid #c8e0c8",fontFamily:"inherit",fontSize:14,color:"#1a3d2b",resize:"vertical",outline:"none",lineHeight:1.6,boxSizing:"border-box",background:"#f8fbf8"}}
+      />
+      <div style={{display:"flex",gap:10,marginTop:14,justifyContent:"flex-end"}}>
+        <button onClick={function(){setQuickNote({open:false,fecha:null,text:""}); }} style={{padding:"8px 18px",border:"1px solid #ddd",borderRadius:8,background:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:13,color:"#5a7a6a",fontWeight:600}}>{"Cancelar"}</button>
+        <button onClick={function(){
+          if(!quickNote.text.trim()) return;
+          var newEvento={id:uid(),pacienteId:"",pacienteNombre:"",tipo:"nota",titulo:quickNote.text.trim(),descripcion:"",fecha:quickNote.fecha,hora:"",notificar:false,notificarVia:"",completado:false};
+          onAddEvento(newEvento);
+          setQuickNote({open:false,fecha:null,text:""});
+        }} style={{padding:"8px 20px",border:"none",borderRadius:8,background:"#2d6a4f",color:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:700}}>{"Guardar nota"}</button>
+      </div>
+    </div>
+  </div>}
+
   </div>);
 }
 
