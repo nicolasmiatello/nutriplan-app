@@ -935,38 +935,75 @@ function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,
         </div>
         <button onClick={nextMonth} style={{...S.btnGhost,padding:"6px 16px",fontSize:18}}>{"\u25b6"}</button>
       </div>
-      <div style={{background:"#fff",borderRadius:14,border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",padding:10,width:"100%"}}>
-        {(function(){
-          var weeks=[];
-          var cells=[];
-          for(var ci=0;ci<startDow;ci++) cells.push(null);
-          for(var cd=1;cd<=daysInMonth;cd++) cells.push(cd);
-          while(cells.length%7!==0) cells.push(null);
-          for(var w=0;w<cells.length/7;w++) weeks.push(cells.slice(w*7,w*7+7));
-          function renderDay(day,isWeekend){
-            if(day===null) return <div style={{padding:4,background:"#fafcfb",borderRadius:6,minHeight:isWeekend?40:130}}/>;
-            var dateStr=year+"-"+String(month+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
-            var dayEvents=eventsByDate[dateStr]||[];
-            var isToday=dateStr===todayStr;
-            var isPast=dateStr<todayStr;
-            var maxShow=isWeekend?1:5;
-            return (<div key={dateStr} onClick={function(){setSelectedDate(dateStr);setEditingEvento(null);setShowForm(true);}} style={{padding:isWeekend?4:6,minHeight:isWeekend?40:130,background:isToday?C.okLight:"#fff",borderRadius:6,cursor:"pointer",border:isToday?"2px solid "+C.ok:"1px solid #f0f4f1",transition:"background .15s"}} onMouseEnter={function(ev){ev.currentTarget.style.background=isToday?"#d4edda":"#f5faf7";}} onMouseLeave={function(ev){ev.currentTarget.style.background=isToday?"#e8f5ee":"#fff";}}>
-              <div style={{fontSize:isWeekend?10:13,fontWeight:isToday?800:600,color:isToday?"#2d6a4f":isPast?"#aaa":"#1a3d2b",marginBottom:2,textAlign:"right",padding:"0 2px"}}>{day}</div>
-              {!isWeekend&&dayEvents.slice(0,maxShow).map(function(ev){return(<div key={ev.id} onClick={function(evn){evn.stopPropagation();if(!ev._isAppointment){setEditingEvento(ev);setShowForm(true);}}} style={{fontSize:11,padding:"2px 5px",borderRadius:4,marginBottom:2,background:ev.completado?"#eee":getEventColor(ev.tipo)+"20",color:ev.completado?"#aaa":getEventColor(ev.tipo),fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textDecoration:ev.completado?"line-through":"none",cursor:"pointer"}}>{ev.hora?ev.hora+" ":""}{ev.pacienteNombre?ev.pacienteNombre+" \xb7 ":""}{ev.titulo}</div>);})}
-              {isWeekend&&dayEvents.length>0&&<div style={{fontSize:9,color:"#7a9a8a",textAlign:"center",fontWeight:600}}>{dayEvents.length}</div>}
-              {!isWeekend&&dayEvents.length>maxShow&&<div style={{fontSize:9,color:"#7a9a8a",textAlign:"center",fontWeight:600}}>{"+"+(dayEvents.length-maxShow)+" m\xe1s"}</div>}
-            </div>);
-          }
-          return(<div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr 0.18fr 0.18fr",gap:2,marginBottom:2}}>
-              {["LUN","MAR","MI\xc9","JUE","VIE","S","D"].map(function(d,di){return(<div key={d} style={{padding:"6px 4px",textAlign:"center",fontSize:di>=5?9:11,fontWeight:700,color:"#5a7a6a",textTransform:"uppercase"}}>{d}</div>);})}
-            </div>
-            {weeks.map(function(week,wi){return(<div key={wi} style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr 0.18fr 0.18fr",gap:2,marginBottom:2}}>
-              {week.map(function(day,di){return renderDay(day,di>=5);})}
-            </div>);})}
+      {(function(){
+        var weeks=[];
+        var cells=[];
+        for(var ci=0;ci<startDow;ci++) cells.push(null);
+        for(var cd=1;cd<=daysInMonth;cd++) cells.push(cd);
+        while(cells.length%7!==0) cells.push(null);
+        for(var w=0;w<cells.length/7;w++) weeks.push(cells.slice(w*7,w*7+7));
+
+        function renderWeekday(day){
+          if(day===null) return <div style={{padding:4,background:"#fafcfb",borderRadius:6,minHeight:130}}/>;
+          var dateStr=year+"-"+String(month+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+          var dayEvents=eventsByDate[dateStr]||[];
+          var isToday=dateStr===todayStr;
+          var isPast=dateStr<todayStr;
+          return (<div key={dateStr} onClick={function(){setSelectedDate(dateStr);setEditingEvento(null);setShowForm(true);}} style={{padding:6,minHeight:130,background:isToday?C.okLight:"#fff",borderRadius:6,cursor:"pointer",border:isToday?"2px solid "+C.ok:"1px solid #f0f4f1",transition:"background .15s"}} onMouseEnter={function(ev){ev.currentTarget.style.background=isToday?"#d4edda":"#f5faf7";}} onMouseLeave={function(ev){ev.currentTarget.style.background=isToday?"#e8f5ee":"#fff";}}>
+            <div style={{fontSize:13,fontWeight:isToday?800:600,color:isToday?"#2d6a4f":isPast?"#aaa":"#1a3d2b",marginBottom:3,textAlign:"right",padding:"0 2px"}}>{day}</div>
+            {dayEvents.slice(0,5).map(function(ev){return(<div key={ev.id} onClick={function(evn){evn.stopPropagation();if(!ev._isAppointment){setEditingEvento(ev);setShowForm(true);}}} style={{fontSize:11,padding:"2px 5px",borderRadius:4,marginBottom:2,background:ev.completado?"#eee":getEventColor(ev.tipo)+"20",color:ev.completado?"#aaa":getEventColor(ev.tipo),fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textDecoration:ev.completado?"line-through":"none",cursor:"pointer"}}>{ev.hora?ev.hora+" ":""}{ev.pacienteNombre?ev.pacienteNombre+" \xb7 ":""}{ev.titulo}</div>);})}
+            {dayEvents.length>5&&<div style={{fontSize:9,color:"#7a9a8a",textAlign:"center",fontWeight:600}}>{"+"+(dayEvents.length-5)+" m\xe1s"}</div>}
           </div>);
-        })()}
-      </div>
+        }
+
+        function renderWeekend(day){
+          if(day===null) return null;
+          var dateStr=year+"-"+String(month+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+          var dayEvents=eventsByDate[dateStr]||[];
+          var isToday=dateStr===todayStr;
+          var isPast=dateStr<todayStr;
+          var dowLabel=new Date(dateStr+"T12:00:00").toLocaleDateString("es-AR",{weekday:"short"});
+          return (<div key={dateStr} onClick={function(){setSelectedDate(dateStr);setEditingEvento(null);setShowForm(true);}} style={{flex:1,padding:"6px 10px",background:isToday?C.okLight:"#f7f3ff",borderRadius:8,cursor:"pointer",border:isToday?"2px solid "+C.ok:"1px solid #e8dff5",transition:"background .15s",display:"flex",alignItems:"flex-start",gap:10,minHeight:44}} onMouseEnter={function(ev){ev.currentTarget.style.background=isToday?"#d4edda":"#ede8f5";}} onMouseLeave={function(ev){ev.currentTarget.style.background=isToday?"#e8f5ee":"#f7f3ff";}}>
+            <div style={{fontSize:12,fontWeight:700,color:isToday?"#2d6a4f":isPast?"#bbb":"#9b72cf",minWidth:28,textAlign:"center"}}>
+              <div style={{fontSize:10,textTransform:"uppercase",color:isToday?"#2d6a4f":isPast?"#ccc":"#b39ddb"}}>{dowLabel}</div>
+              <div>{day}</div>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              {dayEvents.slice(0,3).map(function(ev){return(<div key={ev.id} style={{fontSize:10,padding:"1px 4px",borderRadius:3,marginBottom:1,background:ev.completado?"#eee":getEventColor(ev.tipo)+"20",color:ev.completado?"#aaa":getEventColor(ev.tipo),fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textDecoration:ev.completado?"line-through":"none"}}>{ev.titulo}</div>);})}
+              {dayEvents.length>3&&<div style={{fontSize:9,color:"#9b72cf",fontWeight:600}}>{"+"+(dayEvents.length-3)+" m\xe1s"}</div>}
+              {dayEvents.length===0&&<div style={{fontSize:10,color:"#ccc"}}>\xa0</div>}
+            </div>
+          </div>);
+        }
+
+        var weekendDays=[];
+        for(var wd=1;wd<=daysInMonth;wd++){
+          var dt=new Date(year+"-"+String(month+1).padStart(2,"0")+"-"+String(wd).padStart(2,"0")+"T12:00:00");
+          if(dt.getDay()===6||dt.getDay()===0) weekendDays.push(wd);
+        }
+
+        return(<div>
+          {/* Header Lun-Vie */}
+          <div style={{background:"#fff",borderRadius:14,border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",padding:10,width:"100%",marginBottom:10}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:2,marginBottom:2}}>
+              {["LUN","MAR","MI\xc9","JUE","VIE"].map(function(d){return(<div key={d} style={{padding:"6px 4px",textAlign:"center",fontSize:11,fontWeight:700,color:"#5a7a6a",textTransform:"uppercase"}}>{d}</div>);})}
+            </div>
+            {weeks.map(function(week,wi){
+              var weekdays=week.slice(0,5);
+              return(<div key={wi} style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:2,marginBottom:2}}>
+                {weekdays.map(function(day){return renderWeekday(day);})}
+              </div>);
+            })}
+          </div>
+          {/* Finde abajo */}
+          {weekendDays.length>0&&<div style={{background:"#f3eeff",borderRadius:12,border:"1px solid #e0d4f7",padding:"10px 12px"}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#9b72cf",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>{"\u2728 Fin de semana"}</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {weekendDays.map(function(d){return renderWeekend(d);})}
+            </div>
+          </div>}
+        </div>);
+      })()}
     </div>}
   </div>);
 }
