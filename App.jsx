@@ -769,7 +769,7 @@ function EventForm({patients,onSave,onCancel,prefillPatientId,prefillDate,editEv
       <Field label="Fecha *" type="date" value={form.fecha} onChange={v=>set("fecha",v)}/>
       <Field label="Hora" type="time" value={form.hora} onChange={v=>set("hora",v)}/>
     </div>
-    <Field label="Descripción (opcional)" value={form.descripcion} onChange={v=>set("descripcion",v)} placeholder="Notas sobre este evento..." rows={2}/>
+    <Field label="Notas / Anotaciones" value={form.descripcion} onChange={function(v){set("descripcion",v);}} placeholder={"Escribí cualquier anotación libre: recordatorios, observaciones, instrucciones para el turno..."} rows={5}/>
     <div style={{marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
       <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:13,color:"#1a3d2b",fontWeight:600}}>
         <input type="checkbox" checked={form.notificar} onChange={e=>set("notificar",e.target.checked)} style={{width:16,height:16,accentColor:"#2d6a4f"}}/>
@@ -786,182 +786,176 @@ const DIAS_SEMANA = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 function CalendarView({eventos,patients,appointments,onAddEvento,onUpdateEvento,onDeleteEvento,onSelectPatient,filterPatientId}) {
-  const [currentDate,setCurrentDate]=useState(new Date());
-  const [showForm,setShowForm]=useState(false);
-  const [selectedDate,setSelectedDate]=useState(null);
-  const [editingEvento,setEditingEvento]=useState(null);
-  const [viewMode,setViewMode]=useState("month"); // month | list
+  var [currentDate,setCurrentDate]=useState(new Date());
+  var [showForm,setShowForm]=useState(false);
+  var [selectedDate,setSelectedDate]=useState(null);
+  var [editingEvento,setEditingEvento]=useState(null);
+  var [viewMode,setViewMode]=useState("list");
+  var [showPast,setShowPast]=useState(false);
 
-  const year=currentDate.getFullYear();const month=currentDate.getMonth();
-  const firstDay=new Date(year,month,1);const lastDay=new Date(year,month+1,0);
-  const startDow=(firstDay.getDay()+6)%7; // Monday=0
-  const daysInMonth=lastDay.getDate();
-  const todayStr=todayISO();
+  var year=currentDate.getFullYear();var month=currentDate.getMonth();
+  var firstDay=new Date(year,month,1);var lastDay=new Date(year,month+1,0);
+  var startDow=(firstDay.getDay()+6)%7;
+  var daysInMonth=lastDay.getDate();
+  var todayStr=todayISO();
 
-  const filteredEventos=(eventos||[]).filter(e=>filterPatientId?e.pacienteId===filterPatientId:true);
-  // Merge Fértil appointments into calendar
-  const appointmentEvents=(appointments||[]).filter(a=>filterPatientId?a.patientId===filterPatientId:true).filter(a=>{var dt=new Date(a.startAt);return dt.getFullYear()>2020;}).map(function(a){var dt=new Date(a.startAt);var p=patients.find(function(x){return x.id===a.patientId;});var pName=p?p.nombre:"";return{id:"appt-"+a.id,pacienteId:a.patientId,pacienteNombre:pName,tipo:"fertil",titulo:a.title,descripcion:a.notes||"",fecha:dt.toISOString().split("T")[0],hora:dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}),completado:a.status==="realizada",_isAppointment:true};});
-  const allEvents=[...filteredEventos,...appointmentEvents];
+  var filteredEventos=(eventos||[]).filter(function(e){return filterPatientId?e.pacienteId===filterPatientId:true;});
+  var appointmentEvents=(appointments||[]).filter(function(a){return filterPatientId?a.patientId===filterPatientId:true;}).filter(function(a){var dt=new Date(a.startAt);return dt.getFullYear()>2020;}).map(function(a){var dt=new Date(a.startAt);var p=patients.find(function(x){return x.id===a.patientId;});var pName=p?p.nombre:"";return{id:"appt-"+a.id,pacienteId:a.patientId,pacienteNombre:pName,tipo:"fertil",titulo:a.title,descripcion:a.notes||"",fecha:dt.toISOString().split("T")[0],hora:dt.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"}),completado:a.status==="realizada",_isAppointment:true};});
+  var allEvents=[].concat(filteredEventos,appointmentEvents);
 
-  const eventsByDate=useMemo(()=>{
-    const map={};
-    allEvents.forEach(e=>{if(e.fecha){if(!map[e.fecha])map[e.fecha]=[];map[e.fecha].push(e);}});
+  var eventsByDate=useMemo(function(){
+    var map={};
+    allEvents.forEach(function(e){if(e.fecha){if(!map[e.fecha])map[e.fecha]=[];map[e.fecha].push(e);}});
     return map;
-  },[allEvents]);
+  },[allEvents.length,todayStr]);
 
-  const monthEventos=allEvents.filter(e=>{
+  var monthEventos=allEvents.filter(function(e){
     if(!e.fecha) return false;
-    const d=new Date(e.fecha+"T12:00:00");
+    var d=new Date(e.fecha+"T12:00:00");
     return d.getMonth()===month&&d.getFullYear()===year;
-  }).sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.hora||"").localeCompare(b.hora||""));
+  }).sort(function(a,b){return a.fecha.localeCompare(b.fecha)||(a.hora||"").localeCompare(b.hora||"");});
 
-  const prevMonth=()=>setCurrentDate(new Date(year,month-1,1));
-  const nextMonth=()=>setCurrentDate(new Date(year,month+1,1));
-  const goToday=()=>setCurrentDate(new Date());
+  function prevMonth(){setCurrentDate(new Date(year,month-1,1));}
+  function nextMonth(){setCurrentDate(new Date(year,month+1,1));}
+  function goToday(){setCurrentDate(new Date());}
 
-  const getEventColor=(tipo)=>{if(tipo==="fertil") return C.fertil;const t=EVENTO_TIPOS.find(x=>x.id===tipo);return t?t.color:C.muted;};
+  function getEventColor(tipo){if(tipo==="fertil") return C.fertil;var t=EVENTO_TIPOS.find(function(x){return x.id===tipo;});return t?t.color:C.muted;}
 
-  const todayEventos=allEvents.filter(e=>e.fecha===todayStr&&!e.completado);
-  const tomorrowStr=new Date(new Date().getTime()+86400000).toISOString().split("T")[0];
-  const tomorrowEventos=allEvents.filter(e=>e.fecha===tomorrowStr&&!e.completado).sort((a,b)=>(a.hora||"").localeCompare(b.hora||""));
-  const pendientes=allEvents.filter(e=>!e.completado&&e.fecha<todayStr);
-
-  const handleToggleCompletado=(evento)=>{
-    const updated={...evento,completado:!evento.completado};
+  function handleToggleCompletado(evento){
+    var updated=Object.assign({},evento,{completado:!evento.completado});
     onUpdateEvento(updated);
-  };
+  }
 
-  const handleDeleteEvento=(id)=>{
+  function handleDeleteEvento(id){
     if(confirm("¿Eliminar este evento?")) onDeleteEvento(id);
-  };
+  }
 
-  const calendarCells=[];
-  for(let i=0;i<startDow;i++) calendarCells.push(null);
-  for(let d=1;d<=daysInMonth;d++) calendarCells.push(d);
+  var calendarCells=[];
+  for(var ci=0;ci<startDow;ci++) calendarCells.push(null);
+  for(var cd=1;cd<=daysInMonth;cd++) calendarCells.push(cd);
   while(calendarCells.length%7!==0) calendarCells.push(null);
 
-  const renderEventCard=(e,compact=false)=>{
-    const color=getEventColor(e.tipo);
-    return (<div key={e.id} style={{background:e.completado?"#f0f4f1":color+"12",borderLeft:"3px solid "+(e.completado?"#ccc":color),borderRadius:8,padding:compact?"6px 8px":"12px 16px",marginBottom:compact?4:8,opacity:e.completado?0.6:1,transition:"all .15s"}}>
-      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
+  var allSorted=allEvents.filter(function(e){return !!e.fecha;}).sort(function(a,b){return a.fecha.localeCompare(b.fecha)||(a.hora||"").localeCompare(b.hora||"");});
+  var futureEvents=allSorted.filter(function(e){return e.fecha>=todayStr;});
+  var pastEvents=allSorted.filter(function(e){return e.fecha<todayStr;}).reverse();
+
+  function groupByDate(evList){
+    var map={};var order=[];
+    evList.forEach(function(e){
+      if(!map[e.fecha]){map[e.fecha]=[];order.push(e.fecha);}
+      map[e.fecha].push(e);
+    });
+    return order.map(function(f){return{fecha:f,items:map[f]};});
+  }
+
+  function renderListEvento(e){
+    var color=getEventColor(e.tipo);
+    var isFertil=e.tipo==="fertil"||e._isAppointment;
+    return(<div key={e.id} style={{background:e.completado?"#f5f5f5":isFertil?"#faf5fc":"#fff",borderLeft:"4px solid "+(e.completado?"#ccc":color),borderRadius:10,padding:"14px 18px",marginBottom:8,opacity:e.completado?0.65:1,boxShadow:"0 1px 6px rgba(0,0,0,.04)"}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10}}>
         <div style={{flex:1,minWidth:0}}>
-          {!compact&&<div style={{fontSize:11,color:"#7a9a8a",fontWeight:600,marginBottom:4}}>{fmtDate(e.fecha)}{e.hora?" · "+e.hora:""}</div>}
-          {e.pacienteNombre&&!compact&&<div style={{fontSize:16,fontWeight:700,color:e.completado?"#999":"#1a3d2b",marginBottom:3,textDecoration:e.completado?"line-through":"none"}}>{e.pacienteNombre}</div>}
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            {!e._isAppointment&&<button onClick={()=>handleToggleCompletado(e)} title={e.completado?"Marcar pendiente":"Marcar completado"} style={{width:18,height:18,borderRadius:4,border:"2px solid "+(e.completado?"#aaa":color),background:e.completado?color:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",padding:0,flexShrink:0}}>{e.completado?"✓":""}</button>}
-            {e._isAppointment&&<span style={{fontSize:12}}>{"💜"}</span>}
-            <span style={{fontWeight:600,fontSize:compact?12:13,color:e.completado?"#aaa":"#5a7a6a",textDecoration:e.completado?"line-through":"none"}}>{e.titulo}</span>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+            {e.hora&&<span style={{fontSize:13,fontWeight:700,color:e.completado?"#aaa":color}}>{e.hora}</span>}
+            {isFertil&&<span style={{background:C.fertil,color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"FÉRTIL"}</span>}
+            {e.completado&&<span style={{background:C.ok,color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"REALIZADA"}</span>}
           </div>
-          {!compact&&!e.pacienteNombre&&<div style={{fontSize:12,color:"#7a9a8a",marginTop:3,fontStyle:"italic"}}>Sin paciente asignado</div>}
-          {!compact&&e.descripcion&&<div style={{fontSize:12,color:"#5a7a6a",marginTop:3,fontStyle:"italic"}}>{e.descripcion}</div>}
+          <div style={{fontSize:17,fontWeight:700,color:e.completado?"#aaa":"#1a3d2b",textDecoration:e.completado?"line-through":"none",marginBottom:2}}>{e.pacienteNombre||"Sin paciente"}</div>
+          <div style={{fontSize:13,color:e.completado?"#bbb":"#5a7a6a",fontWeight:500}}>{e.titulo}</div>
+          {e.descripcion&&<div style={{fontSize:13,color:"#7a9a8a",marginTop:6,background:"#f8faf9",borderRadius:6,padding:"6px 10px",whiteSpace:"pre-wrap",lineHeight:1.5}}>{e.descripcion}</div>}
         </div>
-        {!compact&&!e._isAppointment&&<div style={{display:"flex",gap:4,flexShrink:0}}>
-          <button onClick={()=>{setEditingEvento(e);setShowForm(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>{"✏️"}</button>
-          <button onClick={()=>handleDeleteEvento(e.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,padding:"2px 4px"}}>{"🗑"}</button>
-        </div>}
+        <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0,marginTop:2}}>
+          {!e._isAppointment&&!e.completado&&<button onClick={function(){handleToggleCompletado(e);}} style={{width:28,height:28,borderRadius:6,border:"2px solid "+color,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:color,padding:0,fontWeight:700}} title="Marcar completado">{"✓"}</button>}
+          {e.completado&&!e._isAppointment&&<button onClick={function(){handleToggleCompletado(e);}} style={{width:28,height:28,borderRadius:6,border:"2px solid #aaa",background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#aaa",padding:0}} title="Deshacer">{"↩"}</button>}
+          {!e._isAppointment&&<button onClick={function(){setEditingEvento(e);setShowForm(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:15,padding:"4px"}} title="Editar">{"✏️"}</button>}
+          {!e._isAppointment&&<button onClick={function(){handleDeleteEvento(e.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:15,padding:"4px"}} title="Eliminar">{"🗑"}</button>}
+        </div>
       </div>
     </div>);
-  };
+  }
+
+  function renderDateGroup(grupo){
+    var fecha=grupo.fecha;
+    var items=grupo.items;
+    var isToday=fecha===todayStr;
+    var tomorrowStr2=new Date(new Date().getTime()+86400000).toISOString().split("T")[0];
+    var isTomorrow=fecha===tomorrowStr2;
+    var dt=new Date(fecha+"T12:00:00");
+    var label=dt.toLocaleDateString("es-AR",{weekday:"long",day:"numeric",month:"long"});
+    var labelCap=label.charAt(0).toUpperCase()+label.slice(1);
+    var headerBg=isToday?C.okLight:isTomorrow?"#f0f9f0":"transparent";
+    var headerColor=isToday?C.okDark:isTomorrow?C.ok:"#5a7a6a";
+    var badge=isToday?"HOY":isTomorrow?"MAÑANA":null;
+    return(<div key={fecha} style={{marginBottom:22}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,padding:"8px 12px",background:headerBg,borderRadius:8}}>
+        <div style={{width:4,height:20,borderRadius:2,background:headerColor,flexShrink:0}}></div>
+        <span style={{fontSize:15,fontWeight:700,color:headerColor,flex:1}}>{labelCap}</span>
+        {badge&&<span style={{background:isToday?C.okDark:C.ok,color:"#fff",fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:10,letterSpacing:".5px"}}>{badge}</span>}
+        <span style={{fontSize:12,color:"#7a9a8a",fontWeight:600}}>{items.length+" evento"+(items.length>1?"s":"")}</span>
+      </div>
+      {items.map(renderListEvento)}
+    </div>);
+  }
+
+  var futureGroups=groupByDate(futureEvents);
+  var pastGroups=groupByDate(pastEvents);
+  var pastCount=pastGroups.reduce(function(s,g){return s+g.items.length;},0);
 
   return (<div>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
-      <h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>{filterPatientId?"📅 Agenda del paciente":"📅 Agenda"}</h2>
-      <button onClick={()=>{setEditingEvento(null);setSelectedDate(null);setShowForm(true);}} style={S.btnPrimary}>{"📅 Nuevo evento"}</button>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:10}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <h2 style={{margin:0,fontSize:22,fontWeight:700,color:"#1a3d2b"}}>{filterPatientId?"📅 Agenda del paciente":"📅 Agenda"}</h2>
+        <div style={{display:"flex",gap:2,background:"#f0f4f1",borderRadius:10,padding:3}}>
+          {[["list","📋 Lista"],["month","📅 Mes"]].map(function(pair){var id=pair[0];var label=pair[1];return(
+            <button key={id} onClick={function(){setViewMode(id);}} style={{padding:"5px 14px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:viewMode===id?700:500,cursor:"pointer",background:viewMode===id?C.okLight:"transparent",color:viewMode===id?C.okDark:C.textSub,boxShadow:"none",whiteSpace:"nowrap"}}>{label}</button>
+          );})}        </div>
+      </div>
+      <button onClick={function(){setEditingEvento(null);setSelectedDate(null);setShowForm(true);}} style={S.btnPrimary}>{"+ Nuevo evento"}</button>
     </div>
 
-    {/* Alertas de hoy y pendientes */}
-    {(todayEventos.length>0||tomorrowEventos.length>0||pendientes.length>0)&&<div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
-      {todayEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid "+C.okDark,padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:C.okDark,marginBottom:4}}>{"📌 Hoy tenés "+todayEventos.length+" evento"+(todayEventos.length>1?"s":"")}</div>{todayEventos.slice(0,4).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{(e.hora?e.hora+" — ":"")+e.titulo+(e.pacienteNombre?" ("+e.pacienteNombre+")":"")}</div>)}</div>}
-      {tomorrowEventos.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid "+C.ok,padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:C.ok,marginBottom:4}}>{"📋 Mañana: "+tomorrowEventos.length+" paciente"+(tomorrowEventos.length>1?"s":"")}</div>{tomorrowEventos.slice(0,5).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{(e.hora?e.hora+" — ":"")+(e.pacienteNombre?e.pacienteNombre+" · ":"")+e.titulo}</div>)}</div>}
-      {pendientes.length>0&&<div style={{...S.card,flex:1,minWidth:200,borderLeft:"4px solid #e76f51",padding:"14px 16px"}}><div style={{fontSize:13,fontWeight:700,color:C.danger,marginBottom:4}}>{"⚠️ "+pendientes.length+" evento"+(pendientes.length>1?"s":"")+" vencido"+(pendientes.length>1?"s":"")}</div>{pendientes.slice(0,3).map(e=><div key={e.id} style={{fontSize:12,color:"#5a7a6a"}}>{fmtDate(e.fecha)+" — "+e.titulo}</div>)}</div>}
+    {showForm&&<div style={{marginBottom:16}}><EventForm patients={patients} prefillPatientId={filterPatientId} prefillDate={selectedDate} editEvento={editingEvento} onSave={function(e){if(editingEvento){onUpdateEvento(e);}else{onAddEvento(e);}setShowForm(false);setEditingEvento(null);}} onCancel={function(){setShowForm(false);setEditingEvento(null);}}/></div>}
+
+    {viewMode==="list"&&<div>
+      {futureGroups.length===0&&pastGroups.length===0&&<div style={{...S.card,textAlign:"center",padding:"60px 20px"}}><div style={{fontSize:40,marginBottom:10}}>{"📅"}</div><p style={{color:"#7a9a8a",fontSize:15,margin:0}}>{"No hay eventos todavía"}</p><p style={{color:"#aaa",fontSize:13,marginTop:6}}>{"Usá el botón para agregar el primero"}</p></div>}
+      {futureGroups.map(renderDateGroup)}
+      {pastGroups.length>0&&<div style={{marginTop:10}}>
+        <button onClick={function(){setShowPast(!showPast);}} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"1px dashed #ccc",borderRadius:8,padding:"8px 16px",cursor:"pointer",fontSize:13,color:"#7a9a8a",fontFamily:"inherit",fontWeight:600,marginBottom:12}}>
+          <span style={{fontSize:14}}>{showPast?"▲":"▼"}</span>
+          {showPast?"Ocultar pasados":"Ver pasados ("+pastCount+")"}
+        </button>
+        {showPast&&pastGroups.map(renderDateGroup)}
+      </div>}
     </div>}
 
-    {showForm&&<div style={{marginBottom:20}}><EventForm patients={patients} prefillPatientId={filterPatientId} prefillDate={selectedDate} editEvento={editingEvento} onSave={e=>{if(editingEvento){onUpdateEvento(e);}else{onAddEvento(e);}setShowForm(false);setEditingEvento(null);}} onCancel={()=>{setShowForm(false);setEditingEvento(null);}}/></div>}
-
-    {/* Toggle vista */}
-    <div style={{display:"flex",gap:4,marginBottom:16,background:"#f0f4f1",borderRadius:10,padding:4,maxWidth:240}}>
-      {[["month","📅 Mes"],["list","📋 Lista"]].map(([id,label])=>(
-        <button key={id} onClick={()=>setViewMode(id)} style={{flex:1,padding:"6px 10px",border:"none",borderRadius:8,fontFamily:"inherit",fontSize:12,fontWeight:viewMode===id?700:500,cursor:"pointer",background:viewMode===id?C.okLight:"transparent",color:viewMode===id?C.okDark:C.textSub,boxShadow:"none"}}>{label}</button>
-      ))}
-    </div>
-
     {viewMode==="month"&&<div>
-      {/* Nav del mes */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-        <button onClick={prevMonth} style={{...S.btnGhost,padding:"6px 12px"}}>◀</button>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+        <button onClick={prevMonth} style={{...S.btnGhost,padding:"6px 16px",fontSize:18}}>{"◀"}</button>
         <div style={{textAlign:"center"}}>
-          <span style={{fontWeight:800,fontSize:18,color:C.text,letterSpacing:"-0.3px"}}>{MESES_FULL[month]} {year}</span>
+          <span style={{fontWeight:800,fontSize:18,color:C.text,letterSpacing:"-0.3px"}}>{MESES_FULL[month]+" "+year}</span>
           <button onClick={goToday} style={{marginLeft:10,padding:"2px 10px",borderRadius:12,border:"1px solid #d8e8df",background:"#f5faf7",fontSize:11,cursor:"pointer",fontFamily:"inherit",color:"#2d6a4f",fontWeight:600}}>Hoy</button>
         </div>
-        <button onClick={nextMonth} style={{...S.btnGhost,padding:"6px 12px"}}>▶</button>
+        <button onClick={nextMonth} style={{...S.btnGhost,padding:"6px 16px",fontSize:18}}>{"▶"}</button>
       </div>
-
-      {/* Grilla del calendario */}
       <div style={{...S.card,padding:12,overflowX:"auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:1,minWidth:560}}>
-          {DIAS_SEMANA.map(d=><div key={d} style={{padding:"6px 4px",textAlign:"center",fontSize:11,fontWeight:700,color:"#5a7a6a",textTransform:"uppercase"}}>{d}</div>)}
-          {calendarCells.map((day,i)=>{
-            if(day===null) return <div key={`empty-${i}`} style={{padding:4,minHeight:80,background:"#fafcfb",borderRadius:6}}/>;
-            const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-            const dayEvents=eventsByDate[dateStr]||[];
-            const isToday=dateStr===todayStr;
-            const isPast=dateStr<todayStr;
-            return (<div key={dateStr} onClick={()=>{setSelectedDate(dateStr);setEditingEvento(null);setShowForm(true);}} style={{padding:4,minHeight:80,background:isToday?C.okLight:"#fff",borderRadius:6,cursor:"pointer",border:isToday?"2px solid "+C.ok:"1px solid #f0f4f1",transition:"background .15s"}} onMouseEnter={e=>e.currentTarget.style.background=isToday?"#d4edda":"#f5faf7"} onMouseLeave={e=>e.currentTarget.style.background=isToday?"#e8f5ee":"#fff"}>
-              <div style={{fontSize:13,fontWeight:isToday?800:600,color:isToday?"#2d6a4f":isPast?"#aaa":"#1a3d2b",marginBottom:2,textAlign:"right",padding:"0 2px"}}>{day}</div>
-              {dayEvents.slice(0,3).map(ev=>(<div key={ev.id} onClick={e=>{e.stopPropagation();if(!ev._isAppointment){setEditingEvento(ev);setShowForm(true);}}} style={{fontSize:10,padding:"1px 4px",borderRadius:4,marginBottom:1,background:ev.completado?"#eee":getEventColor(ev.tipo)+"20",color:ev.completado?"#aaa":getEventColor(ev.tipo),fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textDecoration:ev.completado?"line-through":"none",cursor:"pointer"}}>{ev.hora?ev.hora+" ":""}{ev.pacienteNombre?ev.pacienteNombre+" - ":""}{ev.titulo}</div>))}
-              {dayEvents.length>3&&<div style={{fontSize:9,color:"#7a9a8a",textAlign:"center"}}>+{dayEvents.length-3} más</div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,minWidth:560}}>
+          {DIAS_SEMANA.map(function(dm){return(<div key={dm} style={{padding:"6px 4px",textAlign:"center",fontSize:11,fontWeight:700,color:"#5a7a6a",textTransform:"uppercase"}}>{dm}</div>);})}
+          {calendarCells.map(function(day,idx){
+            if(day===null) return <div key={"empty-"+idx} style={{padding:4,minHeight:100,background:"#fafcfb",borderRadius:6}}/>;
+            var dateStr=year+"-"+String(month+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+            var dayEvents=eventsByDate[dateStr]||[];
+            var isToday=dateStr===todayStr;
+            var isPast=dateStr<todayStr;
+            return (<div key={dateStr} onClick={function(){setSelectedDate(dateStr);setEditingEvento(null);setShowForm(true);}} style={{padding:6,minHeight:120,background:isToday?C.okLight:"#fff",borderRadius:6,cursor:"pointer",border:isToday?"2px solid "+C.ok:"1px solid #f0f4f1",transition:"background .15s"}} onMouseEnter={function(ev){ev.currentTarget.style.background=isToday?"#d4edda":"#f5faf7";}} onMouseLeave={function(ev){ev.currentTarget.style.background=isToday?"#e8f5ee":"#fff";}}>
+              <div style={{fontSize:13,fontWeight:isToday?800:600,color:isToday?"#2d6a4f":isPast?"#aaa":"#1a3d2b",marginBottom:3,textAlign:"right",padding:"0 2px"}}>{day}</div>
+              {dayEvents.slice(0,4).map(function(ev){return(<div key={ev.id} onClick={function(evn){evn.stopPropagation();if(!ev._isAppointment){setEditingEvento(ev);setShowForm(true);}}} style={{fontSize:10,padding:"2px 5px",borderRadius:4,marginBottom:2,background:ev.completado?"#eee":getEventColor(ev.tipo)+"20",color:ev.completado?"#aaa":getEventColor(ev.tipo),fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textDecoration:ev.completado?"line-through":"none",cursor:"pointer"}}>{ev.hora?ev.hora+" ":""}{ev.pacienteNombre?ev.pacienteNombre+" · ":""}{ev.titulo}</div>);})}
+              {dayEvents.length>4&&<div style={{fontSize:9,color:"#7a9a8a",textAlign:"center",fontWeight:600}}>{"+"+dayEvents.length-4+" más"}</div>}
             </div>);
           })}
         </div>
       </div>
-    </div>}
-
-    {viewMode==="list"&&<div>
-      {monthEventos.length===0?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:36,marginBottom:8}}>{"📅"}</div><p style={{color:"#7a9a8a",fontSize:14}}>{"No hay eventos en "+MESES_FULL[month]}</p></div>:(function(){
-        var todayS=todayISO();
-        var tomorrowS=new Date(new Date().getTime()+86400000).toISOString().split("T")[0];
-        var now=new Date();
-        var endOfWeek=new Date(now);endOfWeek.setDate(now.getDate()+(7-now.getDay()));
-        var weekEndStr=endOfWeek.toISOString().split("T")[0];
-        var hoy=monthEventos.filter(function(e){return e.fecha===todayS;});
-        var manana=monthEventos.filter(function(e){return e.fecha===tomorrowS;});
-        var semana=monthEventos.filter(function(e){return e.fecha>tomorrowS&&e.fecha<=weekEndStr;});
-        var resto=monthEventos.filter(function(e){return e.fecha>weekEndStr;});
-        var groups=[{label:"Hoy",color:C.okDark,items:hoy},{label:"Mañana",color:C.ok,items:manana},{label:"Esta semana",color:C.muted,items:semana},{label:"Resto del mes",color:C.mutedLight,items:resto}];
-        return groups.map(function(g){
-          if(g.items.length===0)return null;
-          return(<div key={g.label} style={{marginBottom:20}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-              <div style={{width:4,height:20,borderRadius:2,background:g.color}}></div>
-              <h3 style={{margin:0,fontSize:15,fontWeight:700,color:g.color}}>{g.label}</h3>
-              <span style={{fontSize:12,color:"#7a9a8a",fontWeight:600}}>{g.items.length+" evento"+(g.items.length>1?"s":"")}</span>
-            </div>
-            {g.items.map(function(e){
-              var color=getEventColor(e.tipo);
-              var isFertil=e.tipo==="fertil"||e._isAppointment;
-              return(<div key={e.id} style={{background:e.completado?"#f5f5f5":isFertil?"#faf5fc":"#fff",borderLeft:"4px solid "+(e.completado?"#ccc":color),borderRadius:10,padding:"16px 20px",marginBottom:10,opacity:e.completado?0.6:1,boxShadow:"0 1px 8px rgba(0,0,0,.04)"}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                      <span style={{fontSize:12,color:"#7a9a8a",fontWeight:600}}>{fmtDate(e.fecha)}{e.hora?" · "+e.hora:""}</span>
-                      {isFertil&&<span style={{background:C.fertil,color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"FÉRTIL"}</span>}
-                      {e.completado&&<span style={{background:C.ok,color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{"REALIZADA"}</span>}
-                    </div>
-                    <div style={{fontSize:18,fontWeight:700,color:e.completado?"#aaa":"#1a3d2b",textDecoration:e.completado?"line-through":"none",marginBottom:2}}>{e.pacienteNombre||"Sin paciente"}</div>
-                    <div style={{fontSize:13,color:e.completado?"#bbb":"#5a7a6a"}}>{e.titulo}</div>
-                    {e.descripcion&&<div style={{fontSize:12,color:"#7a9a8a",marginTop:4,fontStyle:"italic"}}>{e.descripcion}</div>}
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-                    {!e._isAppointment&&!e.completado&&<button onClick={function(){handleToggleCompletado(e);}} style={{width:28,height:28,borderRadius:6,border:"2px solid "+color,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:color,padding:0}} title="Marcar completado">{"✓"}</button>}
-                    {!e._isAppointment&&<button onClick={function(){setEditingEvento(e);setShowForm(true);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,padding:"4px"}}>{"✏️"}</button>}
-                    {!e._isAppointment&&<button onClick={function(){handleDeleteEvento(e.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,padding:"4px"}}>{"🗑"}</button>}
-                  </div>
-                </div>
-              </div>);
-            })}
-          </div>);
-        });
-      })()}
+      {monthEventos.length>0&&<div style={{marginTop:20}}>
+        <h3 style={{margin:"0 0 14px",fontSize:15,fontWeight:700,color:C.textSub}}>{"Todos los eventos de "+MESES_FULL[month]}</h3>
+        {groupByDate(monthEventos).map(renderDateGroup)}
+      </div>}
     </div>}
   </div>);
 }
