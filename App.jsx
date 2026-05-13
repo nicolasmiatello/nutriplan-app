@@ -535,14 +535,19 @@ function BarChart({data,color="#2d6a4f",formatValue=(v)=>v,height=120}) {
 function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAddGasto,onDeleteGasto}) {
   var now=new Date();var thisMonth=now.getMonth();var thisYear=now.getFullYear();
   var mesActual=(thisYear)+"-"+(String(thisMonth+1).padStart(2,"0"));
+  var [mesSel,setMesSel]=useState(mesActual);
   var allConsultas=consultas||[];
   var fc=fertilCases||[];
   var allGastos=gastos||[];
   var [showGastoForm,setShowGastoForm]=useState(false);
   var [gastoForm,setGastoForm]=useState({tipo:"alquiler",categoria:"general",monto:"",mes:mesActual,descripcion:""});
 
-  // Consultas privadas (este mes)
-  var consultasMes=allConsultas.filter(function(c){var d=new Date(c.fecha);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  // Mes seleccionado
+  var mesParts=mesSel.split("-");var selYear=parseInt(mesParts[0]);var selMonth=parseInt(mesParts[1])-1;
+  var esActual=mesSel===mesActual;
+
+  // Consultas privadas (mes seleccionado)
+  var consultasMes=allConsultas.filter(function(c){var d=new Date(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear;});
   var totalMesConsultas=consultasMes.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
   var totalHistoricoConsultas=allConsultas.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0);
 
@@ -556,14 +561,14 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
   var fertilActivas=fc.filter(function(c){return c.status==="activa";}).length;
   var fertilFinalizadas=fc.filter(function(c){return c.status==="finalizada";}).length;
   var fertilTotalIngresos=fc.reduce(function(s,c){return s+(c.amountPaid||0);},0);
-  var fertilMesIngresos=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var d=new Date(sd.length===10?sd+"T12:00:00":sd);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);
+  var fertilMesIngresos=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var d=new Date(sd.length===10?sd+"T12:00:00":sd);return d.getMonth()===selMonth&&d.getFullYear()===selYear;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);
   var fertilTicketPromedio=fc.length?fertilTotalIngresos/fc.length:0;
   var fertilPagos=fc.filter(function(c){return c.paymentStatus==="pago";}).length;
   var fertilPendientes=fc.filter(function(c){return c.paymentStatus==="pendiente";}).length;
   var fertilPctPago=fc.length?Math.round((fertilPagos/fc.length)*100):0;
 
-  // Gastos del mes
-  var gastosMes=allGastos.filter(function(g){return g.mes===mesActual;});
+  // Gastos del mes seleccionado
+  var gastosMes=allGastos.filter(function(g){return g.mes===mesSel;});
   var gastosFertilMes=gastosMes.filter(function(g){return g.categoria==="fertil";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
   var gastosPrivadasMes=gastosMes.filter(function(g){return g.categoria==="privadas";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
   var gastosGeneralMes=gastosMes.filter(function(g){return g.categoria==="general";}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);
@@ -576,9 +581,10 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
   var gananciaNetaMes=totalMes-totalGastosMes;
 
   // Gráficos últimos 6 meses
-  var last6=Array.from({length:6},function(_,i){var d=new Date(thisYear,thisMonth-5+i,1);var m=d.getMonth();var y=d.getFullYear();var cs=allConsultas.filter(function(c){var dd=new Date(c.fecha);return dd.getMonth()===m&&dd.getFullYear()===y;});var fertilMes=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);return{label:MESES[m],value:cs.length,monto:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0),montoFertil:fertilMes,montoTotal:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0)+fertilMes};});
+  var last6=Array.from({length:6},function(_,i){var d=new Date(thisYear,thisMonth-5+i,1);var m=d.getMonth();var y=d.getFullYear();var mesKey=y+"-"+String(m+1).padStart(2,"0");var cs=allConsultas.filter(function(c){var dd=new Date(c.fecha);return dd.getMonth()===m&&dd.getFullYear()===y;});var fertilMes=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);var gastosKey=allGastos.filter(function(g){return g.mes===mesKey;}).reduce(function(s,g){return s+(parseFloat(g.monto)||0);},0);var ingTotal=cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0)+fertilMes;return{label:MESES[m],value:cs.length,monto:cs.reduce(function(s,c){return s+(parseFloat(c.monto)||0);},0),montoFertil:fertilMes,montoTotal:ingTotal,ganancia:ingTotal-gastosKey};});
   var last6Fertil=Array.from({length:6},function(_,i){var d=new Date(thisYear,thisMonth-5+i,1);var m=d.getMonth();var y=d.getFullYear();var ing=fc.filter(function(c){var sd=c.startDate||c.createdAt||"";var dd=new Date(sd.length===10?sd+"T12:00:00":sd);return dd.getMonth()===m&&dd.getFullYear()===y;}).reduce(function(s,c){return s+(c.amountPaid||0);},0);return{label:MESES[m],value:ing};});
   var last6Privadas=last6.map(function(d){return{label:d.label,value:d.monto};});
+  var last6Ganancia=last6.map(function(d){return{label:d.label,value:d.ganancia};});
 
   var statCard=function(icon,label,value,sub,color){
     color=color||C.okDark;
@@ -595,10 +601,18 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
 
   return (<div>
     {/* ── BLOQUE 1: GENERAL ── */}
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:10}}>
       <h2 style={{margin:0,fontSize:22,fontWeight:800,color:C.text,letterSpacing:"-0.3px"}}>{"📊 Estadísticas generales"}</h2>
-      <button onClick={function(){setShowGastoForm(!showGastoForm);}} style={S.btnOutline}>{"💸 "+(showGastoForm?"Cerrar":"Cargar gasto")}</button>
+      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,background:C.bg,border:"1px solid "+C.border,borderRadius:8,padding:"6px 10px"}}>
+          <span style={{fontSize:12,fontWeight:600,color:C.textSub}}>{"📅 Mes:"}</span>
+          <input type="month" value={mesSel} onChange={function(e){setMesSel(e.target.value);}} style={{border:"none",background:"transparent",fontFamily:"inherit",fontSize:13,fontWeight:700,color:C.text,outline:"none",cursor:"pointer"}}/>
+          {!esActual&&<button onClick={function(){setMesSel(mesActual);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:C.ok,fontWeight:600,padding:"0 4px"}}>{"\u2190 Actual"}</button>}
+        </div>
+        <button onClick={function(){setShowGastoForm(!showGastoForm);}} style={S.btnOutline}>{"💸 "+(showGastoForm?"Cerrar":"Cargar gasto")}</button>
+      </div>
     </div>
+    {!esActual&&<div style={{background:"#fff8e1",border:"1px solid #f0c040",borderRadius:8,padding:"8px 14px",marginBottom:14,fontSize:12,color:"#7a6010",fontWeight:600}}>{"\u26a0\ufe0f Mostrando datos de "+mesSel+". Los gráficos históricos siempre muestran los últimos 6 meses."}</div>}
 
     {showGastoForm&&<div style={{...S.card,marginBottom:20,borderLeft:"4px solid "+C.warn}}>
       <h4 style={{margin:"0 0 14px",fontSize:14,fontWeight:700,color:C.text}}>{"Registrar gasto"}</h4>
@@ -625,10 +639,14 @@ function StatsDashboard({patients,consultas,fertilCases,appointments,gastos,onAd
       <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"Consultas por mes"}</h4>{last6.some(function(d){return d.value>0;})?<BarChart data={last6} color={C.ok}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
       <div style={S.card}><h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"Facturación total por mes"}</h4>{last6.some(function(d){return d.montoTotal>0;})?<BarChart data={last6.map(function(d){return{label:d.label,value:d.montoTotal};})} color={C.okDark} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📊" title="Sin datos aún" compact={true}/>}</div>
     </div>
+    <div style={{...S.card,marginBottom:28}}>
+      <h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"📈 Ganancia neta por mes (ingresos − gastos)"}</h4>
+      {last6Ganancia.some(function(d){return d.value!==0;})?<BarChart data={last6Ganancia} color={C.ok} formatValue={function(v){return "$"+Math.round(v/1000)+"k";}}/>:<EmptyState icon="📈" title="Sin datos aún" compact={true}/>}
+    </div>
 
     {/* Gastos del mes detalle */}
     {gastosMes.length>0&&<div style={{...S.card,marginBottom:28}}>
-      <h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"💸 Gastos del mes"}</h4>
+      <h4 style={{margin:"0 0 12px",fontSize:14,fontWeight:700,color:C.text}}>{"💸 Gastos — "+mesSel}</h4>
       {gastosMes.map(function(g){return(<div key={g.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid "+C.borderLight}}>
         <div><span style={{fontWeight:600,fontSize:13,color:C.text}}>{g.tipo.charAt(0).toUpperCase()+g.tipo.slice(1)}</span><span style={{fontSize:11,color:C.muted,marginLeft:8}}>{g.categoria==="fertil"?"Fértil":g.categoria==="privadas"?"Consultas":"General"}</span>{g.descripcion&&<span style={{fontSize:11,color:C.muted,marginLeft:6,fontStyle:"italic"}}>{" · "+g.descripcion}</span>}</div>
         <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontSize:14,color:C.danger}}>{fmtMoney(g.monto)}</span><button onClick={function(){if(confirm("¿Eliminar este gasto?"))onDeleteGasto(g.id);}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:C.danger,padding:"2px 4px"}}>{"✕"}</button></div>
